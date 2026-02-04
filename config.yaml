@@ -1,0 +1,96 @@
+# MS Rewards Automator 配置文件模板
+# 复制此文件为 config.yaml 并根据需要修改配置
+
+# 搜索任务配置
+search:
+  desktop_count: 30           # 桌面端搜索次数（通常需要 30 次）
+  mobile_count: 20            # 移动端搜索次数（通常需要 20 次）
+  wait_interval:
+    min: 2                   # 最小等待时间（秒）- 搜索之间的间隔
+    max: 5                   # 最大等待时间（秒）
+  search_terms_file: "tools/search_terms.txt"  # 搜索词文件路径
+
+# 浏览器配置
+browser:
+  headless: true             # 是否无头模式（true = 不显示浏览器窗口）
+  slow_mo: 50                # 操作延迟（毫秒），模拟人类速度
+  timeout: 30000             # 页面加载超时（毫秒）
+
+# 账户配置
+account:
+  storage_state_path: "storage_state.json"  # Cookie 存储路径
+  login_url: "https://rewards.microsoft.com/"  # 登录页面 URL
+
+# 反检测配置
+anti_detection:
+  use_stealth: true          # 是否使用 playwright-stealth 库
+  random_viewport: true      # 是否随机化视口大小
+  simulate_human_typing: true # 是否模拟人类打字速度
+  scroll_behavior:
+    enabled: true            # 是否启用滚动行为模拟
+    min_scrolls: 2           # 最小滚动次数
+    max_scrolls: 5           # 最大滚动次数
+    scroll_delay_min: 500    # 滚动间隔最小值（毫秒）
+    scroll_delay_max: 2000   # 滚动间隔最大值（毫秒）
+
+# 状态监控配置
+monitoring:
+  enabled: true              # 是否启用状态监控
+  check_interval: 5          # 检查间隔（每N次搜索检查一次）
+  check_points_before_task: true  # 任务前检查积分
+  alert_on_no_increase: true      # 积分不增加时告警
+  max_no_increase_count: 3        # 最大连续无增加次数（达到后停止）
+
+# 通知推送配置
+notification:
+  enabled: false             # 是否启用通知功能
+  
+  # Telegram Bot 配置
+  telegram:
+    enabled: false           # 是否启用 Telegram 通知
+    bot_token: ""            # Telegram Bot Token (从 @BotFather 获取)
+    chat_id: ""              # Telegram Chat ID (你的用户 ID)
+  
+  # Server酱 配置（微信推送）
+  serverchan:
+    enabled: false           # 是否启用 Server酱
+    key: ""                  # Server酱 SendKey (从 https://sct.ftqq.com/ 获取)
+  
+  # WhatsApp 配置（CallMeBot）
+  whatsapp:
+    enabled: false           # 是否启用 WhatsApp 通知
+    phone: ""                # 你的手机号 (格式: +8613800138000)
+    apikey: ""               # CallMeBot API Key
+
+# 任务调度配置
+scheduler:
+  enabled: true              # 是否启用调度器
+  mode: "random"             # 调度模式: "random" (随机时间) 或 "fixed" (固定时间)
+  
+  # 随机模式配置
+  random_start_hour: 8       # 随机时间范围开始（小时）
+  random_end_hour: 22        # 随机时间范围结束（小时）
+  
+  # 固定模式配置
+  fixed_hour: 10             # 固定执行时间（小时）
+  fixed_minute: 0            # 固定执行时间（分钟）
+
+# 错误处理配置
+error_handling:
+  max_retries: 3             # 最大重试次数
+  retry_delay: 5             # 重试延迟（秒）
+  exponential_backoff: true  # 是否使用指数退避
+
+# 日志配置
+logging:
+  level: "INFO"              # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "logs/automator.log" # 日志文件路径
+  console: true              # 是否输出到控制台
+
+# 使用说明:
+# 1. 程序会自动检测登录状态：首次运行自动使用有头模式，后续自动使用无头模式
+# 2. 登录成功后，会话状态会保存到 storage_state.json
+# 3. 如需重新登录，删除 storage_state.json 文件即可
+# 4. 搜索次数根据 Microsoft Rewards 要求调整
+# 5. 等待间隔建议设置较长，以降低被检测风险
+# 6. 通知功能默认关闭，需要时请配置相应的服务并启用

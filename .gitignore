@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Conda
+.conda/
+
+# 敏感文件 - 会话状态和 Cookie
+storage_state.json
+storage_state_*.json
+*.session
+cookies.json
+
+# 日志文件
+logs/
+*.log
+
+# 配置文件（如果包含敏感信息）
+# config.yaml
+
+# Kiro 开发文件
+.kiro/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# Playwright
+.playwright/
+test-results/
+playwright-report/
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
+.hypothesis/
+
+# 临时文件
+*.tmp
+temp/
+
+# 截图和调试文件
+screenshots/*.png
+screenshots/*.html
+!screenshots/points_detection_failed.png

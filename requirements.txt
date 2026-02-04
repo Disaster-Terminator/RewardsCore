@@ -1,0 +1,27 @@
+# MS Rewards Automator - Python 依赖
+# 使用 pip install -r requirements.txt 安装
+
+# 核心依赖
+playwright==1.40.0
+playwright-stealth==1.0.6
+pyyaml==6.0.1
+aiohttp==3.9.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# 测试依赖
+hypothesis==6.92.1
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-playwright==0.4.3
+
+# 可视化和数据分析
+streamlit==1.30.0
+plotly==5.18.0
+pandas==2.1.4
+
+# 代码质量工具（可选）
+# black==23.12.1
+# isort==5.13.2
+# pylint==3.0.3
+# mypy==1.7.1

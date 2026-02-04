@@ -1,0 +1,235 @@
+name: MS Rewards Daily Automation
+
+on:
+  # 定时执行（每天随机时间）
+  schedule:
+    # 北京时间 8:00-22:00 之间随机执行
+    # 这里设置多个时间点，GitHub Actions 会随机选择
+    - cron: '0 0 * * *'   # UTC 00:00 = 北京时间 08:00
+    - cron: '0 6 * * *'   # UTC 06:00 = 北京时间 14:00
+    - cron: '0 12 * * *'  # UTC 12:00 = 北京时间 20:00
+  
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '执行模式'
+        required: false
+        default: 'normal'
+        type: choice
+        options:
+          - normal
+          - fast
+          - slow
+      desktop_only:
+        description: '仅执行桌面搜索'
+        required: false
+        type: boolean
+        default: false
+      mobile_only:
+        description: '仅执行移动搜索'
+        required: false
+        type: boolean
+        default: false
+
+# ⚠️ 重要警告：
+# GitHub Actions 使用数据中心 IP，可能被 Microsoft 检测并封禁账号
+# 强烈建议在本地运行此脚本，而不是使用 GitHub Actions
+# 如果必须使用 GitHub Actions，请自行承担风险
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    
+    # 设置超时时间（30分钟）
+    timeout-minutes: 30
+    
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # 2. 设置 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps chromium
+      
+      # 4. 恢复会话状态（从 Secrets）
+      - name: Restore session state
+        env:
+          STORAGE_STATE: ${{ secrets.STORAGE_STATE }}
+        run: |
+          if [ -n "$STORAGE_STATE" ]; then
+            echo "$STORAGE_STATE" > storage_state.json
+            echo "✓ 会话状态已恢复"
+          else
+            echo "⚠️ 未找到会话状态，需要手动登录"
+          fi
+      
+      # 5. 创建配置文件（从 Secrets）
+      - name: Create config file
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+        run: |
+          cat > config.yaml << EOF
+          # MS Rewards Automator 配置文件（GitHub Actions）
+          
+          search:
+            desktop_count: 30
+            mobile_count: 20
+            wait_interval:
+              min: 8
+              max: 20
+            search_terms_file: "tools/search_terms.txt"
+          
+          browser:
+            headless: true
+            slow_mo: 100
+            timeout: 30000
+          
+          account:
+            storage_state_path: "storage_state.json"
+            login_url: "https://rewards.microsoft.com/"
+          
+          anti_detection:
+            use_stealth: true
+            random_viewport: true
+            simulate_human_typing: true
+            scroll_behavior:
+              enabled: true
+              min_scrolls: 2
+              max_scrolls: 5
+              scroll_delay_min: 500
+              scroll_delay_max: 2000
+          
+          monitoring:
+            enabled: true
+            check_interval: 5
+            check_points_before_task: true
+            alert_on_no_increase: true
+            max_no_increase_count: 3
+          
+          notification:
+            enabled: true
+            telegram:
+              enabled: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
+              bot_token: "$TELEGRAM_BOT_TOKEN"
+              chat_id: "$TELEGRAM_CHAT_ID"
+            serverchan:
+              enabled: ${{ secrets.SERVERCHAN_KEY != '' }}
+              key: "$SERVERCHAN_KEY"
+          
+          scheduler:
+            enabled: false
+          
+          error_handling:
+            max_retries: 3
+            retry_delay: 5
+            exponential_backoff: true
+          
+          logging:
+            level: "INFO"
+            file: "logs/automator.log"
+            console: true
+          EOF
+          
+          echo "✓ 配置文件已创建"
+      
+      # 6. 运行自动化脚本
+      - name: Run automation
+        run: |
+          # 构建命令
+          CMD="python main.py --headless"
+          
+          # 添加模式参数
+          if [ "${{ github.event.inputs.mode }}" != "" ]; then
+            CMD="$CMD --mode ${{ github.event.inputs.mode }}"
+          fi
+          
+          # 添加任务选项
+          if [ "${{ github.event.inputs.desktop_only }}" == "true" ]; then
+            CMD="$CMD --desktop-only"
+          fi
+          
+          if [ "${{ github.event.inputs.mobile_only }}" == "true" ]; then
+            CMD="$CMD --mobile-only"
+          fi
+          
+          echo "执行命令: $CMD"
+          $CMD
+      
+      # 7. 保存会话状态（更新到 Secrets 需要手动操作）
+      - name: Save session state
+        if: always()
+        run: |
+          if [ -f storage_state.json ]; then
+            echo "会话状态文件存在"
+            echo "⚠️ 注意: 需要手动更新 STORAGE_STATE Secret"
+            echo "文件内容:"
+            cat storage_state.json
+          fi
+      
+      # 8. 上传日志和报告
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-and-reports
+          path: |
+            logs/
+            screenshots/
+          retention-days: 7
+      
+      # 9. 发送失败通知
+      - name: Send failure notification
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            MESSAGE="❌ MS Rewards 自动化执行失败\n\n时间: $(date '+%Y-%m-%d %H:%M:%S')\n工作流: ${{ github.workflow }}\n运行ID: ${{ github.run_id }}"
+            
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=${TELEGRAM_CHAT_ID}" \
+              -d "text=${MESSAGE}" \
+              -d "parse_mode=Markdown"
+          fi
+
+# 配置 Repository Secrets:
+# 
+# 必需的 Secrets:
+# - STORAGE_STATE: 会话状态 JSON（从 storage_state.json 复制）
+# 
+# 可选的 Secrets（通知功能）:
+# - TELEGRAM_BOT_TOKEN: Telegram Bot Token
+# - TELEGRAM_CHAT_ID: Telegram Chat ID
+# - SERVERCHAN_KEY: Server酱 SendKey
+# 
+# 设置方法:
+# 1. 进入 GitHub 仓库
+# 2. Settings -> Secrets and variables -> Actions
+# 3. 点击 "New repository secret"
+# 4. 添加上述 Secrets
+# 
+# 获取 STORAGE_STATE:
+# 1. 本地运行一次: python main.py
+# 2. 手动登录完成后，复制 storage_state.json 的全部内容
+# 3. 粘贴到 STORAGE_STATE Secret
+# 
+# 注意事项:
+# - GitHub Actions 使用数据中心 IP，可能被检测
+# - 建议使用自托管 Runner 或本地定时任务
+# - 定期检查账号状态，避免被封禁

@@ -1,0 +1,18 @@
+name: ms-rewards-bot
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - playwright==1.40.0
+      - playwright-stealth==1.0.6
+      - pyyaml==6.0.1
+      - aiohttp==3.9.1
+      - beautifulsoup4==4.12.2
+      - hypothesis==6.92.1
+      - pytest==7.4.3
+      - pytest-asyncio==0.21.1
+      - pytest-playwright==0.4.3
+      - lxml==4.9.3
