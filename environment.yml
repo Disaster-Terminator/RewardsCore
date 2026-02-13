@@ -16,3 +16,9 @@ dependencies:
       - pytest-asyncio==0.21.1
       - pytest-playwright==0.4.3
       - lxml==4.9.3
+      # 额外依赖
+      - psutil
+      - pyotp
+      - pandas
+      - plotly
+      - streamlit

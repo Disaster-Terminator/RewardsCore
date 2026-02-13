@@ -8,12 +8,17 @@ pyyaml==6.0.1
 aiohttp==3.9.1
 beautifulsoup4==4.12.2
 lxml==4.9.3
+psutil==5.9.6
+pyotp
 
 # 测试依赖
 hypothesis==6.92.1
-pytest==7.4.3
+pytest>=7.4.3,<8.0.0
 pytest-asyncio==0.21.1
 pytest-playwright==0.4.3
+pytest-benchmark>=4.0.0,<5.0.0
+pytest-cov==4.1.0
+faker==22.0.0
 
 # 可视化和数据分析
 streamlit==1.30.0
