@@ -143,9 +143,10 @@ class TestBingThemePersistence:
     
     def test_validate_theme_state_valid(self, theme_manager):
         """测试验证有效的主题状态数据"""
+        import time
         valid_data = {
             "theme": "dark",
-            "timestamp": asyncio.get_running_loop().time(),
+            "timestamp": time.time(),
             "version": "1.0"
         }
         
@@ -164,9 +165,10 @@ class TestBingThemePersistence:
     
     def test_validate_theme_state_invalid_theme(self, theme_manager):
         """测试验证无效主题值的数据"""
+        import time
         invalid_data = {
             "theme": "invalid_theme",
-            "timestamp": asyncio.get_running_loop().time(),
+            "timestamp": time.time(),
             "version": "1.0"
         }
         
@@ -175,9 +177,10 @@ class TestBingThemePersistence:
     
     def test_validate_theme_state_expired(self, theme_manager):
         """测试验证过期的主题状态数据"""
+        import time
         expired_data = {
             "theme": "dark",
-            "timestamp": asyncio.get_running_loop().time() - (31 * 24 * 3600),  # 31天前
+            "timestamp": time.time() - (31 * 24 * 3600),  # 31天前
             "version": "1.0"
         }
         

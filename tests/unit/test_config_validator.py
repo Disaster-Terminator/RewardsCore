@@ -357,7 +357,7 @@ class TestConfigValidator:
         
         assert "✅ 配置验证通过，没有发现问题" in report
     
-    @patch('config_manager.ConfigManager')
+    @patch('src.infrastructure.config_manager.ConfigManager')
     def test_validate_config_file_success(self, mock_config_manager):
         """测试配置文件验证 - 成功"""
         mock_config = Mock()
@@ -369,7 +369,7 @@ class TestConfigValidator:
         assert is_valid is True
         assert "配置验证报告" in report
     
-    @patch('config_manager.ConfigManager')
+    @patch('src.infrastructure.config_manager.ConfigManager')
     def test_validate_config_file_failure(self, mock_config_manager):
         """测试配置文件验证 - 失败"""
         mock_config_manager.side_effect = Exception("Config load failed")

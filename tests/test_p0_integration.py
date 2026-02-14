@@ -8,10 +8,10 @@ import sys
 from pathlib import Path
 
 # 添加 src 到路径
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from infrastructure.config_manager import ConfigManager
-from infrastructure.logger import setup_logging
+from src.infrastructure.config_manager import ConfigManager
+from src.infrastructure.logger import setup_logging
 import logging
 
 
@@ -22,7 +22,7 @@ async def test_query_engine():
     print("="*70)
     
     try:
-        from src.search.query_engine import QueryEngine
+        from search.query_engine import QueryEngine
         
         config = ConfigManager("config.yaml")
         query_engine = QueryEngine(config)
@@ -60,7 +60,7 @@ async def test_login_state_machine():
     print("="*70)
     
     try:
-        from src.login.login_state_machine import LoginStateMachine, LoginState
+        from login.login_state_machine import LoginStateMachine, LoginState
         
         config = ConfigManager("config.yaml")
         logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ async def test_task_system():
     print("="*70)
     
     try:
-        from src.tasks import TaskManager, TaskParser
+        from tasks import TaskManager, TaskParser
         
         config = ConfigManager("config.yaml")
         task_manager = TaskManager(config)
