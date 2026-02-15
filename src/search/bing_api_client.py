@@ -83,17 +83,15 @@ class BingAPIClient:
         Returns:
             List of suggestions
         """
-        # Encode query for URL
         encoded_query = quote(query)
         url = f"{self.SUGGESTIONS_URL}?query={encoded_query}"
         
-        async with aiohttp.ClientSession() as session:
+        async with self._semaphore:
+            session = await self._get_session()
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=self.timeout)) as response:
                 response.raise_for_status()
                 data = await response.json()
                 
-                # Bing Suggestions API returns: [query, [suggestions], [descriptions], [urls]]
-                # We only need the suggestions (index 1)
                 if isinstance(data, list) and len(data) > 1:
                     suggestions = data[1]
                     if isinstance(suggestions, list):

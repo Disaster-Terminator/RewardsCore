@@ -45,8 +45,8 @@ class ErrorHandler:
         self.max_retries = config.get("error_handling.max_retries", 3)
         self.retry_delay = config.get("error_handling.retry_delay", 5)
         self.use_exponential_backoff = config.get("error_handling.exponential_backoff", True)
+        self._max_history = 100
         
-        # 错误统计
         self.error_count = 0
         self.error_history = []
         
@@ -131,6 +131,9 @@ class ErrorHandler:
         }
         
         self.error_history.append(error_record)
+        
+        if len(self.error_history) > self._max_history:
+            self.error_history = self.error_history[-self._max_history:]
         
         # 记录日志
         log_message = f"错误 [{error_type.value}] [{severity.value}] {context}: {error}"

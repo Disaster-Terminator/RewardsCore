@@ -326,7 +326,8 @@ class ConfigManager:
         Returns:
             合并后的配置
         """
-        result = default.copy()
+        import copy
+        result = copy.deepcopy(default)
         
         for key, value in loaded.items():
             if key in result and isinstance(result[key], dict) and isinstance(value, dict):

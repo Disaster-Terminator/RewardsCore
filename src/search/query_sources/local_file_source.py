@@ -159,17 +159,13 @@ class LocalFileSource(QuerySource):
         available = [t for t in candidates if t not in self.used_terms]
         
         if not available:
-            # If all terms have been used, clear the usage record
             self.logger.debug("All search terms used, resetting usage record")
             self.used_terms.clear()
             available = candidates
         
-        # Randomly select queries
-        for _ in range(min(count, len(available))):
-            term = random.choice(available)
-            queries.append(term)
-            self.used_terms.add(term)
-            available.remove(term)
+        selected = random.sample(available, min(count, len(available)))
+        queries.extend(selected)
+        self.used_terms.update(selected)
         
         # If usage record exceeds 70% of candidates, clear half
         if len(self.used_terms) > len(candidates) * 0.7:

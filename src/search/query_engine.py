@@ -5,31 +5,35 @@ Query Engine - Intelligent query generation from multiple sources
 import asyncio
 import random
 import logging
+import time
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
 
 class QueryCache:
-    """Simple in-memory cache with TTL for queries"""
+    """Simple in-memory cache with TTL and LRU eviction for queries"""
     
-    def __init__(self, ttl: int = 3600):
+    def __init__(self, ttl: int = 3600, max_size: int = 100):
         """
         Initialize cache
         
         Args:
             ttl: Time to live in seconds (default 1 hour)
+            max_size: Maximum number of entries (default 100)
         """
         self.ttl = ttl
-        self.cache: Dict[str, tuple] = {}  # key -> (queries, timestamp)
+        self.max_size = max_size
+        self.cache: OrderedDict = OrderedDict()
         self.logger = logging.getLogger(f"{__name__}.QueryCache")
     
     def get(self, key: str) -> Optional[List[str]]:
         """Get cached queries if not expired"""
         if key in self.cache:
             queries, timestamp = self.cache[key]
-            if datetime.now() - timestamp < timedelta(seconds=self.ttl):
+            if time.monotonic() - timestamp < self.ttl:
+                self.cache.move_to_end(key)
                 self.logger.debug(f"Cache hit for key: {key}")
                 return queries
             else:
@@ -39,7 +43,10 @@ class QueryCache:
     
     def set(self, key: str, queries: List[str]) -> None:
         """Cache queries with current timestamp"""
-        self.cache[key] = (queries, datetime.now())
+        if len(self.cache) >= self.max_size:
+            self.cache.popitem(last=False)
+            self.logger.debug("Cache full, evicted oldest entry")
+        self.cache[key] = (queries, time.monotonic())
         self.logger.debug(f"Cached {len(queries)} queries for key: {key}")
     
     def clear(self) -> None:

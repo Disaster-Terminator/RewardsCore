@@ -215,10 +215,12 @@ class LoginDetector:
             logger.debug(f"[Cookie检测] 总共有 {len(cookies)} 个Cookie")
             
             auth_cookies = [
+                "ESTSAUTH",
+                "ESTSAUTHPERSISTENT",
+                "SAML11",
+                "RPSAuth",
                 "MSPOK",
                 "MSPRequ",
-                "MSCC",
-                "MUID",
                 "_EDGE_S",
                 "_EDGE_V",
             ]

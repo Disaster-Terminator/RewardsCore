@@ -8,6 +8,7 @@ import logging
 import psutil
 import time
 import json
+import platform
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -158,9 +159,14 @@ class HealthMonitor:
             if len(self.metrics["memory_usage"]) > 100:
                 self.metrics["memory_usage"] = self.metrics["memory_usage"][-100:]
             
-            # 磁盘空间
-            disk = psutil.disk_usage('/')
-            disk_percent = (disk.used / disk.total) * 100
+            # 磁盘空间 - 跨平台支持
+            system_disk = 'C:\\' if platform.system() == 'Windows' else '/'
+            try:
+                disk = psutil.disk_usage(system_disk)
+                disk_percent = (disk.used / disk.total) * 100
+            except Exception as disk_error:
+                logger.debug(f"无法获取磁盘信息: {disk_error}")
+                disk_percent = 0
             
             # 判断系统健康状态
             status = "healthy"
