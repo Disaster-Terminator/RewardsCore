@@ -78,7 +78,7 @@ DEFAULT_CONFIG = {
         "theme": "dark",
         "force_theme": True,
         "persistence_enabled": True,
-        "theme_state_file": "theme_state.json"
+        "theme_state_file": "logs/theme_state.json"
     },
     "monitoring": {
         "enabled": True,
@@ -130,24 +130,20 @@ DEFAULT_CONFIG = {
     }
 }
 
-# 开发模式覆盖配置
+# 开发模式覆盖配置 - 用于快速迭代调试
 DEV_MODE_OVERRIDES = {
     "search": {
-        # 开发模式：极简搜索数量 + 更短的等待时间
         "desktop_count": 2,
         "mobile_count": 2,
-        # 使用区间形式，方便 AntiBanModule 读取 min/max
         "wait_interval": {
             "min": 0.5,
             "max": 1.5,
         },
     },
     "browser": {
-        # 开发模式尽量减少慢动作，加快调试速度
         "slow_mo": 0,
         "headless": False
     },
-    # 开发模式弱化反检测，避免额外耗时
     "anti_detection": {
         "use_stealth": False,
         "random_viewport": False,
@@ -155,23 +151,59 @@ DEV_MODE_OVERRIDES = {
             "enabled": False
         }
     },
-    # 开发模式下启用积分监控，便于测试完整流程
     "monitoring": {
         "enabled": True,
     },
-    # 开发模式下禁用主题管理，避免自动导航干扰任务流程
     "bing_theme": {
         "enabled": False,
         "persistence_enabled": False,
     },
-    # 开发模式下保留监控与任务执行，但提高可观测性（由各模块内部根据 dev_mode 决定是否降级行为）
     "task_system": {
-        "enabled": True,  # 开发模式下启用任务系统
+        "enabled": False,
         "debug_mode": True,
-        "max_tasks": 2,  # 开发模式只执行少量任务
+        "max_tasks": 2,
     },
     "logging": {
         "level": "DEBUG"
+    }
+}
+
+# 用户模式覆盖配置 - 用于鲁棒性测试，模拟真实使用环境
+USER_MODE_OVERRIDES = {
+    "search": {
+        "desktop_count": 3,
+        "mobile_count": 3,
+        "wait_interval": {
+            "min": 3,
+            "max": 8,
+        },
+    },
+    "browser": {
+        "slow_mo": 50,
+        "headless": False
+    },
+    "anti_detection": {
+        "use_stealth": True,
+        "random_viewport": True,
+        "scroll_behavior": {
+            "enabled": True,
+            "min_scrolls": 2,
+            "max_scrolls": 4,
+        }
+    },
+    "monitoring": {
+        "enabled": True,
+    },
+    "bing_theme": {
+        "enabled": False,
+        "persistence_enabled": False,
+    },
+    "task_system": {
+        "enabled": False,
+        "debug_mode": False,
+    },
+    "logging": {
+        "level": "INFO"
     }
 }
 
@@ -179,27 +211,30 @@ DEV_MODE_OVERRIDES = {
 class ConfigManager:
     """配置管理器类"""
 
-    def __init__(self, config_path: str = "config.yaml", dev_mode: bool = False):
+    def __init__(self, config_path: str = "config.yaml", dev_mode: bool = False, user_mode: bool = False):
         """
         初始化配置管理器
 
         Args:
             config_path: 配置文件路径
-            dev_mode: 是否启用开发模式
+            dev_mode: 是否启用开发模式（快速迭代调试）
+            user_mode: 是否启用用户模式（鲁棒性测试，模拟真实环境）
         """
         self.config_path = config_path
         self.dev_mode = dev_mode
+        self.user_mode = user_mode
         self.config: Dict[str, Any] = {}
-        self.config_data: Dict[str, Any] = {}  # 保持向后兼容
+        self.config_data: Dict[str, Any] = {}
         self._load_config()
 
-        # 初始化类型化配置
         self._init_typed_config()
 
-        # 如果启用开发模式，应用覆盖配置
         if self.dev_mode:
             self._apply_dev_mode()
             logger.info("🚀 开发模式已启用")
+        elif self.user_mode:
+            self._apply_user_mode()
+            logger.info("🎯 用户模式已启用")
 
     def _init_typed_config(self) -> None:
         """初始化类型化配置"""
@@ -213,11 +248,18 @@ class ConfigManager:
     def _apply_dev_mode(self) -> None:
         """应用开发模式覆盖配置"""
         self.config = self._merge_configs(self.config, DEV_MODE_OVERRIDES)
-        self.config_data = self.config  # 保持同步
-        # 同步更新类型化配置
+        self.config_data = self.config
         if self.app:
             self.app = type(self.app).from_dict(self.config)
         logger.debug("开发模式配置已应用")
+    
+    def _apply_user_mode(self) -> None:
+        """应用用户模式覆盖配置"""
+        self.config = self._merge_configs(self.config, USER_MODE_OVERRIDES)
+        self.config_data = self.config
+        if self.app:
+            self.app = type(self.app).from_dict(self.config)
+        logger.debug("用户模式配置已应用")
     
     def _load_config(self) -> None:
         """加载配置文件"""

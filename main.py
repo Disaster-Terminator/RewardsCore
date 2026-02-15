@@ -44,6 +44,9 @@ def parse_arguments():
   python main.py --desktop-only           # 仅执行桌面搜索
   python main.py --mobile-only            # 仅执行移动搜索
   python main.py --test-notification      # 测试通知功能
+  python main.py --autonomous-test        # 运行自主测试框架
+  python main.py --autonomous-test --test-type login  # 仅测试登录状态
+  python main.py --autonomous-test --quick-test       # 快速测试模式
         """
     )
 
@@ -108,6 +111,25 @@ def parse_arguments():
         help="测试通知功能"
     )
 
+    parser.add_argument(
+        "--autonomous-test",
+        action="store_true",
+        help="运行自主测试框架（无头模式，自动问题发现）"
+    )
+
+    parser.add_argument(
+        "--test-type",
+        choices=["login", "bing_access", "search", "points", "full"],
+        default="full",
+        help="自主测试类型 (默认: full)"
+    )
+
+    parser.add_argument(
+        "--quick-test",
+        action="store_true",
+        help="快速测试模式（减少等待时间）"
+    )
+
     # 调度选项
     parser.add_argument(
         "--schedule",
@@ -158,6 +180,108 @@ async def test_notification_func(config):
         print("✅ 测试通知发送成功！")
     else:
         print("❌ 测试通知发送失败，请检查配置")
+
+
+async def run_autonomous_test(args):
+    """运行自主测试框架"""
+    sys.path.insert(0, str(Path(__file__).parent))
+    
+    from tests.autonomous.autonomous_test_runner import AutonomousTestRunner, TestConfig
+    from tests.autonomous.smart_scenarios import SmartTestScenarios
+    
+    print("\n" + "=" * 70)
+    print("MS Rewards Automator - 自主测试框架")
+    print("=" * 70)
+    print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"测试类型: {args.test_type}")
+    print("=" * 70)
+    
+    test_config = TestConfig(
+        headless=True,
+        auto_screenshot=True,
+        screenshot_on_error=True,
+        stop_on_critical=True,
+        max_retries=3,
+        page_timeout=30000,
+        inspection_interval=3 if args.quick_test else 5
+    )
+    
+    runner = AutonomousTestRunner(
+        config_path=args.config,
+        test_config=test_config
+    )
+    
+    results = {
+        "session_id": runner.screenshot_manager.session_id,
+        "tests": {},
+        "reports": {}
+    }
+    
+    try:
+        if not await runner.initialize():
+            print("❌ 初始化失败")
+            return 1
+        
+        if not await runner.create_browser():
+            print("❌ 创建浏览器失败")
+            return 1
+        
+        storage_state = runner.config.get("account.storage_state_path")
+        if not await runner.create_context(storage_state):
+            print("❌ 创建上下文失败")
+            return 1
+        
+        test_map = {
+            "login": ("登录状态检测", runner._test_login_status),
+            "bing_access": ("Bing访问测试", runner._test_bing_access),
+            "search": ("搜索功能测试", runner._test_search_function),
+            "points": ("积分检测测试", runner._test_points_detection),
+        }
+        
+        if args.test_type == "full":
+            for test_key, (test_name, test_func) in test_map.items():
+                results["tests"][test_key] = await runner.run_test(test_name, test_func)
+        else:
+            test_name, test_func = test_map[args.test_type]
+            results["tests"][args.test_type] = await runner.run_test(test_name, test_func)
+        
+    except KeyboardInterrupt:
+        print("\n用户中断测试")
+        results["interrupted"] = True
+        
+    except Exception as e:
+        print(f"❌ 测试执行失败: {e}")
+        import traceback
+        traceback.print_exc()
+        results["error"] = str(e)
+        
+    finally:
+        await runner.cleanup()
+    
+    results["reports"] = runner.generate_reports()
+    
+    print("\n" + "=" * 70)
+    print("测试结果摘要")
+    print("=" * 70)
+    
+    passed = sum(1 for v in results["tests"].values() if v)
+    total = len(results["tests"])
+    
+    for test_name, test_result in results["tests"].items():
+        status = "✅ 通过" if test_result else "❌ 失败"
+        print(f"  {test_name}: {status}")
+    
+    print("\n" + "-" * 70)
+    print(f"总计: {total} | 通过: {passed} | 失败: {total - passed}")
+    
+    if results.get("reports"):
+        print("\n报告文件:")
+        for report_type, path in results["reports"].items():
+            print(f"  {report_type}: {path}")
+    
+    print("=" * 70)
+    
+    return 0 if passed == total else 1
 
 
 def signal_handler(signum, frame):
@@ -230,6 +354,10 @@ async def main():
     if args.test_notification:
         await test_notification_func(config)
         return
+
+    # 自主测试模式
+    if args.autonomous_test:
+        return await run_autonomous_test(args)
 
     # 调度模式
     if args.schedule:

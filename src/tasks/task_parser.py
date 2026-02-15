@@ -14,8 +14,7 @@ from tasks.task_base import TaskMetadata
 class TaskParser:
     """Parser for Microsoft Rewards dashboard tasks"""
     
-    # Sections on the dashboard that contain tasks
-    TASK_SECTIONS = ["section#dailyset", "section#streaks", "section#offers"]
+    TASK_SECTIONS = ["section#streaks", "section#offers", "section#snapshot", "section#dailyset"]
     
     def __init__(self, config=None):
         self.logger = logging.getLogger(__name__)
@@ -144,7 +143,13 @@ class TaskParser:
         except Exception as e:
             self.logger.debug(f"  No cookie consent banner: {e}")
         
-        section_selectors = ["section#dailyset", "section#streaks", "section[id*='daily']", "section[id*='streak']"]
+        section_selectors = [
+            "section#streaks", 
+            "section#offers", 
+            "section#snapshot",
+            "section[id*='streak']", 
+            "section[id*='offer']"
+        ]
         section_found = False
         
         for selector in section_selectors:
@@ -213,6 +218,7 @@ class TaskParser:
         """
         Parse task elements from the dashboard page.
         Uses JavaScript evaluation to extract structured task data from the React DOM.
+        Supports both link-based and button-based task cards.
         """
         tasks = []
         
@@ -221,7 +227,7 @@ class TaskParser:
                 () => {
                     const tasks = [];
                     
-                    const sectionIds = ['dailyset', 'streaks', 'offers', 'snapshot'];
+                    const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset'];
                     let sections = [];
                     
                     for (const sectionId of sectionIds) {
@@ -244,37 +250,54 @@ class TaskParser:
                     }
                     
                     for (const {id: sectionId, el: section} of sections) {
-                        const cards = section.querySelectorAll('a[href], button[href], [role="link"]');
+                        const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button');
                         
                         for (const card of cards) {
+                            const tagName = card.tagName.toLowerCase();
                             const href = card.getAttribute('href') || card.getAttribute('data-href') || '';
                             
                             if (href === '/earn' || href === '/dashboard' || 
                                 href === '/redeem' || href === '/about' || href === '/refer' ||
-                                href === '/' || href === '#') {
+                                href === '/' || href === '#' || href.includes('/orderhistory') ||
+                                href.includes('/faq') || href.includes('support.microsoft.com') ||
+                                href.includes('x.com') || href.includes('xbox.com') ||
+                                href.includes('microsoft.com/about') || href.includes('news.microsoft.com') ||
+                                href.includes('go.microsoft.com') || href.includes('choice.microsoft.com')) {
                                 continue;
                             }
                             
                             const text = card.innerText || '';
                             const ariaLabel = card.getAttribute('aria-label') || '';
                             
+                            const skipTexts = ['接受', '拒绝', '管理 cookie', 'accept', 'reject', 'manage cookie',
+                                              '提供反馈', 'feedback', '了解详细信息', 'learn more',
+                                              '订单历史记录', 'order history'];
+                            if (skipTexts.some(s => text.toLowerCase().includes(s) || ariaLabel.toLowerCase().includes(s))) {
+                                continue;
+                            }
+                            
                             let title = '';
                             const headings = card.querySelectorAll('h3, h4, p, span, div');
                             for (const h of headings) {
                                 const t = h.innerText.trim();
-                                if (t && t.length > 2 && t.length < 200) {
+                                if (t && t.length > 2 && t.length < 200 && !t.includes('\\n')) {
                                     title = t;
                                     break;
                                 }
                             }
                             if (!title) {
-                                title = ariaLabel || text.substring(0, 80).trim();
+                                const cleanText = text.replace(/\\s+/g, ' ').trim().substring(0, 80);
+                                if (cleanText && cleanText.length > 2) {
+                                    title = cleanText;
+                                } else {
+                                    title = ariaLabel;
+                                }
                             }
                             
                             if (!title && !href) continue;
                             
                             let points = 0;
-                            const pointsMatch = text.match(/(\\d+)\\s*(?:points?|pts?|积分)/i);
+                            const pointsMatch = text.match(/(\\d+)\\s*(?:points?|pts?|积分|分)/i);
                             if (pointsMatch) {
                                 points = parseInt(pointsMatch[1]);
                             } else {
@@ -301,6 +324,8 @@ class TaskParser:
                                 completed = true;
                             }
                             
+                            const isButton = tagName === 'button' && !href;
+                            
                             tasks.push({
                                 sectionId: sectionId,
                                 title: title,
@@ -308,7 +333,8 @@ class TaskParser:
                                 points: points,
                                 taskType: taskType,
                                 completed: completed,
-                                ariaLabel: ariaLabel
+                                ariaLabel: ariaLabel,
+                                isButton: isButton
                             });
                         }
                     }

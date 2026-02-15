@@ -119,12 +119,18 @@ class SystemInitializer:
             self.config.config["browser"]["headless"] = True
 
         if self.args.mode == "fast":
-            self.config.config["search"]["wait_interval"]["min"] = 2
-            self.config.config["search"]["wait_interval"]["max"] = 5
+            if isinstance(self.config.config["search"].get("wait_interval"), dict):
+                self.config.config["search"]["wait_interval"]["min"] = 2
+                self.config.config["search"]["wait_interval"]["max"] = 5
+            else:
+                self.config.config["search"]["wait_interval"] = {"min": 2, "max": 5}
             self.config.config["browser"]["slow_mo"] = 50
         elif self.args.mode == "slow":
-            self.config.config["search"]["wait_interval"]["min"] = 15
-            self.config.config["search"]["wait_interval"]["max"] = 30
+            if isinstance(self.config.config["search"].get("wait_interval"), dict):
+                self.config.config["search"]["wait_interval"]["min"] = 15
+                self.config.config["search"]["wait_interval"]["max"] = 30
+            else:
+                self.config.config["search"]["wait_interval"] = {"min": 15, "max": 30}
             self.config.config["browser"]["slow_mo"] = 200
 
     def _init_query_engine(self) -> Optional[QueryEngine]:

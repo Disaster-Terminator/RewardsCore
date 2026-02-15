@@ -113,7 +113,7 @@ class BingThemeConfig:
     theme: str = "dark"  # dark, light
     force_theme: bool = True
     persistence_enabled: bool = True
-    theme_state_file: str = "theme_state.json"
+    theme_state_file: str = "logs/theme_state.json"
 
 
 @dataclass

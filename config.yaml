@@ -32,7 +32,7 @@ login:
 
 # 任务系统
 task_system:
-  enabled: true # 是否完成每日任务
+  enabled: false # 禁用任务系统（微软已更改Dashboard页面布局）
   debug_mode: false # 首次运行建议 true（保存诊断截图）
 
 # 通知（可选）
@@ -52,6 +52,11 @@ scheduler:
 # 日志
 logging:
   level: "INFO" # 开启 DEBUG 查看详细检测日志
+
+# Bing主题设置
+bing_theme:
+  enabled: false # 禁用主题管理，避免页面结构变化
+  force_theme: false # 不强制设置主题
 
 
 # ============================================================

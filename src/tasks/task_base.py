@@ -18,6 +18,7 @@ class TaskMetadata:
     is_completed: bool
     destination_url: Optional[str] = None
     promotion_type: Optional[str] = None
+    is_button: bool = False
     
     def __str__(self) -> str:
         status = "✓" if self.is_completed else "○"

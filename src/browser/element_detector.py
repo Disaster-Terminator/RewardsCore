@@ -41,12 +41,12 @@ class ElementDetector:
     
     # 搜索结果选择器
     SEARCH_RESULT_SELECTORS = [
-        "li.b_algo h2 a",                    # Bing标准结果
-        "div.b_algo h2 a",                   # Bing结果变体
-        "h2 a[href]",                        # 通用h2链接
-        "div[data-testid='result'] a",       # 测试ID结果
-        "article a[href]",                   # 文章链接
-        ".result a[href]",                   # 结果类链接
+        "li.b_algo h2 a",
+        "#b_results .b_algo h2 a",
+        "h2 a[href]",
+        "li.b_algo a[href]",
+        "#b_results li a[href]",
+        ".b_algo a[href]",
     ]
     
     def __init__(self, config=None):
@@ -180,14 +180,15 @@ class ElementDetector:
         
         logger.debug("开始查找搜索结果...")
         
+        per_selector_timeout = max(timeout // len(self.search_result_selectors), 2000)
+        
         for i, selector in enumerate(self.search_result_selectors):
             try:
                 logger.debug(f"尝试结果选择器 {i+1}/{len(self.search_result_selectors)}: {selector}")
                 
-                # 等待至少一个结果出现
                 await page.wait_for_selector(
                     selector,
-                    timeout=min(timeout // len(self.search_result_selectors), 3000),
+                    timeout=per_selector_timeout,
                     state="visible"
                 )
                 

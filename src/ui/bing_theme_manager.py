@@ -31,7 +31,7 @@ class BingThemeManager:
         
         # 会话间主题持久化配置
         self.persistence_enabled = config.get("bing_theme.persistence_enabled", True) if config else True
-        self.theme_state_file = config.get("bing_theme.theme_state_file", "theme_state.json") if config else "theme_state.json"
+        self.theme_state_file = config.get("bing_theme.theme_state_file", "logs/theme_state.json") if config else "logs/theme_state.json"
         
         # 主题状态缓存
         self._theme_state_cache = None
@@ -1619,95 +1619,154 @@ class BingThemeManager:
             return False
     
     def _generate_force_theme_css(self, theme: str) -> str:
-        """生成强制主题CSS样式"""
+        """生成强制主题CSS样式 - 保留灰度层次，避免纯黑"""
         if theme == "dark":
             return """
-            /* 强制深色主题样式 */
+            /* 深色主题样式 - 保留灰度层次 */
             html[data-forced-theme="dark"], 
             body[data-forced-theme="dark"],
             html.forced-dark-theme,
             body.forced-dark-theme {
-                background-color: #212529 !important;
-                color: #ffffff !important;
+                background-color: #1a1a2e !important;
+                color: #e0e0e0 !important;
                 color-scheme: dark !important;
             }
             
-            html[data-forced-theme="dark"] *,
-            body[data-forced-theme="dark"] *,
-            html.forced-dark-theme *,
-            body.forced-dark-theme * {
-                background-color: inherit !important;
-                color: inherit !important;
+            /* Bing头部 - 使用中等深度的灰色 */
+            .b_header {
+                background-color: #16213e !important;
+                border-bottom: 1px solid #2a2a4a !important;
             }
             
-            /* Bing特定样式 */
-            .b_header, .b_footer, .b_searchbox, .b_searchboxForm {
-                background-color: #2d3748 !important;
-                color: #ffffff !important;
+            /* 搜索框 - 使用较深的灰色 */
+            .b_searchbox, .b_searchboxForm, #sb_form_q {
+                background-color: #0f3460 !important;
+                border: 1px solid #1a1a4a !important;
+                color: #e0e0e0 !important;
             }
             
+            /* 搜索结果卡片 - 使用不同深度的灰色 */
+            .b_algo {
+                background-color: #1a1a2e !important;
+                border-bottom: 1px solid #2a2a4a !important;
+                padding: 12px 0 !important;
+            }
+            
+            .b_algo h2 {
+                color: #4da6ff !important;
+            }
+            
+            .b_algo p, .b_algo span {
+                color: #b0b0b0 !important;
+            }
+            
+            /* 侧边栏 */
+            .b_ans, .b_rs {
+                background-color: #16213e !important;
+                border-radius: 8px !important;
+                padding: 16px !important;
+            }
+            
+            /* 页脚 */
+            .b_footer {
+                background-color: #0d0d1a !important;
+                border-top: 1px solid #2a2a4a !important;
+            }
+            
+            /* 输入框 */
             input[type="text"], input[type="search"], textarea {
-                background-color: #4a5568 !important;
-                color: #ffffff !important;
-                border-color: #718096 !important;
+                background-color: #1a1a3e !important;
+                color: #e0e0e0 !important;
+                border: 1px solid #2a2a5a !important;
             }
             
-            .b_algo, .b_ans, .b_rs {
-                background-color: #2d3748 !important;
-                color: #ffffff !important;
-            }
-            
+            /* 链接 */
             a, a:visited {
-                color: #63b3ed !important;
+                color: #4da6ff !important;
             }
             
             a:hover {
-                color: #90cdf4 !important;
+                color: #80c4ff !important;
+            }
+            
+            /* 强调文字 */
+            strong, b {
+                color: #ffffff !important;
             }
             """
         else:
             return """
-            /* 强制浅色主题样式 */
+            /* 浅色主题样式 - 保留灰度层次 */
             html[data-forced-theme="light"], 
             body[data-forced-theme="light"],
             html.forced-light-theme,
             body.forced-light-theme {
-                background-color: #ffffff !important;
-                color: #212529 !important;
+                background-color: #f5f5f5 !important;
+                color: #333333 !important;
                 color-scheme: light !important;
             }
             
-            html[data-forced-theme="light"] *,
-            body[data-forced-theme="light"] *,
-            html.forced-light-theme *,
-            body.forced-light-theme * {
-                background-color: inherit !important;
-                color: inherit !important;
+            /* Bing头部 */
+            .b_header {
+                background-color: #ffffff !important;
+                border-bottom: 1px solid #e0e0e0 !important;
             }
             
-            /* Bing特定样式 */
-            .b_header, .b_footer, .b_searchbox, .b_searchboxForm {
-                background-color: #f8f9fa !important;
-                color: #212529 !important;
+            /* 搜索框 */
+            .b_searchbox, .b_searchboxForm, #sb_form_q {
+                background-color: #ffffff !important;
+                border: 1px solid #d0d0d0 !important;
+                color: #333333 !important;
             }
             
+            /* 搜索结果卡片 */
+            .b_algo {
+                background-color: #ffffff !important;
+                border-bottom: 1px solid #e8e8e8 !important;
+                padding: 12px 0 !important;
+            }
+            
+            .b_algo h2 {
+                color: #0066cc !important;
+            }
+            
+            .b_algo p, .b_algo span {
+                color: #555555 !important;
+            }
+            
+            /* 侧边栏 */
+            .b_ans, .b_rs {
+                background-color: #fafafa !important;
+                border: 1px solid #e0e0e0 !important;
+                border-radius: 8px !important;
+                padding: 16px !important;
+            }
+            
+            /* 页脚 */
+            .b_footer {
+                background-color: #f0f0f0 !important;
+                border-top: 1px solid #e0e0e0 !important;
+            }
+            
+            /* 输入框 */
             input[type="text"], input[type="search"], textarea {
                 background-color: #ffffff !important;
-                color: #212529 !important;
-                border-color: #ced4da !important;
+                color: #333333 !important;
+                border: 1px solid #c0c0c0 !important;
             }
             
-            .b_algo, .b_ans, .b_rs {
-                background-color: #ffffff !important;
-                color: #212529 !important;
-            }
-            
+            /* 链接 */
             a, a:visited {
                 color: #0066cc !important;
             }
             
             a:hover {
                 color: #004499 !important;
+            }
+            
+            /* 强调文字 */
+            strong, b {
+                color: #000000 !important;
             }
             """
     

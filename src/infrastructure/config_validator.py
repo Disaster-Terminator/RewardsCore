@@ -138,7 +138,7 @@ class ConfigValidator:
             },
             "bing_theme.theme_state_file": {
                 "type": str,
-                "default": "theme_state.json",
+                "default": "logs/theme_state.json",
                 "description": "主题状态文件路径"
             }
         }
