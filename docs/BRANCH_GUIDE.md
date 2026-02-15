@@ -6,8 +6,9 @@
 main                          # 核心分支：登录 + 搜索（必须稳定）
 ├── feature/daily-tasks       # 每日任务系统（问答、投票、URL奖励）
 ├── feature/theme-management  # Bing主题管理
-├── feature/health-monitor    # 健康监控与自诊断
+├── feature/health-monitor-enhanced  # 健康监控与自诊断
 ├── feature/notifications     # 通知系统
+├── feature/scheduler-enhanced # 调度器增强（先执行一次，再进入调度）
 ├── dev                       # 开发集成分支（合并测试）
 └── backup-before-cleanup-*   # 备份分支
 ```
@@ -41,8 +42,9 @@ monitoring.health_check.enabled: false  # 健康监控
 |------|------|----------|
 | `feature/daily-tasks` | 每日任务 | `src/tasks/` |
 | `feature/theme-management` | 主题管理 | `src/ui/bing_theme_manager.py` |
-| `feature/health-monitor` | 健康监控 | `src/infrastructure/health_monitor.py`, `self_diagnosis.py` |
+| `feature/health-monitor-enhanced` | 健康监控 | `src/infrastructure/health_monitor.py`, `self_diagnosis.py` |
 | `feature/notifications` | 通知系统 | `src/infrastructure/notificator.py` |
+| `feature/scheduler-enhanced` | 调度器增强 | `src/infrastructure/scheduler.py` |
 
 ### 2.3 dev 分支
 
@@ -205,7 +207,37 @@ notification:
   telegram:
     bot_token: "your_token"
     chat_id: "your_chat_id"
+
+# feature/scheduler-enhanced 分支
+scheduler:
+  enabled: true
+  mode: "random"
+  random_start_hour: 8
+  random_end_hour: 22
+  run_once_on_start: true  # 启动时先执行一次
 ```
+
+### 5.3 调度器行为说明
+
+**调度器增强分支合并后的默认行为**：
+
+```
+python main.py 执行流程：
+┌─────────────────────────────────────────┐
+│ 1. 立即执行一次正常逻辑（登录+搜索）       │
+│ 2. 进入调度模式，等待下次触发             │
+│    - 用户可通过 --no-schedule 跳过调度    │
+│    - 用户可通过 --schedule-only 跳过首次  │
+└─────────────────────────────────────────┘
+```
+
+**命令行参数**：
+
+| 参数 | 说明 |
+|------|------|
+| `python main.py` | 执行一次 + 进入调度（默认） |
+| `python main.py --no-schedule` | 仅执行一次，不进入调度 |
+| `python main.py --schedule-only` | 跳过首次执行，直接进入调度 |
 
 ## 六、依赖关系图
 
