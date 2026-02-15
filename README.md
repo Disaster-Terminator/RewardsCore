@@ -140,7 +140,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/ms-rewards-automator.git
+git clone https://github.com/Disaster-Terminator/ms-rewards-automator.git
 cd ms-rewards-automator
 
 # 使用 Conda 环境（推荐）
@@ -172,26 +172,27 @@ playwright install chromium
 ### 2. 首次使用
 
 ```bash
-# 开发模式（快速测试，2+2搜索）
-python main.py --dev
+# 复制配置文件
+cp config.example.yaml config.yaml
+# 编辑 config.yaml，填写账号信息
 
-# 用户模式（完整测试，3+3搜索，拟人行为）
-python main.py --usermode
+# 直接运行（生产环境，30+20搜索）
+python main.py
 ```
 
 **运行模式说明**：
 
 | 模式 | 桌面搜索 | 移动搜索 | 拟人行为 | 防检测 | 用途 |
 |------|----------|----------|----------|--------|------|
-| `--dev` | 2 | 2 | ❌ | ❌ | 快速迭代调试 |
+| 默认 | 30 | 20 | ✅ | ✅ | **生产环境（用户使用）** |
 | `--usermode` | 3 | 3 | ✅ | ✅ | 鲁棒性测试 |
-| 默认 | 30 | 20 | ✅ | ✅ | 生产环境 |
+| `--dev` | 2 | 2 | ❌ | ❌ | 快速迭代调试 |
 
-**智能模式说明**：
+**登录方式**：
 
-- **首次运行**: 自动打开浏览器，需要手动登录 Microsoft 账号
-- **后续运行**: 自动保存会话，使用无头模式（后台运行）
-- **重新登录**: 删除 `storage_state.json` 文件后重新运行
+- **手动登录**（推荐）：首次运行时浏览器打开，手动登录后保存会话
+- **自动登录**：在 `config.yaml` 填写账号密码，自动完成登录（需配置 2FA 密钥）
+- **重新登录**：删除 `storage_state.json` 文件后重新运行
 
 ### 3. 常用命令
 
@@ -201,7 +202,7 @@ python main.py --usermode
 # 生产环境（完整搜索）
 python main.py
 
-# 用户模式（测试真实使用场景）
+# 测试模式（3+3搜索，验证稳定性）
 python main.py --usermode
 
 # 开发模式（快速迭代）
@@ -381,7 +382,7 @@ ms-rewards-automator/
 │   └── reports/           # 技术报告
 ├── logs/                   # 日志文件
 ├── main.py                 # 主程序入口
-├── config.yaml             # 配置文件
+├── config.example.yaml     # 配置文件模板（复制为 config.yaml 使用）
 └── requirements.txt        # Python 依赖
 ```
 
