@@ -8,8 +8,8 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 import sys
 from pathlib import Path
+from playwright.async_api import Error as PlaywrightError
 
-# 添加src目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ui.bing_theme_manager import BingThemeManager
@@ -468,7 +468,7 @@ class TestBingThemeManager:
     @pytest.mark.asyncio
     async def test_detect_theme_by_computed_styles_exception(self, theme_manager, mock_page):
         """测试计算样式检测异常"""
-        mock_page.evaluate.side_effect = Exception("JS error")
+        mock_page.evaluate.side_effect = PlaywrightError("JS error")
         
         result = await theme_manager._detect_theme_by_computed_styles(mock_page)
         
