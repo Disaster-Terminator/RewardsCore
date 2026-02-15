@@ -96,6 +96,12 @@ def parse_arguments():
         help="仅执行移动搜索"
     )
 
+    parser.add_argument(
+        "--tasks-only",
+        action="store_true",
+        help="仅执行日常任务（跳过搜索）"
+    )
+
     # 任务选项
     parser.add_argument(
         "--skip-daily-tasks",

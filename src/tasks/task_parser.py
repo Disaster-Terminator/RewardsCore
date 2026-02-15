@@ -4,29 +4,30 @@ Supports the new React-based rewards.bing.com dashboard (2025+)
 """
 
 import logging
-import re
-from typing import List, Optional
-from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
+from typing import List
+
+from playwright.async_api import Page
+from playwright.async_api import TimeoutError as PlaywrightTimeout
 
 from tasks.task_base import TaskMetadata
 
 
 class TaskParser:
     """Parser for Microsoft Rewards dashboard tasks"""
-    
+
     TASK_SECTIONS = ["section#streaks", "section#offers", "section#snapshot", "section#dailyset"]
-    
+
     def __init__(self, config=None):
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.debug_mode = config.get("task_system.debug_mode", False) if config else False
-    
+
     async def discover_tasks(self, page: Page) -> List[TaskMetadata]:
         """
         Navigate to dashboard and discover all available tasks
         """
         self.logger.info("Discovering tasks from dashboard...")
-        
+
         try:
             # Navigate to rewards dashboard if not already there
             current_url = page.url
@@ -37,10 +38,10 @@ class TaskParser:
                     wait_until="domcontentloaded",
                     timeout=30000
                 )
-            
+
             # Wait for OAuth redirect to complete (if any)
             await self._wait_for_dashboard(page)
-            
+
             # DIAGNOSTIC: Log current state
             self.logger.info(f"Final URL: {page.url}")
             try:
@@ -48,22 +49,22 @@ class TaskParser:
                 self.logger.info(f"Page title: {page_title}")
             except Exception:
                 pass
-            
+
             # Check if on login page
             if await self._is_login_page(page):
                 self.logger.error("Detected login page, cannot discover tasks")
                 self.logger.info("  提示: 会话可能已过期，请重新登录")
                 return []
-            
+
             # Wait for React content to finish loading
             await self._wait_for_content_load(page)
-            
+
             # Parse tasks from the page
             tasks = await self._parse_tasks_from_page(page)
-            
+
             self.logger.info(f"Discovered {len(tasks)} tasks")
             return tasks
-            
+
         except PlaywrightTimeout:
             self.logger.error("Timeout while loading dashboard")
             return []
@@ -77,14 +78,14 @@ class TaskParser:
         for attempt in range(max_wait_attempts):
             await page.wait_for_load_state("domcontentloaded")
             await page.wait_for_timeout(2000)
-            
+
             current_url = page.url
             self.logger.info(f"Current URL (attempt {attempt + 1}): {current_url}")
-            
+
             on_rewards = "rewards.microsoft.com" in current_url or "rewards.bing.com" in current_url
             if on_rewards:
                 break
-            
+
             if "login.live.com" in current_url or "login.microsoftonline.com" in current_url:
                 self.logger.info("  检测到 OAuth 页面，等待自动登录完成...")
                 try:
@@ -104,10 +105,10 @@ class TaskParser:
                         self.logger.warning(f"  导航失败: {e}")
             else:
                 break
-        
+
         final_url = page.url
         self.logger.info(f"Final URL: {final_url}")
-        
+
         if "login" in final_url.lower() or "oauth" in final_url.lower():
             self.logger.warning("  最终仍在 OAuth 页面，检查页面内容...")
             try:
@@ -133,7 +134,7 @@ class TaskParser:
         We need to wait for these to be replaced with actual content.
         """
         self.logger.info("Waiting for dashboard content to load...")
-        
+
         try:
             accept_btn = page.locator("button:has-text('Accept'), button:has-text('接受')")
             if await accept_btn.count() > 0:
@@ -142,16 +143,16 @@ class TaskParser:
                 await page.wait_for_timeout(1000)
         except Exception as e:
             self.logger.debug(f"  No cookie consent banner: {e}")
-        
+
         section_selectors = [
-            "section#streaks", 
-            "section#offers", 
+            "section#streaks",
+            "section#offers",
             "section#snapshot",
-            "section[id*='streak']", 
+            "section[id*='streak']",
             "section[id*='offer']"
         ]
         section_found = False
-        
+
         for selector in section_selectors:
             try:
                 await page.wait_for_selector(selector, timeout=5000)
@@ -160,11 +161,11 @@ class TaskParser:
                 break
             except PlaywrightTimeout:
                 continue
-        
+
         if not section_found:
             self.logger.warning("  No task sections found, waiting for page to stabilize...")
             await page.wait_for_timeout(3000)
-        
+
         max_attempts = 10
         for i in range(max_attempts):
             try:
@@ -175,7 +176,7 @@ class TaskParser:
                     await page.wait_for_timeout(2000)
             except Exception:
                 pass
-            
+
             try:
                 skeleton_count = await page.evaluate("""
                     () => {
@@ -183,19 +184,19 @@ class TaskParser:
                         return skeletons.length;
                     }
                 """)
-                
+
                 if skeleton_count == 0:
                     self.logger.info(f"  Dashboard content loaded (after {i + 1} checks)")
                     return
-                
+
                 self.logger.debug(f"  Still loading... ({skeleton_count} skeletons remaining)")
             except Exception as e:
                 self.logger.debug(f"  Error checking skeletons: {e}")
-            
+
             await page.wait_for_timeout(1000)
-        
+
         self.logger.warning(f"  Content may not be fully loaded after {max_attempts}s")
-    
+
     async def _is_login_page(self, page: Page) -> bool:
         """Check if currently on login page"""
         try:
@@ -204,16 +205,16 @@ class TaskParser:
                 'input[type="email"]',
                 '#i0116',
             ]
-            
+
             for selector in login_selectors:
                 element = await page.query_selector(selector)
                 if element:
                     return True
-            
+
             return False
         except Exception:
             return False
-    
+
     async def _parse_tasks_from_page(self, page: Page) -> List[TaskMetadata]:
         """
         Parse task elements from the dashboard page.
@@ -221,13 +222,13 @@ class TaskParser:
         Supports both link-based and button-based task cards.
         """
         tasks = []
-        
+
         try:
             raw_tasks = await page.evaluate("""
                 () => {
                     const tasks = [];
                     const seenHrefs = new Set();
-                    
+
                     // Helper to find closest clickable parent or self
                     function getClickable(el) {
                         return el.closest('a') || el.closest('button') || el;
@@ -236,59 +237,65 @@ class TaskParser:
                     // 1. Try to find cards using new CSS classes (2025 update)
                     const newCardSelectors = [
                         'div[class*="rounded-2xl"][class*="bg-neutralBg1"]',
-                        '[class*="mai:rounded-cornerCardRewards"]'
+                        '[class*="mai:rounded-cornerCardRewards"]',
+                        'div[class*="rounded-2xl"]'  // Broader catch-all for cards
                     ];
-                    
+
                     let cardElements = [];
                     for (const selector of newCardSelectors) {
                         const els = document.querySelectorAll(selector);
                         if (els.length > 0) {
-                            cardElements = Array.from(els);
-                            break;
+                            // Add found elements, avoid duplicates in the DOM element list if possible,
+                            // but simpler to just add and let href deduplication handle it later
+                            cardElements.push(...Array.from(els));
                         }
                     }
-                    
-                    // If no new cards found, fallback to section-based search
-                    if (cardElements.length === 0) {
-                        const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset'];
-                        let sections = [];
-                        
-                        for (const sectionId of sectionIds) {
-                            const section = document.querySelector(`section#${sectionId}`);
-                            if (section) sections.push(section);
-                        }
-                        
-                        if (sections.length === 0) {
-                            sections = Array.from(document.querySelectorAll('section'));
-                        }
-                        
-                        if (sections.length === 0) {
-                            const mainContent = document.querySelector('main, [role="main"], #main, .main-content');
-                            if (mainContent) sections = [mainContent];
-                        }
-                        
-                        for (const section of sections) {
-                            const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button');
-                            cardElements.push(...cards);
-                        }
+
+                    // Always look for section-based cards as well to ensure coverage
+                    const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset', 'more-activities', 'daily-sets'];
+                    let sections = [];
+
+                    for (const sectionId of sectionIds) {
+                        const section = document.querySelector(`section#${sectionId}`);
+                        if (section) sections.push(section);
                     }
                     
+                    // Also look for sections by class or other attributes
+                    const otherSections = document.querySelectorAll('section, div[data-test="daily-set-card"]');
+                    sections.push(...Array.from(otherSections));
+
+                    for (const section of sections) {
+                        // Look for clickable elements within sections
+                        const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button, div[role="button"]');
+                        cardElements.push(...Array.from(cards));
+                    }
+                    
+                    // Fallback: if we still have very few elements, try a broad search
+                    if (cardElements.length < 5) {
+                         const mainContent = document.querySelector('main, [role="main"], #main, .main-content');
+                         if (mainContent) {
+                             const links = mainContent.querySelectorAll('a, button');
+                             cardElements.push(...Array.from(links));
+                         }
+                    }
+
+
                     for (const el of cardElements) {
                         const clickable = getClickable(el);
                         const tagName = clickable.tagName.toLowerCase();
-                        
+
                         // Extract href
                         let href = clickable.getAttribute('href') || clickable.getAttribute('data-href') || '';
-                        
+
                         // If no href on clickable, check if parent has href (for nested structures)
                         if (!href && el !== clickable) {
                              const parentLink = el.closest('a');
                              if (parentLink) href = parentLink.getAttribute('href') || '';
                         }
 
-                        // Skip navigation links
-                        if (href === '/earn' || href === '/dashboard' || 
-                            href === '/redeem' || href === '/about' || href === '/refer' ||
+                        // Skip navigation links and redeem links
+                        if (href === '/earn' || href === '/dashboard' ||
+                            href.includes('/redeem/') || href === '/about' || href === '/refer' ||
                             href === '/' || href === '#' || href.includes('/orderhistory') ||
                             href.includes('/faq') || href.includes('support.microsoft.com') ||
                             href.includes('x.com') || href.includes('xbox.com') ||
@@ -296,24 +303,24 @@ class TaskParser:
                             href.includes('go.microsoft.com') || href.includes('choice.microsoft.com')) {
                             continue;
                         }
-                        
+
                         // Avoid duplicates
                         if (href && seenHrefs.has(href)) continue;
                         if (href) seenHrefs.add(href);
 
                         const text = clickable.innerText || el.innerText || '';
                         const ariaLabel = clickable.getAttribute('aria-label') || el.getAttribute('aria-label') || '';
-                        
+
                         const skipTexts = ['接受', '拒绝', '管理 cookie', 'accept', 'reject', 'manage cookie',
                                           '提供反馈', 'feedback', '了解详细信息', 'learn more',
-                                          '订单历史记录', 'order history'];
+                                          '订单历史记录', 'order history', 'redeem', 'shop', '兑换', '购物'];
                         if (skipTexts.some(s => text.toLowerCase().includes(s) || ariaLabel.toLowerCase().includes(s))) {
                             continue;
                         }
-                        
+
                         let title = '';
                         // Try to find title in common heading tags
-                        const headings = clickable.querySelectorAll('h3, h4, .text-body1, [class*="title"], [class*="header"]');
+                        const headings = clickable.querySelectorAll('h3, h4, .text-body1, .text-body1Strong, .text-subtitle2, [class*="title"], [class*="header"]');
                         for (const h of headings) {
                             const t = h.innerText.trim();
                             if (t && t.length > 2 && t.length < 200 && !t.includes('\\n')) {
@@ -321,29 +328,35 @@ class TaskParser:
                                 break;
                             }
                         }
-                        
+
                         if (!title) {
                             // Split by newlines and take the longest logical line
                             const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 2);
                             if (lines.length > 0) {
                                 // Usually the first line is the title, or the one that's not points
-                                title = lines.find(l => !l.match(/^\d+/) && !l.includes('积分') && !l.includes('points')) || lines[0];
+                                title = lines.find(l => !l.match(/^\\d+$/) && !l.includes('积分') && !l.includes('points') && !l.match(/^\\d+\\s*$/)) || lines[0];
                             } else {
                                 title = ariaLabel;
                             }
                         }
+
+                        // Filter out numeric-only titles (likely points display)
+                        if (!title || title.match(/^\\d+$/) || title.match(/^\\d+\\s*$/)) continue;
+
+                        const isButton = (tagName === 'button' || clickable.getAttribute('role') === 'button') && !href;
                         
-                        if (!title && !href) continue;
-                        
+                        // Must have href or be a button
+                        if (!href && !isButton) continue;
+
                         let points = 0;
-                        const pointsMatch = text.match(/(\d+)\s*(?:points?|pts?|积分|分)/i);
+                        const pointsMatch = text.match(/(\\d+)\\s*(?:points?|pts?|积分|分)/i);
                         if (pointsMatch) {
                             points = parseInt(pointsMatch[1]);
                         } else {
-                            const numMatch = text.match(/\+(\d+)/);
+                            const numMatch = text.match(/\\+(\\d+)/);
                             if (numMatch) points = parseInt(numMatch[1]);
                         }
-                        
+
                         let taskType = 'urlreward';
                         const combined = (href + ' ' + text + ' ' + ariaLabel).toLowerCase();
                         if (combined.includes('quiz') || combined.includes('测验')) {
@@ -351,22 +364,37 @@ class TaskParser:
                         } else if (combined.includes('poll') || combined.includes('投票')) {
                             taskType = 'poll';
                         }
-                        
+
                         let completed = false;
                         const completedEl = clickable.querySelector(
                             '[class*="completed"], [class*="done"], [class*="check"], ' +
                             'svg[class*="check"], [aria-label*="Completed"], [aria-label*="完成"]'
                         );
                         if (completedEl) completed = true;
-                        if (ariaLabel.toLowerCase().includes('completed') || 
-                            ariaLabel.includes('完成') || 
-                            combined.includes('已完成') || 
+                        
+                        // Check for success background color (New Next.js UI)
+                        if (clickable.querySelector('.bg-statusSuccessBg3') || 
+                            el.querySelector('.bg-statusSuccessBg3')) {
+                            completed = true;
+                        }
+
+                        // Check for progress text (e.g. "4/4 tasks")
+                        const progressMatch = text.match(/(\d+)\/(\d+)\s*(?:个任务|tasks)/);
+                        if (progressMatch) {
+                            if (progressMatch[1] === progressMatch[2]) {
+                                completed = true;
+                            }
+                        }
+
+                        if (ariaLabel.toLowerCase().includes('completed') ||
+                            ariaLabel.includes('完成') ||
+                            combined.includes('已完成') ||
                             combined.includes('completed')) {
                             completed = true;
                         }
-                        
+
                         const isButton = tagName === 'button' && !href;
-                        
+
                         tasks.push({
                             sectionId: 'unknown',
                             title: title.substring(0, 100),
@@ -378,18 +406,18 @@ class TaskParser:
                             isButton: isButton
                         });
                     }
-                    
+
                     return tasks;
                 }
             """)
-            
+
             if not raw_tasks:
                 self.logger.warning("No task elements found on page")
                 await self._save_diagnostics(page)
                 return tasks
-            
+
             self.logger.info(f"Found {len(raw_tasks)} potential task elements")
-            
+
             for i, raw in enumerate(raw_tasks):
                 try:
                     title = raw.get('title', f'Task {i + 1}')
@@ -398,7 +426,7 @@ class TaskParser:
                     task_type = raw.get('taskType', 'urlreward')
                     completed = raw.get('completed', False)
                     section_id = raw.get('sectionId', '')
-                    
+
                     metadata = TaskMetadata(
                         task_id=f"{section_id}_{i}",
                         task_type=task_type,
@@ -413,43 +441,43 @@ class TaskParser:
                 except Exception as e:
                     self.logger.debug(f"  ✗ Failed to parse task {i}: {e}")
                     continue
-            
+
         except Exception as e:
             self.logger.error(f"Error parsing tasks from page: {e}")
             await self._save_diagnostics(page)
-        
+
         return tasks
-    
+
     async def _save_diagnostics(self, page: Page):
         """Save diagnostic screenshot and HTML for debugging"""
         if not self.debug_mode:
             self.logger.info("💡 提示: 在config.yaml中启用task_system.debug_mode以保存诊断数据")
             return
-        
+
         import os
         from datetime import datetime
         os.makedirs("logs/diagnostics", exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+
         try:
             screenshot_path = f"logs/diagnostics/no_tasks_{timestamp}.png"
             await page.screenshot(path=screenshot_path, full_page=True)
             self.logger.warning(f"📸 截图已保存: {screenshot_path}")
-            
+
             html = await page.content()
             html_path = f"logs/diagnostics/no_tasks_{timestamp}.html"
             with open(html_path, "w", encoding="utf-8") as f:
                 f.write(html)
             self.logger.warning(f"📄 HTML已保存: {html_path}")
-            
+
             self.logger.warning("⚠️ 诊断数据已收集 - 请检查这些文件以分析问题")
         except Exception as e:
             self.logger.error(f"保存诊断数据失败: {e}")
-    
+
     def _determine_task_type(self, promotion_type: str) -> str:
         """Determine task type from promotion type"""
         promotion_type_lower = promotion_type.lower()
-        
+
         if 'quiz' in promotion_type_lower:
             return 'quiz'
         elif 'poll' in promotion_type_lower:

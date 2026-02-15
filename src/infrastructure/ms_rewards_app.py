@@ -16,23 +16,18 @@ MSRewardsApp - 系统总线
 - 各子系统组件（BrowserSimulator、SearchEngine等）: 被组装和调用
 """
 
-import asyncio
 import logging
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
-from browser.anti_ban_module import AntiBanModule
-from browser.simulator import BrowserSimulator
-from search.search_term_generator import SearchTermGenerator
-from search.search_engine import SearchEngine
-from search.query_engine import QueryEngine
-from account.points_detector import PointsDetector
 from account.manager import AccountManager
-from infrastructure.state_monitor import StateMonitor
+from browser.simulator import BrowserSimulator
 from infrastructure.error_handler import ErrorHandler
-from infrastructure.notificator import Notificator
 from infrastructure.health_monitor import HealthMonitor
-from ui.real_time_status import StatusManager
+from infrastructure.notificator import Notificator
+from infrastructure.state_monitor import StateMonitor
+from search.search_engine import SearchEngine
 from tasks import TaskManager
+from ui.real_time_status import StatusManager
 
 
 class MSRewardsApp:
@@ -230,7 +225,7 @@ class MSRewardsApp:
     async def _handle_login(self) -> None:
         """处理登录流程"""
         await self.coordinator.handle_login(self.page, self.context)
-        
+
         if await self._is_page_crashed():
             self.logger.warning("  登录检测后页面已崩溃，重建浏览器上下文...")
             await self._recreate_page()
@@ -239,7 +234,7 @@ class MSRewardsApp:
         """检查初始积分"""
         initial_points = await self.state_monitor.check_points_before_task(self.page)
         StatusManager.update_points(initial_points, initial_points)
-        
+
         if await self._is_page_crashed():
             self.logger.warning("  积分检测后页面已崩溃，重建浏览器上下文...")
             await self._recreate_page()
@@ -254,6 +249,12 @@ class MSRewardsApp:
 
     async def _execute_searches(self) -> None:
         """执行搜索任务"""
+        if self.args.tasks_only:
+            self.logger.info("\n[5-6/8] 跳过搜索任务（--tasks-only）")
+            StatusManager.update_progress(5, 8)
+            StatusManager.update_progress(6, 8)
+            return
+
         # 5. 桌面搜索
         if not self.args.mobile_only:
             # 检查页面是否有效，如果崩溃则重建
