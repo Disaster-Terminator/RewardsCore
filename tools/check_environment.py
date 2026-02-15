@@ -10,13 +10,13 @@ from pathlib import Path
 
 
 def check_python_version():
-    """检查 Python 版本是否 >= 3.8"""
+    """检查 Python 版本是否 >= 3.10"""
     print("检查 Python 版本...")
     version = sys.version_info
     
-    if version.major < 3 or (version.major == 3 and version.minor < 8):
+    if version.major < 3 or (version.major == 3 and version.minor < 10):
         print(f"❌ Python 版本过低: {version.major}.{version.minor}.{version.micro}")
-        print("   需要 Python 3.8 或更高版本")
+        print("   需要 Python 3.10 或更高版本")
         return False
     
     print(f"✓ Python 版本: {version.major}.{version.minor}.{version.micro}")
@@ -33,9 +33,18 @@ def check_package_imports():
         'yaml': 'pyyaml',
         'aiohttp': 'aiohttp',
         'bs4': 'beautifulsoup4',
+        'lxml': 'lxml',
+        'psutil': 'psutil',
+        'pyotp': 'pyotp',
+    }
+    
+    optional_packages = {
         'hypothesis': 'hypothesis',
         'pytest': 'pytest',
         'pytest_asyncio': 'pytest-asyncio',
+        'streamlit': 'streamlit',
+        'plotly': 'plotly',
+        'pandas': 'pandas',
     }
     
     missing_packages = []
@@ -48,8 +57,16 @@ def check_package_imports():
             print(f"❌ {package_name} - 未安装")
             missing_packages.append(package_name)
     
+    print("\n可选包检查:")
+    for module_name, package_name in optional_packages.items():
+        try:
+            __import__(module_name)
+            print(f"✓ {package_name}")
+        except ImportError:
+            print(f"⚠ {package_name} - 未安装（可选）")
+    
     if missing_packages:
-        print("\n缺失的包:")
+        print("\n缺失的必需包:")
         for pkg in missing_packages:
             print(f"  - {pkg}")
         print("\n安装命令:")
@@ -64,11 +81,9 @@ def check_playwright_browsers():
     print("\n检查 Playwright 浏览器...")
     
     try:
-        # 尝试导入 playwright 并检查浏览器
         from playwright.sync_api import sync_playwright
         
         with sync_playwright() as p:
-            # 尝试启动 chromium 来验证是否已安装
             try:
                 browser = p.chromium.launch(headless=True)
                 browser.close()
@@ -99,7 +114,8 @@ def check_project_structure():
     print("\n检查项目结构...")
     
     required_dirs = ['src', 'tests', 'logs', 'docs', 'tools']
-    required_files = ['requirements.txt', 'environment.yml', 'config.yaml']
+    required_files = ['requirements.txt', 'environment.yml']
+    optional_files = ['config.yaml', 'config.example.yaml']
     
     all_exist = True
     
@@ -116,7 +132,52 @@ def check_project_structure():
         else:
             print(f"⚠ {file_name} - 文件不存在")
     
+    config_exists = any(Path(f).exists() for f in optional_files)
+    if config_exists:
+        print(f"✓ 配置文件存在")
+    else:
+        print(f"⚠ 配置文件不存在，请复制 config.example.yaml 为 config.yaml")
+    
     return all_exist
+
+
+def check_config_file():
+    """检查配置文件完整性"""
+    print("\n检查配置文件...")
+    
+    config_path = Path("config.yaml")
+    example_path = Path("config.example.yaml")
+    
+    if not config_path.exists():
+        if example_path.exists():
+            print("⚠ config.yaml 不存在")
+            print("  请复制 config.example.yaml 为 config.yaml 并填写配置")
+        else:
+            print("❌ 配置文件模板不存在")
+        return False
+    
+    try:
+        import yaml
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        
+        required_sections = ['search', 'browser', 'account']
+        missing_sections = []
+        
+        for section in required_sections:
+            if section not in config:
+                missing_sections.append(section)
+        
+        if missing_sections:
+            print(f"❌ 配置文件缺少必需节: {', '.join(missing_sections)}")
+            return False
+        
+        print("✓ 配置文件结构正确")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 配置文件解析失败: {e}")
+        return False
 
 
 def main():
@@ -131,6 +192,7 @@ def main():
         ("Python 包", check_package_imports),
         ("Playwright 浏览器", check_playwright_browsers),
         ("项目结构", check_project_structure),
+        ("配置文件", check_config_file),
     ]
     
     results = []
@@ -165,7 +227,7 @@ def main():
         print("\n常见解决方案:")
         print("1. 安装依赖: pip install -r requirements.txt")
         print("2. 安装浏览器: playwright install")
-        print("3. 或使用 Conda: bash setup_env.sh")
+        print("3. 创建配置: 复制 config.example.yaml 为 config.yaml")
         return 1
 
 

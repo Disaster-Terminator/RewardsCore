@@ -15,6 +15,11 @@ browser:
   type: "chromium" # 浏览器类型: chromium(Playwright内置,推荐), chrome, edge
   force_dark_mode: false # 禁用强制深色模式
 
+# 账户配置
+account:
+  storage_state_path: "storage_state.json" # 会话状态文件路径
+  login_url: "https://rewards.microsoft.com/" # 登录页面
+
 # 登录方式（二选一）
 login:
   # 方式1: 手动登录（推荐，更可靠）
