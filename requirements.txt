@@ -2,31 +2,31 @@
 # 使用 pip install -r requirements.txt 安装
 
 # 核心依赖
-playwright==1.40.0
-playwright-stealth==1.0.6
-pyyaml==6.0.1
-aiohttp==3.9.1
-beautifulsoup4==4.12.2
-lxml==4.9.3
-psutil==5.9.6
-pyotp
+playwright>=1.49.0
+playwright-stealth>=1.0.6
+pyyaml>=6.0.1
+aiohttp>=3.11.0
+beautifulsoup4>=4.12.3
+lxml>=5.3.0
+psutil>=6.1.0
+pyotp>=2.9.0
 
 # 测试依赖
-hypothesis==6.92.1
-pytest>=7.4.3,<8.0.0
-pytest-asyncio==0.21.1
-pytest-playwright==0.4.3
-pytest-benchmark>=4.0.0,<5.0.0
-pytest-cov==4.1.0
-faker==22.0.0
+hypothesis>=6.125.0
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-playwright>=0.5.0
+pytest-benchmark>=5.0.0
+pytest-cov>=6.0.0
+faker>=35.0.0
 
 # 可视化和数据分析
-streamlit==1.30.0
-plotly==5.18.0
-pandas==2.1.4
+streamlit>=1.41.0
+plotly>=5.24.0
+pandas>=2.2.0
 
 # 代码质量工具（可选）
-# black==23.12.1
-# isort==5.13.2
-# pylint==3.0.3
-# mypy==1.7.1
+# black>=25.0.0
+# isort>=5.13.2
+# pylint>=3.3.0
+# mypy>=1.14.0
