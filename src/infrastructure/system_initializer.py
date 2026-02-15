@@ -11,7 +11,7 @@ from typing import Tuple, Any, Optional
 from browser.anti_ban_module import AntiBanModule
 from browser.simulator import BrowserSimulator
 from search.search_term_generator import SearchTermGenerator
-from search.search_engine_legacy import SearchEngine
+from search.search_engine import SearchEngine
 from search.query_engine import QueryEngine
 from account.points_detector import PointsDetector
 from account.manager import AccountManager

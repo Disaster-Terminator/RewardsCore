@@ -388,7 +388,7 @@ class TaskCoordinator:
     def _get_search_engine(self) -> Any:
         """获取 SearchEngine"""
         if self._search_engine is None:
-            from search.search_engine_legacy import SearchEngine
+            from search.search_engine import SearchEngine
             from search.search_term_generator import SearchTermGenerator
             from browser.anti_ban_module import AntiBanModule
 

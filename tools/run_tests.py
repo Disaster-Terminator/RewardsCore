@@ -19,7 +19,8 @@ def run_command(cmd, description):
             shell=True,
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
+            cwd=Path(__file__).parent.parent
         )
         
         print(result.stdout)
@@ -55,19 +56,19 @@ def main():
     
     # 2. 属性测试
     results["属性测试"] = run_command(
-        "pytest tests/test_*_properties.py -v --tb=short",
+        "pytest tests/ -v --tb=short -m property",
         "运行属性测试"
     )
     
     # 3. 环境检查
     results["环境检查"] = run_command(
-        "python check_environment.py",
+        "python tools/check_environment.py",
         "检查环境依赖"
     )
     
     # 4. 配置验证
     results["配置验证"] = run_command(
-        "python -c \"from src.config_manager import ConfigManager; c = ConfigManager('config.yaml'); print('配置文件有效')\"",
+        "python -c \"from src.infrastructure.config_manager import ConfigManager; c = ConfigManager('config.yaml'); print('配置文件有效')\"",
         "验证配置文件"
     )
     

@@ -10,7 +10,7 @@ import asyncio
 from typing import Optional, Dict
 from pathlib import Path
 from playwright.async_api import Page, BrowserContext
-from login.login_detector_legacy import LoginDetector
+from login.login_detector import LoginDetector
 from login.login_state_machine import LoginStateMachine, LoginState
 from login.edge_popup_handler import EdgePopupHandler
 from login.handlers import (

@@ -39,27 +39,14 @@ class SearchEngine:
         self.monitor = monitor
         self.query_engine = query_engine
         
-        # 初始化元素检测器
         self.element_detector = ElementDetector(config)
-        
-        # 初始化Bing主题管理器
         self.theme_manager = BingThemeManager(config)
-        
-        # 预生成的查询缓存（用于同步方法）
         self._query_cache = []
         
         logger.info("搜索引擎初始化完成")
     
     async def navigate_to_bing(self, page: Page) -> bool:
-        """
-        导航到 Bing 搜索页面
-        
-        Args:
-            page: Playwright Page 对象
-            
-        Returns:
-            是否成功
-        """
+        """导航到 Bing 搜索页面"""
         try:
             logger.debug(f"导航到 Bing: {self.BING_URL}")
             await page.goto(self.BING_URL, wait_until="networkidle", timeout=30000)
@@ -69,15 +56,8 @@ class SearchEngine:
             return False
     
     async def _get_search_term(self) -> str:
-        """
-        获取搜索词（支持 QueryEngine 或传统生成器）
-        
-        Returns:
-            搜索词
-        """
-        # 如果启用了 QueryEngine 且可用
+        """获取搜索词（支持 QueryEngine 或传统生成器）"""
         if self.query_engine and self.config.get("query_engine.enabled", False):
-            # 如果缓存为空，预生成一批查询
             if not self._query_cache:
                 try:
                     count = max(
@@ -90,43 +70,28 @@ class SearchEngine:
                     logger.error(f"QueryEngine 生成查询失败，回退到传统生成器: {e}")
                     return self.term_generator.get_random_term()
             
-            # 从缓存中取出一个查询
             if self._query_cache:
                 term = self._query_cache.pop(0)
                 logger.debug(f"从 QueryEngine 获取查询: {term}")
                 return term
         
-        # 回退到传统生成器
         return self.term_generator.get_random_term()
     
     async def perform_single_search(self, page: Page, term: str, health_monitor=None) -> bool:
-        """
-        执行单次搜索
-        
-        Args:
-            page: Playwright Page 对象
-            term: 搜索词
-            
-        Returns:
-            是否成功
-        """
+        """执行单次搜索"""
         try:
             logger.info(f"搜索: {term}")
             
-            # 1. 等待页面准备就绪
             await self.element_detector.wait_for_page_ready(page, timeout=15000, check_network=True)
             
-            # 检测页面错误
             page_errors = await self.element_detector.detect_page_errors(page)
             if page_errors:
                 logger.warning(f"检测到页面错误: {page_errors}")
             
-            # 确保主题设置正确（在搜索前），仅在启用时执行
             if self.theme_manager.enabled:
                 context = page.context
                 await self.theme_manager.ensure_theme_before_search(page, context)
             
-            # 2. 检查当前页面，如果需要则导航到 Bing
             current_url = page.url
             need_navigate = False
             
@@ -142,19 +107,16 @@ class SearchEngine:
             if need_navigate:
                 try:
                     await page.goto(self.BING_URL, wait_until="domcontentloaded", timeout=20000)
-                    # 等待页面完全准备就绪
                     await self.element_detector.wait_for_page_ready(page, timeout=10000)
                     await asyncio.sleep(1)
                 except Exception as e:
                     logger.error(f"导航到 Bing 失败: {e}")
                     return False
             
-            # 2. 快速处理 Cookie 弹窗（如果存在）
             try:
                 handled = await CookieHandler.handle_cookie_popup(page)
                 if handled:
                     await asyncio.sleep(1)
-                    # 如果被重定向，再次导航
                     if "rewards" in page.url:
                         await page.goto(self.BING_URL, wait_until="domcontentloaded", timeout=20000)
                         await self.element_detector.wait_for_page_ready(page, timeout=10000)
@@ -162,7 +124,6 @@ class SearchEngine:
             except Exception as e:
                 logger.debug(f"处理 Cookie 弹窗时出错: {e}")
             
-            # 3. 找到搜索框（使用ElementDetector）
             logger.debug(f"当前页面 URL: {page.url}")
             logger.debug(f"当前页面标题: {await page.title()}")
             
@@ -170,13 +131,11 @@ class SearchEngine:
             
             if not search_box:
                 logger.error("未找到搜索框")
-                # 拍摄诊断截图
                 await self.element_detector.take_diagnostic_screenshot(
                     page, 
                     f"search_box_not_found_{term[:20]}.png"
                 )
                 
-                # 检测页面错误
                 errors = await self.element_detector.detect_page_errors(page)
                 if errors:
                     logger.error(f"页面错误: {errors}")
@@ -187,19 +146,16 @@ class SearchEngine:
             
             logger.info(f"✓ 找到搜索框，准备输入: {term}")
             
-            # 4. 清空并输入搜索词（使用多种方法确保成功）
             try:
                 logger.debug("准备输入搜索词...")
                 
-                # 方法1: 使用 fill() 方法（最可靠）
                 try:
                     logger.debug("尝试方法1: fill()")
-                    await search_box.fill("")  # 先清空
+                    await search_box.fill("")
                     await asyncio.sleep(0.3)
-                    await search_box.fill(term)  # 直接填充
+                    await search_box.fill(term)
                     await asyncio.sleep(0.5)
                     
-                    # 验证输入是否成功
                     input_value = await search_box.input_value()
                     if input_value == term:
                         logger.info(f"✓ 方法1成功输入: {term}")
@@ -210,23 +166,19 @@ class SearchEngine:
                 except Exception as e1:
                     logger.debug(f"方法1失败: {e1}")
                     
-                    # 方法2: 点击后使用 type()
                     try:
                         logger.debug("尝试方法2: click + type()")
                         await search_box.click()
                         await asyncio.sleep(0.3)
                         
-                        # 清空
                         await page.keyboard.press("Control+A")
                         await asyncio.sleep(0.1)
                         await page.keyboard.press("Backspace")
                         await asyncio.sleep(0.3)
                         
-                        # 输入（一次性输入，不逐字符）
                         await page.keyboard.type(term, delay=50)
                         await asyncio.sleep(0.5)
                         
-                        # 验证
                         input_value = await search_box.input_value()
                         if input_value == term:
                             logger.info(f"✓ 方法2成功输入: {term}")
@@ -237,13 +189,11 @@ class SearchEngine:
                     except Exception as e2:
                         logger.debug(f"方法2失败: {e2}")
                         
-                        # 方法3: 使用 JavaScript 直接设置值
                         try:
                             logger.debug("尝试方法3: JavaScript setValue")
                             await search_box.evaluate(f"el => el.value = '{term}'")
                             await asyncio.sleep(0.3)
                             
-                            # 触发 input 事件
                             await search_box.evaluate("""
                                 el => {
                                     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -252,7 +202,6 @@ class SearchEngine:
                             """)
                             await asyncio.sleep(0.5)
                             
-                            # 验证
                             input_value = await search_box.input_value()
                             if input_value == term:
                                 logger.info(f"✓ 方法3成功输入: {term}")
@@ -272,23 +221,19 @@ class SearchEngine:
                 logger.error(f"输入搜索词过程异常: {e}")
                 return False
             
-            # 5. 提交搜索（使用多种方法确保成功）
             logger.debug("准备提交搜索...")
             
             try:
-                # 方法1: 按 Enter 键
                 logger.debug("尝试方法1: 按 Enter 键")
                 await page.keyboard.press("Enter")
                 await asyncio.sleep(2)
                 
-                # 检查是否跳转到搜索结果页
                 current_url = page.url
                 if "search" in current_url.lower() or "/search?" in current_url:
                     logger.info("✓ 方法1成功：Enter 键提交搜索")
                 else:
                     logger.debug(f"方法1失败，URL未变化: {current_url}")
                     
-                    # 方法2: 先按 Escape 关闭下拉框，再按 Enter
                     logger.debug("尝试方法2: Escape + Enter")
                     await page.keyboard.press("Escape")
                     await asyncio.sleep(0.3)
@@ -301,7 +246,6 @@ class SearchEngine:
                     else:
                         logger.debug(f"方法2失败，URL未变化: {current_url}")
                         
-                        # 方法3: 点击搜索按钮
                         logger.debug("尝试方法3: 点击搜索按钮")
                         search_button_selectors = [
                             "input#sb_form_go",
@@ -335,7 +279,6 @@ class SearchEngine:
                         else:
                             logger.warning("未找到搜索按钮")
                             
-                            # 方法4: 使用 JavaScript 提交表单
                             logger.debug("尝试方法4: JavaScript 提交表单")
                             try:
                                 await page.evaluate("""
@@ -371,7 +314,6 @@ class SearchEngine:
                     f"submit_exception_{term[:20]}.png"
                 )
             
-            # 6. 等待搜索结果加载（使用智能等待）
             try:
                 await self.element_detector.wait_for_page_ready(page, timeout=15000, check_network=True)
             except Exception:
@@ -379,7 +321,6 @@ class SearchEngine:
             
             await asyncio.sleep(random.uniform(1, 2))
             
-            # 验证是否真的进行了搜索（检查URL是否包含搜索参数）
             current_url = page.url
             if "search" not in current_url.lower() and "/search?" not in current_url:
                 logger.warning(f"搜索可能未成功，当前URL: {current_url}")
@@ -387,18 +328,15 @@ class SearchEngine:
                     page, 
                     f"search_not_submitted_{term[:20]}.png"
                 )
-                return False  # 搜索未成功，返回失败
+                return False
             else:
                 logger.info(f"✓ 搜索已成功提交，当前URL: {current_url}")
             
-            # 7. 模拟人类浏览行为
             await self.anti_ban.simulate_human_scroll(page)
             
-            # 8. 随机点击搜索结果（30% 概率）
             if random.random() < 0.3:
                 await self._click_random_result(page)
             
-            # 9. 随机翻页（20% 概率）
             if random.random() < 0.2:
                 await self._random_pagination(page)
             
@@ -410,59 +348,43 @@ class SearchEngine:
             return False
     
     async def _click_random_result(self, page: Page) -> None:
-        """
-        随机点击一个搜索结果（增加真实性）
-        使用TabManager防止新标签页打开
-        
-        Args:
-            page: Playwright Page 对象
-        """
+        """随机点击一个搜索结果（增加真实性）"""
         try:
             logger.debug("尝试点击搜索结果...")
             
-            # 创建TabManager实例
             tab_manager = TabManager(page.context)
             
-            # 查找搜索结果链接（使用ElementDetector）
             result_links = await self.element_detector.find_search_results(page, timeout=5000, min_results=1)
             
             if not result_links:
                 logger.debug("未找到搜索结果链接")
                 return
             
-            # 随机选择一个结果（通常选择前 5 个）
             available_links = result_links[:min(5, len(result_links))]
             link = random.choice(available_links)
             
-            # 获取链接文本
             try:
                 link_text = await link.text_content()
                 logger.debug(f"点击搜索结果: {link_text[:50]}...")
             except Exception:
                 pass
             
-            # 保存当前页面的 URL（用于返回）
             original_url = page.url
             
-            # 使用TabManager在当前标签页中点击链接
             success = await tab_manager.click_link_in_current_tab(page, link, timeout=10000)
             
             if success:
-                # 在页面上停留一小段时间
                 stay_time = random.uniform(2, 4)
                 await asyncio.sleep(stay_time)
                 
-                # 滚动一下
                 await self.anti_ban.simulate_human_scroll(page)
                 
-                # 返回搜索结果（使用后退按钮）
                 try:
                     await page.go_back(wait_until="domcontentloaded", timeout=10000)
                     await asyncio.sleep(random.uniform(1, 2))
                     logger.debug("✓ 搜索结果点击完成")
                 except Exception as e:
                     logger.debug(f"后退失败，直接导航回搜索页: {e}")
-                    # 如果后退失败，直接导航回原始 URL
                     try:
                         await page.goto(original_url, wait_until="domcontentloaded", timeout=10000)
                         await asyncio.sleep(1)
@@ -473,7 +395,6 @@ class SearchEngine:
             
         except Exception as e:
             logger.debug(f"点击搜索结果失败: {e}")
-            # 确保我们回到搜索页面
             try:
                 if "bing.com/search" not in page.url:
                     await page.goto(self.BING_URL, wait_until="domcontentloaded", timeout=10000)
@@ -481,16 +402,10 @@ class SearchEngine:
                 pass
     
     async def _random_pagination(self, page: Page) -> None:
-        """
-        随机翻页（增加真实性）
-        
-        Args:
-            page: Playwright Page 对象
-        """
+        """随机翻页（增加真实性）"""
         try:
             logger.debug("尝试翻页...")
             
-            # 查找"下一页"按钮
             next_page_selectors = [
                 "a[title='Next page']",
                 "a.sb_pagN",
@@ -510,10 +425,8 @@ class SearchEngine:
                 logger.debug("未找到翻页按钮")
                 return
             
-            # 点击下一页
             await next_button.click()
             
-            # 等待页面加载
             try:
                 await page.wait_for_load_state("networkidle", timeout=10000)
             except Exception:
@@ -521,10 +434,8 @@ class SearchEngine:
             
             await asyncio.sleep(random.uniform(1, 2))
             
-            # 滚动浏览
             await self.anti_ban.simulate_human_scroll(page)
             
-            # 返回第一页
             await page.go_back()
             await asyncio.sleep(random.uniform(1, 2))
             
@@ -534,34 +445,22 @@ class SearchEngine:
             logger.debug(f"翻页失败: {e}")
     
     async def execute_desktop_searches(self, page: Page, count: int, health_monitor=None) -> int:
-        """
-        执行桌面端搜索
-        
-        Args:
-            page: Playwright Page 对象
-            count: 搜索次数
-            
-        Returns:
-            成功的搜索次数
-        """
+        """执行桌面端搜索"""
         logger.info(f"开始执行 {count} 次桌面搜索...")
         
         success_count = 0
         
         for i in range(count):
-            # 获取搜索词（支持 QueryEngine）
             term = await self._get_search_term()
             
             logger.info(f"[{i+1}/{count}] 搜索: {term}")
             
-            # 更新实时状态
             try:
                 from src.ui.real_time_status import StatusManager
                 StatusManager.update_desktop_searches(i, count)
             except Exception:
                 pass
             
-            # 执行搜索
             start_time = time.time() if health_monitor else 0
             search_success = await self.perform_single_search(page, term, health_monitor)
             
@@ -575,13 +474,11 @@ class SearchEngine:
                 if health_monitor:
                     health_monitor.record_search_result(False)
             
-            # 等待随机时间（最后一次搜索不需要等待）
             if i < count - 1:
                 wait_time = self.anti_ban.get_random_wait_time()
                 logger.debug(f"等待 {wait_time:.1f} 秒...")
                 await asyncio.sleep(wait_time)
         
-        # 更新最终状态
         try:
             from src.ui.real_time_status import StatusManager
             StatusManager.update_desktop_searches(success_count, count)
@@ -592,34 +489,22 @@ class SearchEngine:
         return success_count
     
     async def execute_mobile_searches(self, page: Page, count: int, health_monitor=None) -> int:
-        """
-        执行移动端搜索
-        
-        Args:
-            page: Playwright Page 对象
-            count: 搜索次数
-            
-        Returns:
-            成功的搜索次数
-        """
+        """执行移动端搜索"""
         logger.info(f"开始执行 {count} 次移动搜索...")
         
         success_count = 0
         
         for i in range(count):
-            # 获取搜索词（支持 QueryEngine）
             term = await self._get_search_term()
             
             logger.info(f"[{i+1}/{count}] 搜索: {term}")
             
-            # 更新实时状态
             try:
                 from src.ui.real_time_status import StatusManager
                 StatusManager.update_mobile_searches(i, count)
             except Exception:
                 pass
             
-            # 执行搜索
             start_time = time.time() if health_monitor else 0
             search_success = await self.perform_single_search(page, term, health_monitor)
             
@@ -633,13 +518,11 @@ class SearchEngine:
                 if health_monitor:
                     health_monitor.record_search_result(False)
             
-            # 等待随机时间
             if i < count - 1:
                 wait_time = self.anti_ban.get_random_wait_time()
                 logger.debug(f"等待 {wait_time:.1f} 秒...")
                 await asyncio.sleep(wait_time)
         
-        # 更新最终状态
         try:
             from src.ui.real_time_status import StatusManager
             StatusManager.update_mobile_searches(success_count, count)

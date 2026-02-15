@@ -361,7 +361,7 @@ def register_services(container: Container, config: Any) -> Container:
     from browser.anti_ban_module import AntiBanModule
     from browser.simulator import BrowserSimulator
     from search.search_term_generator import SearchTermGenerator
-    from search.search_engine_legacy import SearchEngine
+    from search.search_engine import SearchEngine
     from account.points_detector import PointsDetector
     from account.manager import AccountManager
     from infrastructure.state_monitor import StateMonitor

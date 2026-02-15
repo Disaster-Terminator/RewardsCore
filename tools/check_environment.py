@@ -98,7 +98,7 @@ def check_project_structure():
     """检查项目目录结构"""
     print("\n检查项目结构...")
     
-    required_dirs = ['src', 'tests', 'logs', 'docs', 'scripts']
+    required_dirs = ['src', 'tests', 'logs', 'docs', 'tools']
     required_files = ['requirements.txt', 'environment.yml', 'config.yaml']
     
     all_exist = True

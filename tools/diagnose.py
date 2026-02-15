@@ -9,7 +9,6 @@ import os
 import argparse
 from pathlib import Path
 
-# 添加项目根目录到路径
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -20,10 +19,8 @@ def check_environment():
     print("环境检查")
     print("="*50)
     
-    # Python版本
     print(f"\n✓ Python版本: {sys.version}")
     
-    # 检查依赖
     try:
         import playwright
         print(f"✓ Playwright: {playwright.__version__}")
@@ -38,7 +35,6 @@ def check_environment():
         print("✗ PyYAML 未安装")
         return False
     
-    # 检查配置文件
     config_path = project_root / "config.yaml"
     if config_path.exists():
         print(f"✓ 配置文件存在: {config_path}")
@@ -65,10 +61,14 @@ def validate_config():
             config = yaml.safe_load(f)
         
         validator = ConfigValidator(config)
-        is_valid, errors = validator.validate()
+        is_valid, errors, warnings = validator.validate_config(config)
         
         if is_valid:
             print("\n✓ 配置文件有效")
+            if warnings:
+                print("\n警告:")
+                for warning in warnings:
+                    print(f"  - {warning}")
             return True
         else:
             print("\n✗ 配置文件存在错误:")
@@ -94,19 +94,16 @@ def check_p0_config():
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         
-        # 检查登录状态机
         login_config = config.get('login', {})
         print(f"\n登录状态机:")
         print(f"  - 启用: {login_config.get('state_machine_enabled', False)}")
         print(f"  - 最大转换: {login_config.get('max_transitions', 20)}")
         
-        # 检查任务系统
         task_config = config.get('task_system', {})
         print(f"\n任务系统:")
         print(f"  - 启用: {task_config.get('enabled', False)}")
         print(f"  - 跳过已完成: {task_config.get('skip_completed', True)}")
         
-        # 检查查询引擎
         query_config = config.get('query_engine', {})
         print(f"\n查询引擎:")
         print(f"  - 启用: {query_config.get('enabled', False)}")
@@ -133,7 +130,7 @@ async def diagnose_task_discovery():
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         
-        storage_state = config['account']['storage_state_path']
+        storage_state = config.get('account', {}).get('storage_state_path', 'storage_state.json')
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=False)
@@ -151,7 +148,6 @@ async def diagnose_task_discovery():
             await page.goto("https://rewards.microsoft.com/", wait_until="networkidle")
             await page.wait_for_load_state("domcontentloaded")
             
-            # 测试选择器
             selectors = [
                 'mee-card',
                 '.mee-card',
@@ -167,7 +163,6 @@ async def diagnose_task_discovery():
                 except Exception as e:
                     print(f"  {selector}: 错误 - {e}")
             
-            # 保存截图和HTML
             await page.screenshot(path="debug_rewards_page.png")
             html = await page.content()
             with open("debug_rewards_page.html", "w", encoding="utf-8") as f:
@@ -233,7 +228,6 @@ def main():
     
     args = parser.parse_args()
     
-    # 如果没有指定参数，显示帮助
     if not any(vars(args).values()):
         parser.print_help()
         return
@@ -244,31 +238,25 @@ def main():
     
     results = []
     
-    # 环境检查
     if args.all or args.env:
         results.append(("环境检查", check_environment()))
     
-    # 配置验证
     if args.all or args.config:
         results.append(("配置验证", validate_config()))
     
-    # P0配置检查
     if args.all or args.p0:
         results.append(("P0配置", check_p0_config()))
     
-    # 任务发现诊断（异步）
     if args.all or args.tasks:
         import asyncio
         result = asyncio.run(diagnose_task_discovery())
         results.append(("任务发现", result))
     
-    # 查询引擎验证（异步）
     if args.all or args.query:
         import asyncio
         result = asyncio.run(verify_query_engine())
         results.append(("查询引擎", result))
     
-    # 总结
     print("\n" + "="*50)
     print("诊断总结")
     print("="*50)

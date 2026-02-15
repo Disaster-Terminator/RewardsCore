@@ -1,6 +1,9 @@
 """
 数据模型定义
 使用 dataclasses 定义配置和状态数据结构
+
+注意：此文件中的模型为备用定义。
+主要的配置类在 app_config.py 中定义。
 """
 
 from dataclasses import dataclass, field
@@ -96,7 +99,7 @@ class SearchTerm:
     term: str
     used_count: int = 0
     last_used: Optional[datetime] = None
-    source: str = "file"  # "file" 或 "generated"
+    source: str = "file"
 
 
 @dataclass
@@ -116,8 +119,8 @@ class SearchSession:
     """搜索会话"""
     session_id: str
     start_time: datetime
-    end_time: Optional[datetime] = None
     device_type: DeviceType
+    end_time: Optional[datetime] = None
     search_results: List[SearchResult] = field(default_factory=list)
     total_searches: int = 0
     successful_searches: int = 0
@@ -149,7 +152,7 @@ class DailyReport:
 @dataclass
 class TaskStatus:
     """任务状态"""
-    task_type: str  # "desktop_search", "mobile_search", "daily_set"
+    task_type: str
     completed: bool = False
     progress: int = 0
     max_progress: int = 0

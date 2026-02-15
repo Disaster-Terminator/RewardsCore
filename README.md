@@ -15,27 +15,32 @@
 ## ✨ 核心功能
 
 ### 🔍 智能搜索系统
+
 - **桌面端搜索**: 自动完成30次桌面搜索任务
 - **移动端搜索**: 自动完成20次移动搜索任务
 - **智能适配**: 自动检测登录状态，首次显示浏览器，后续后台运行
 - **反检测机制**: 集成 playwright-stealth，模拟真实用户行为
 
 ### 📊 数据监控
+
 - **实时积分监控**: 智能检测积分变化，实时监控任务完成情况
 - **会话持久化**: 一次登录，长期使用，自动保存加密的登录状态
 - **健康监控**: 内置性能监控，记录执行成功率、响应时间等指标
 
 ### 🚀 智能调度
+
 - **定时执行**: 支持每天固定时间自动执行
 - **随机调度**: 避开高峰时段，随机时间执行（更安全）
 - **批量任务**: 桌面+移动双重任务，最大化收益
 
 ### 📈 任务扩展
+
 - **日常任务**: 自动发现并完成奖励任务（问答、调查、URL任务等）
 - **任务过滤**: 智能过滤无效任务，只执行有效积分任务
 - **错误恢复**: 失败任务自动跳过，继续执行其他任务
 
 ### 🔔 通知系统
+
 - **多渠道通知**: 支持 Telegram、微信（Server酱）、WhatsApp 推送
 - **实时反馈**: 任务完成情况、积分增长、异常提醒
 - **配置灵活**: 可同时启用多种通知方式
@@ -43,6 +48,7 @@
 ## 🛠️ 系统架构
 
 采用模块化设计，核心组件包括：
+
 - **MSRewardsApp**: 主控制器，协调整个系统
 - **TaskCoordinator**: 任务协调器，管理执行流程
 - **BrowserSimulator**: 浏览器管理器，处理自动化
@@ -50,10 +56,12 @@
 - **SearchEngine**: 搜索引擎，执行搜索任务
 
 各组件松耦合设计，支持独立测试和维护。
-  - 处理浏览器会话状态
-  - 集成反检测模块
+
+- 处理浏览器会话状态
+- 集成反检测模块
 
 #### 4. StateMonitor (状态监控器)
+
 - **职责**: 监控和记录系统状态
 - **功能**:
   - 积分变化检测
@@ -61,6 +69,7 @@
   - 生成每日报告
 
 #### 5. AccountManager (账户管理器)
+
 - **职责**: 管理账户登录和会话
 - **功能**:
   - 自动和手动登录支持
@@ -70,6 +79,7 @@
 ### 执行流程
 
 #### 完整执行流程
+
 ```
 1. 系统初始化
    ├─ 加载配置文件
@@ -105,16 +115,19 @@
 ### 关键技术特性
 
 #### 🔄 会话管理策略
+
 - **智能检测**: 自动检测已有会话，避免重复登录
 - **会话持久化**: 加密保存登录状态，长期有效
 - **会话恢复**: 意外退出后可从上次位置恢复
 
 #### 🎭 反检测机制
+
 - **playwright-stealth**: 隐藏自动化特征
 - **随机延迟**: 搜索间隔随机化，模拟真实用户
 - **加权调度**: 避开高峰时段，分散执行时间
 
 #### 📊 数据收集
+
 - **实时监控**: 监控每次搜索后的积分变化
 - **智能分析**: 识别积分异常，及时告警
 - **持久化存储**: 日志和报告长期保存
@@ -124,6 +137,7 @@
 ### 1. 环境准备
 
 #### Windows 用户（推荐）
+
 ```bash
 # 克隆仓库
 git clone https://github.com/yourusername/ms-rewards-automator.git
@@ -138,6 +152,7 @@ python tools/check_environment.py
 ```
 
 #### Linux/macOS 用户
+
 ```bash
 # 克隆仓库
 git clone https://github.com/yourusername/ms-rewards-automator.git
@@ -156,17 +171,12 @@ playwright install chromium
 
 ### 2. 首次使用
 
-#### Windows 用户
-```cmd
-quick_start.bat
-```
-
-#### Linux/macOS 用户
 ```bash
-./scripts/unix/quick_start.sh
+python main.py --dev
 ```
 
 **智能模式说明**：
+
 - **首次运行**: 自动打开浏览器，需要手动登录 Microsoft 账号
 - **后续运行**: 自动保存会话，使用无头模式（后台运行）
 - **重新登录**: 删除 `storage_state.json` 文件后重新运行
@@ -174,6 +184,7 @@ quick_start.bat
 ### 3. 常用命令
 
 #### 基本使用
+
 ```bash
 # 立即执行一次（后台模式）
 python main.py
@@ -195,6 +206,7 @@ python main.py --mobile-only
 ```
 
 #### 调试和测试
+
 ```bash
 # 模拟执行（不执行真实搜索）
 python main.py --dry-run
@@ -209,18 +221,13 @@ python main.py --skip-daily-tasks
 ### 4. 查看执行结果
 
 #### 启动数据面板
+
 ```bash
-# Windows
-scripts/windows/start_dashboard.bat
-
-# Linux/macOS
-./scripts/unix/start_dashboard.sh
-
-# 或直接运行
-streamlit run dashboard.py
+streamlit run tools/dashboard.py
 ```
 
 数据面板显示：
+
 - 今天的任务完成情况
 - 积分获得详情
 - 7天积分增长趋势
@@ -229,21 +236,25 @@ streamlit run dashboard.py
 ## 🎯 实际使用场景
 
 ### 场景1：日常自动化任务
+
 - **目标**: 每天自动完成所有任务，获得最大积分
 - **配置**: 启用调度器，设置随机时间执行
 - **流程**: 早上随机时间自动启动 → 完成所有任务 → 发送结果通知
 
 ### 场景2：手动调试模式
+
 - **目标**: 查看浏览器执行过程，调试问题
 - **配置**: `--headless=false` 强制显示浏览器
 - **流程**: 启动 → 手动登录 → 观察执行过程 → 查看错误
 
 ### 场景3：快速测试模式
+
 - **目标**: 快速验证配置是否正确
 - **配置**: `--desktop-only --dry-run` 模拟执行
 - **流程**: 不执行真实搜索，只验证流程
 
 ### 场景4：仅执行移动搜索
+
 - **目标**: 只完成移动端搜索任务
 - **配置**: `--mobile-only`
 - **流程**: 桌面登录 → 创建移动上下文 → 完成移动搜索
@@ -277,14 +288,11 @@ python tools/check_environment.py
 ### 2. 首次运行
 
 ```bash
-# Windows 用户
-quick_start.bat
-
-# 或直接运行
-python main.py
+python main.py --dev
 ```
 
 **智能模式**：程序会自动检测登录状态
+
 - 首次运行时，浏览器会自动打开（有头模式），请手动登录 Microsoft 账号
 - 登录成功后会自动保存会话，后续运行将自动切换到无头模式（后台运行）
 - 如需重新登录，删除 `storage_state.json` 文件即可
@@ -292,35 +300,27 @@ python main.py
 ### 3. 查看任务完成情况
 
 ```bash
-# Windows 用户
-scripts/windows/start_dashboard.bat
-
-# 或直接运行
-streamlit run dashboard.py
+streamlit run tools/dashboard.py
 ```
 
 浏览器会打开 Dashboard，显示今天的任务完成情况（桌面搜索 X/30，移动搜索 X/20）和 7 天积分增长曲线。
 
 ### 4. 配置通知（可选）
 
-编辑 `config.yaml` 配置 Telegram、Server酱或 WhatsApp 通知，详见 [通知配置指南](docs/guides/NOTIFICATION_GUIDE.md)。
+编辑 `config.yaml` 配置 Telegram、Server酱或 WhatsApp 通知，详见 [用户指南](docs/guides/用户指南.md)。
 
 ## 📚 详细文档
 
 ### 用户文档
-- **[使用指南](docs/guides/USAGE_GUIDE.md)** - 完整的使用说明和配置详解
-- **[通知配置](docs/guides/NOTIFICATION_GUIDE.md)** - Telegram、微信、WhatsApp 通知设置
-- **[故障排除](docs/guides/TROUBLESHOOTING.md)** - 常见问题和解决方案
-- **[任务系统指南](docs/guides/TASK_SYSTEM_GUIDE.md)** - 日常任务系统详解
-- **[查询引擎指南](docs/guides/QUERY_ENGINE_GUIDE.md)** - 高级搜索功能说明
 
-### 开发文档
-- **[执行流程分析](docs/development/EXECUTION_FLOW.md)** - 详细的执行流程和性能分析
-- **[深度技术解析](docs/development/DEVELOPER_NOTES.md)** - 关键技术决策和实现细节
-- **[任务系统调试](docs/development/TASK_SYSTEM_DEBUG_SESSION.md)** - 任务系统调试指南
-- **[登录系统优化](docs/development/LOGIN_SYSTEM_OPTIMIZATION.md)** - 登录系统优化记录
+- **[用户指南](docs/guides/用户指南.md)** - 完整的使用说明、配置详解和故障排除
+
+### 技术文档
+
+- **[技术参考](docs/reports/技术参考.md)** - 防检测策略和技术实现细节
 
 ### 配置文件说明
+
 ```yaml
 # 基础配置
 search:
@@ -352,9 +352,11 @@ notification:
 ## ⚠️ 风险提示与安全建议
 
 ### ⚠️ 重要声明
+
 本项目仅供学习和研究使用。使用自动化工具可能违反 Microsoft Rewards 服务条款，可能导致账号被限制或封禁。使用本工具造成的任何后果由使用者自行承担。
 
 ### ✅ 推荐的安全使用方式
+
 - **使用本地运行**: 在家庭网络环境中运行，避免使用云服务器
 - **启用慢速模式**: `python main.py --mode slow`
 - **启用随机调度**: `python main.py --schedule`
@@ -362,12 +364,14 @@ notification:
 - **监控日志**: 定期检查执行日志，及时发现异常
 
 ### ❌ 避免的危险行为
+
 - **不要在云服务器上运行**: 避免使用 AWS、Azure、GitHub Actions 等
 - **不要频繁手动运行**: 避免一天内多次执行
 - **不要修改核心参数**: 不要随意减少等待时间
 - **不要同时运行多个实例**: 避免资源竞争
 
 ### 📊 安全配置建议
+
 ```yaml
 # 推荐的安全配置
 search:
@@ -389,20 +393,26 @@ notification:
 ```
 ms-rewards-automator/
 ├── src/                    # 源代码目录
+│   ├── account/           # 账户管理
+│   ├── browser/           # 浏览器控制
+│   ├── infrastructure/    # 基础设施
+│   ├── login/             # 登录模块
+│   ├── search/            # 搜索模块
+│   ├── tasks/             # 任务系统
+│   └── ui/                # 用户界面
+├── tests/                  # 测试目录
+│   ├── autonomous/        # 自动化测试
+│   ├── integration/       # 集成测试
+│   └── unit/              # 单元测试
 ├── tools/                  # 辅助工具
-│   ├── check_environment.py  # 环境检查
-│   ├── run_tests.py          # 测试运行器
-│   └── search_terms.txt      # 搜索词库
-├── tests/                  # 单元测试
+│   ├── check_environment.py
+│   ├── dashboard.py
+│   └── search_terms.txt
 ├── docs/                   # 文档目录
-│   ├── guides/            # 使用指南
-│   └── development/       # 开发文档
+│   ├── guides/            # 用户指南
+│   └── reports/           # 技术报告
 ├── logs/                   # 日志文件
-├── scripts/                # 启动脚本
-│   ├── windows/           # Windows 脚本
-│   └── unix/              # Unix/Linux 脚本
 ├── main.py                 # 主程序入口
-├── dashboard.py            # 数据面板
 ├── config.yaml             # 配置文件
 └── requirements.txt        # Python 依赖
 ```
@@ -420,4 +430,3 @@ ms-rewards-automator/
 ---
 
 **如果觉得有用，请给个 ⭐ Star！**
-
