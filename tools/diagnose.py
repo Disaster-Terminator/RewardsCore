@@ -136,7 +136,9 @@ async def diagnose_task_discovery():
         storage_state = config.get('account', {}).get('storage_state_path', 'storage_state.json')
         
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=False)
+            # 默认使用无头模式，可以通过参数控制
+            # 用户建议开发时使用无头模式
+            browser = await p.chromium.launch(headless=True)
             
             if Path(storage_state).exists():
                 context = await browser.new_context(storage_state=storage_state)
@@ -148,43 +150,33 @@ async def diagnose_task_discovery():
             page = await context.new_page()
             
             print("\n导航到 Rewards 页面...")
-            await page.goto("https://rewards.microsoft.com/", wait_until="networkidle")
-            await page.wait_for_load_state("domcontentloaded")
+            try:
+                await page.goto("https://rewards.microsoft.com/", wait_until="domcontentloaded", timeout=60000)
+                await page.wait_for_timeout(5000) # Wait for hydration
+            except Exception as e:
+                print(f"  ⚠ 导航到 Rewards 页面超时或错误: {e}")
             
-            selectors = [
-                'mee-card',
-                '.mee-card',
-                '[class*="rewards-card"]',
-                '[data-bi-id*="card"]'
-            ]
+            # Save debug info
+            screenshot_path = "debug_rewards_page.png"
+            await page.screenshot(path=screenshot_path, full_page=True)
+            print(f"\n✔ 已保存: {screenshot_path}")
             
-            print("\n测试选择器:")
-            for selector in selectors:
-                try:
-                    elements = await page.query_selector_all(selector)
-                    print(f"  {selector}: 找到 {len(elements)} 个元素")
-                except Exception as e:
-                    print(f"  {selector}: 错误 - {e}")
-            
-            await page.screenshot(path="debug_rewards_page.png")
-            html = await page.content()
-            with open("debug_rewards_page.html", "w", encoding="utf-8") as f:
-                f.write(html)
-            
-            print("\n✓ 已保存:")
-            print("  - debug_rewards_page.png")
-            print("  - debug_rewards_page.html")
+            html_content = await page.content()
+            html_path = "debug_rewards_page.html"
+            with open(html_path, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print(f"✔ 已保存: {html_path}")
             
             # 导航到 dashboard 和 earn 页面并保存 HTML
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             diagnostics_dir = project_root / "logs" / "diagnostics"
             diagnostics_dir.mkdir(parents=True, exist_ok=True)
 
-            # Dashboard 页面
             print("\n导航到 dashboard 页面...")
             try:
-                await page.goto("https://rewards.microsoft.com/dashboard", wait_until="networkidle")
-                await page.wait_for_load_state("domcontentloaded")
+                await page.goto("https://rewards.microsoft.com/dashboard", wait_until="domcontentloaded", timeout=60000)
+                await page.wait_for_timeout(5000) # Wait for hydration
+                
                 dashboard_html = await page.content()
                 dashboard_html_path = diagnostics_dir / f"dashboard_{timestamp}.html"
                 with open(dashboard_html_path, "w", encoding="utf-8") as f:
@@ -210,8 +202,8 @@ async def diagnose_task_discovery():
             except Exception as e:
                 print(f"  ✗ 导航到 earn 页面失败: {e}")
             
-            print("\n按Enter继续...")
-            input()
+            # print("\n按Enter继续...")
+            # input()
             
             await browser.close()
         

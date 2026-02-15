@@ -226,117 +226,157 @@ class TaskParser:
             raw_tasks = await page.evaluate("""
                 () => {
                     const tasks = [];
+                    const seenHrefs = new Set();
                     
-                    const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset'];
-                    let sections = [];
-                    
-                    for (const sectionId of sectionIds) {
-                        const section = document.querySelector(`section#${sectionId}`);
-                        if (section) sections.push({id: sectionId, el: section});
+                    // Helper to find closest clickable parent or self
+                    function getClickable(el) {
+                        return el.closest('a') || el.closest('button') || el;
                     }
+
+                    // 1. Try to find cards using new CSS classes (2025 update)
+                    const newCardSelectors = [
+                        'div[class*="rounded-2xl"][class*="bg-neutralBg1"]',
+                        '[class*="mai:rounded-cornerCardRewards"]'
+                    ];
                     
-                    if (sections.length === 0) {
-                        sections = Array.from(document.querySelectorAll('section')).map(s => ({
-                            id: s.id || 'unknown',
-                            el: s
-                        }));
-                    }
-                    
-                    if (sections.length === 0) {
-                        const mainContent = document.querySelector('main, [role="main"], #main, .main-content');
-                        if (mainContent) {
-                            sections = [{id: 'main', el: mainContent}];
+                    let cardElements = [];
+                    for (const selector of newCardSelectors) {
+                        const els = document.querySelectorAll(selector);
+                        if (els.length > 0) {
+                            cardElements = Array.from(els);
+                            break;
                         }
                     }
                     
-                    for (const {id: sectionId, el: section} of sections) {
-                        const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button');
+                    // If no new cards found, fallback to section-based search
+                    if (cardElements.length === 0) {
+                        const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset'];
+                        let sections = [];
                         
-                        for (const card of cards) {
-                            const tagName = card.tagName.toLowerCase();
-                            const href = card.getAttribute('href') || card.getAttribute('data-href') || '';
-                            
-                            if (href === '/earn' || href === '/dashboard' || 
-                                href === '/redeem' || href === '/about' || href === '/refer' ||
-                                href === '/' || href === '#' || href.includes('/orderhistory') ||
-                                href.includes('/faq') || href.includes('support.microsoft.com') ||
-                                href.includes('x.com') || href.includes('xbox.com') ||
-                                href.includes('microsoft.com/about') || href.includes('news.microsoft.com') ||
-                                href.includes('go.microsoft.com') || href.includes('choice.microsoft.com')) {
-                                continue;
-                            }
-                            
-                            const text = card.innerText || '';
-                            const ariaLabel = card.getAttribute('aria-label') || '';
-                            
-                            const skipTexts = ['接受', '拒绝', '管理 cookie', 'accept', 'reject', 'manage cookie',
-                                              '提供反馈', 'feedback', '了解详细信息', 'learn more',
-                                              '订单历史记录', 'order history'];
-                            if (skipTexts.some(s => text.toLowerCase().includes(s) || ariaLabel.toLowerCase().includes(s))) {
-                                continue;
-                            }
-                            
-                            let title = '';
-                            const headings = card.querySelectorAll('h3, h4, p, span, div');
-                            for (const h of headings) {
-                                const t = h.innerText.trim();
-                                if (t && t.length > 2 && t.length < 200 && !t.includes('\\n')) {
-                                    title = t;
-                                    break;
-                                }
-                            }
-                            if (!title) {
-                                const cleanText = text.replace(/\\s+/g, ' ').trim().substring(0, 80);
-                                if (cleanText && cleanText.length > 2) {
-                                    title = cleanText;
-                                } else {
-                                    title = ariaLabel;
-                                }
-                            }
-                            
-                            if (!title && !href) continue;
-                            
-                            let points = 0;
-                            const pointsMatch = text.match(/(\\d+)\\s*(?:points?|pts?|积分|分)/i);
-                            if (pointsMatch) {
-                                points = parseInt(pointsMatch[1]);
-                            } else {
-                                const numMatch = text.match(/\\+(\\d+)/);
-                                if (numMatch) points = parseInt(numMatch[1]);
-                            }
-                            
-                            let taskType = 'urlreward';
-                            const combined = (href + ' ' + text + ' ' + ariaLabel).toLowerCase();
-                            if (combined.includes('quiz') || combined.includes('测验')) {
-                                taskType = 'quiz';
-                            } else if (combined.includes('poll') || combined.includes('投票')) {
-                                taskType = 'poll';
-                            }
-                            
-                            let completed = false;
-                            const completedEl = card.querySelector(
-                                '[class*="completed"], [class*="done"], [class*="check"], ' +
-                                'svg[class*="check"], [aria-label*="Completed"], [aria-label*="完成"]'
-                            );
-                            if (completedEl) completed = true;
-                            if (ariaLabel.toLowerCase().includes('completed') || 
-                                ariaLabel.includes('完成')) {
-                                completed = true;
-                            }
-                            
-                            const isButton = tagName === 'button' && !href;
-                            
-                            tasks.push({
-                                sectionId: sectionId,
-                                title: title,
-                                href: href,
-                                points: points,
-                                taskType: taskType,
-                                completed: completed,
-                                ariaLabel: ariaLabel,
-                                isButton: isButton
-                            });
+                        for (const sectionId of sectionIds) {
+                            const section = document.querySelector(`section#${sectionId}`);
+                            if (section) sections.push(section);
                         }
+                        
+                        if (sections.length === 0) {
+                            sections = Array.from(document.querySelectorAll('section'));
+                        }
+                        
+                        if (sections.length === 0) {
+                            const mainContent = document.querySelector('main, [role="main"], #main, .main-content');
+                            if (mainContent) sections = [mainContent];
+                        }
+                        
+                        for (const section of sections) {
+                            const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button');
+                            cardElements.push(...cards);
+                        }
+                    }
+                    
+                    for (const el of cardElements) {
+                        const clickable = getClickable(el);
+                        const tagName = clickable.tagName.toLowerCase();
+                        
+                        // Extract href
+                        let href = clickable.getAttribute('href') || clickable.getAttribute('data-href') || '';
+                        
+                        // If no href on clickable, check if parent has href (for nested structures)
+                        if (!href && el !== clickable) {
+                             const parentLink = el.closest('a');
+                             if (parentLink) href = parentLink.getAttribute('href') || '';
+                        }
+
+                        // Skip navigation links
+                        if (href === '/earn' || href === '/dashboard' || 
+                            href === '/redeem' || href === '/about' || href === '/refer' ||
+                            href === '/' || href === '#' || href.includes('/orderhistory') ||
+                            href.includes('/faq') || href.includes('support.microsoft.com') ||
+                            href.includes('x.com') || href.includes('xbox.com') ||
+                            href.includes('microsoft.com/about') || href.includes('news.microsoft.com') ||
+                            href.includes('go.microsoft.com') || href.includes('choice.microsoft.com')) {
+                            continue;
+                        }
+                        
+                        // Avoid duplicates
+                        if (href && seenHrefs.has(href)) continue;
+                        if (href) seenHrefs.add(href);
+
+                        const text = clickable.innerText || el.innerText || '';
+                        const ariaLabel = clickable.getAttribute('aria-label') || el.getAttribute('aria-label') || '';
+                        
+                        const skipTexts = ['接受', '拒绝', '管理 cookie', 'accept', 'reject', 'manage cookie',
+                                          '提供反馈', 'feedback', '了解详细信息', 'learn more',
+                                          '订单历史记录', 'order history'];
+                        if (skipTexts.some(s => text.toLowerCase().includes(s) || ariaLabel.toLowerCase().includes(s))) {
+                            continue;
+                        }
+                        
+                        let title = '';
+                        // Try to find title in common heading tags
+                        const headings = clickable.querySelectorAll('h3, h4, .text-body1, [class*="title"], [class*="header"]');
+                        for (const h of headings) {
+                            const t = h.innerText.trim();
+                            if (t && t.length > 2 && t.length < 200 && !t.includes('\\n')) {
+                                title = t;
+                                break;
+                            }
+                        }
+                        
+                        if (!title) {
+                            // Split by newlines and take the longest logical line
+                            const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 2);
+                            if (lines.length > 0) {
+                                // Usually the first line is the title, or the one that's not points
+                                title = lines.find(l => !l.match(/^\d+/) && !l.includes('积分') && !l.includes('points')) || lines[0];
+                            } else {
+                                title = ariaLabel;
+                            }
+                        }
+                        
+                        if (!title && !href) continue;
+                        
+                        let points = 0;
+                        const pointsMatch = text.match(/(\d+)\s*(?:points?|pts?|积分|分)/i);
+                        if (pointsMatch) {
+                            points = parseInt(pointsMatch[1]);
+                        } else {
+                            const numMatch = text.match(/\+(\d+)/);
+                            if (numMatch) points = parseInt(numMatch[1]);
+                        }
+                        
+                        let taskType = 'urlreward';
+                        const combined = (href + ' ' + text + ' ' + ariaLabel).toLowerCase();
+                        if (combined.includes('quiz') || combined.includes('测验')) {
+                            taskType = 'quiz';
+                        } else if (combined.includes('poll') || combined.includes('投票')) {
+                            taskType = 'poll';
+                        }
+                        
+                        let completed = false;
+                        const completedEl = clickable.querySelector(
+                            '[class*="completed"], [class*="done"], [class*="check"], ' +
+                            'svg[class*="check"], [aria-label*="Completed"], [aria-label*="完成"]'
+                        );
+                        if (completedEl) completed = true;
+                        if (ariaLabel.toLowerCase().includes('completed') || 
+                            ariaLabel.includes('完成') || 
+                            combined.includes('已完成') || 
+                            combined.includes('completed')) {
+                            completed = true;
+                        }
+                        
+                        const isButton = tagName === 'button' && !href;
+                        
+                        tasks.push({
+                            sectionId: 'unknown',
+                            title: title.substring(0, 100),
+                            href: href,
+                            points: points,
+                            taskType: taskType,
+                            completed: completed,
+                            ariaLabel: ariaLabel,
+                            isButton: isButton
+                        });
                     }
                     
                     return tasks;
