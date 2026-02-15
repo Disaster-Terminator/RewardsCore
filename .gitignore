@@ -35,6 +35,10 @@ storage_state_*.json
 *.session
 cookies.json
 
+# 用户配置文件（包含账密等敏感信息）
+config.yaml
+config.local.yaml
+
 # 日志文件
 logs/
 *.log

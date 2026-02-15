@@ -1,291 +1,66 @@
 # ============================================================
-# MS Rewards Automator - 配置示例
+# MS Rewards Automator - 示例配置文件
 # ============================================================
-# 复制此文件为 config.yaml 并根据需要修改
+# 复制此文件为 config.yaml 并填写你的配置
 
-# ============================================================
-# 场景 1: 首次运行 / 调试模式
-# ============================================================
-# 特点：显示浏览器、不弹窗、保存诊断信息
-
+# 搜索任务
 search:
-  desktop_count: 5 # 测试时减少搜索次数
-  mobile_count: 3
-  wait_interval:
-    min: 2
-    max: 5
-  search_terms_file: "tools/search_terms.txt"
+  desktop_count: 30 # 桌面端搜索次数
+  mobile_count: 20 # 移动端搜索次数
+  wait_interval: 5 # 搜索间隔（秒），建议 3-8
 
+# 浏览器
 browser:
-  headless: false # 显示浏览器，方便观察
-  prevent_focus: "basic" # 不弹到前台
-  slow_mo: 200 # 慢速执行，便于观察
-  timeout: 30000
-  type: "chromium"  # 浏览器类型: chromium(Playwright内置,推荐), chrome, edge
-                    # 注意: Playwright内置的chromium无需系统安装，推荐使用
+  headless: false # 首次运行建议 false（显示浏览器，方便手动登录）
+  type: "chromium" # 浏览器类型: chromium(Playwright内置,推荐), chrome, edge
+  force_dark_mode: false # 禁用强制深色模式
 
-account:
-  storage_state_path: "storage_state.json"
-  login_url: "https://rewards.microsoft.com/"
-  email: "" # 留空，使用手动登录
-  password: ""
-  totp_secret: ""
-
+# 登录方式（二选一）
 login:
-  state_machine_enabled: true
-  max_transitions: 20
-  timeout_seconds: 300
-  stay_signed_in: true
-  manual_intervention_timeout: 120
+  # 方式1: 手动登录（推荐，更可靠）
+  # - 首次运行时浏览器会打开，手动登录即可
+  # - 登录后会保存会话，后续自动加载
+  # - 支持 2FA，有足够时间完成验证
 
-query_engine:
-  enabled: false # 首次运行建议禁用
+  # 方式2: 自动登录（可选，不推荐）
+  # - 填写下方 email, password, totp_secret
+  # - 注意：经常被微软拒绝，成功率不高
+  auto_login:
+    enabled: false # 是否启用自动登录
+    email: "" # Microsoft 账号
+    password: "" # 密码
+    totp_secret: "" # 2FA 密钥（如有）
 
+# 任务系统
 task_system:
-  enabled: true
-  min_delay: 2
-  max_delay: 5
-  skip_completed: true
-  debug_mode: true # 开启调试，保存截图
-  task_types:
-    url_reward: true
-    quiz: false
-    poll: false
+  enabled: false # 禁用任务系统
+  debug_mode: false
 
-bing_theme:
-  enabled: false
-
-monitoring:
-  enabled: true
-  check_interval: 5
-  check_points_before_task: true
-  alert_on_no_increase: true
-  max_no_increase_count: 3
-  real_time_display: true
-  health_check:
-    enabled: true
-    interval: 30
-    save_reports: true
-
+# 通知（可选）
 notification:
   enabled: false
+  telegram:
+    bot_token: ""
+    chat_id: ""
 
+# 调度器（可选）
 scheduler:
   enabled: false
+  mode: "random"
+  random_start_hour: 8
+  random_end_hour: 22
 
-error_handling:
-  max_retries: 3
-  retry_delay: 5
-  exponential_backoff: true
-
+# 日志
 logging:
-  level: "DEBUG" # 详细日志
-  file: "logs/automator.log"
-  console: true
+  level: "INFO"
 
-# ============================================================
-# 场景 2: 日常使用 / 后台运行
-# ============================================================
+# Bing主题设置
+bing_theme:
+  enabled: false
+  force_theme: false
 
-# search:
-#   desktop_count: 30
-#   mobile_count: 20
-#   wait_interval:
-#     min: 3
-#     max: 8
-#   search_terms_file: "tools/search_terms.txt"
-#
-# browser:
-#   headless: true           # 后台运行
-#   prevent_focus: false     # 无头模式下无需防焦点
-#   slow_mo: 100
-#   timeout: 30000
-#   type: "chromium"
-#
-# account:
-#   storage_state_path: "storage_state.json"
-#   login_url: "https://rewards.microsoft.com/"
-#   email: "your_email@example.com"
-#   password: "your_password"
-#   totp_secret: "your_totp_secret"  # 强烈推荐配置
-#
-# login:
-#   state_machine_enabled: true
-#   max_transitions: 20
-#   timeout_seconds: 300
-#   stay_signed_in: true
-#   manual_intervention_timeout: 120
-#
-# query_engine:
-#   enabled: true            # 启用智能查询引擎
-#   cache_ttl: 3600
-#   sources:
-#     local_file:
-#       enabled: true
-#     bing_suggestions:
-#       enabled: true
-#   bing_api:
-#     rate_limit: 10
-#     max_retries: 3
-#     timeout: 15
-#     suggestions_per_query: 3
-#     suggestions_per_seed: 3
-#     max_expand: 5
-#
-# task_system:
-#   enabled: true
-#   min_delay: 2
-#   max_delay: 5
-#   skip_completed: true
-#   debug_mode: false        # 关闭调试
-#   task_types:
-#     url_reward: true
-#     quiz: false
-#     poll: false
-#
-# bing_theme:
-#   enabled: true            # 启用深色主题
-#   theme: "dark"
-#   force_theme: true
-#   persistence_enabled: true
-#   theme_state_file: "theme_state.json"
-#
-# monitoring:
-#   enabled: true
-#   check_interval: 5
-#   check_points_before_task: true
-#   alert_on_no_increase: true
-#   max_no_increase_count: 3
-#   real_time_display: true
-#   health_check:
-#     enabled: true
-#     interval: 30
-#     save_reports: true
-#
-# notification:
-#   enabled: true            # 启用通知
-#   telegram:
-#     enabled: true
-#     bot_token: "your_bot_token"
-#     chat_id: "your_chat_id"
-#   serverchan:
-#     enabled: false
-#     key: ""
-#   whatsapp:
-#     enabled: false
-#     phone: ""
-#     apikey: ""
-#
-# scheduler:
-#   enabled: true            # 启用调度器
-#   mode: "random"
-#   random_start_hour: 8
-#   random_end_hour: 22
-#   fixed_hour: 10
-#   fixed_minute: 0
-#
-# error_handling:
-#   max_retries: 3
-#   retry_delay: 5
-#   exponential_backoff: true
-#
-# logging:
-#   level: "INFO"
-#   file: "logs/automator.log"
-#   console: true
-
-# ============================================================
-# 场景 3: 安全模式 / 降低风险
-# ============================================================
-
-# search:
-#   desktop_count: 30
-#   mobile_count: 20
-#   wait_interval:
-#     min: 8                 # 更长的等待时间
-#     max: 15
-#   search_terms_file: "tools/search_terms.txt"
-#
-# browser:
-#   headless: true
-#   prevent_focus: false
-#   slow_mo: 200             # 更慢的操作速度
-#   timeout: 30000
-#   type: "chromium"
-#
-# account:
-#   storage_state_path: "storage_state.json"
-#   login_url: "https://rewards.microsoft.com/"
-#   email: "your_email@example.com"
-#   password: "your_password"
-#   totp_secret: "your_totp_secret"
-#
-# login:
-#   state_machine_enabled: true
-#   max_transitions: 20
-#   timeout_seconds: 300
-#   stay_signed_in: true
-#   manual_intervention_timeout: 120
-#
-# query_engine:
-#   enabled: true            # 使用智能查询提高多样性
-#   cache_ttl: 3600
-#   sources:
-#     local_file:
-#       enabled: true
-#     bing_suggestions:
-#       enabled: true
-#   bing_api:
-#     rate_limit: 5          # 降低 API 请求频率
-#     max_retries: 3
-#     timeout: 15
-#     suggestions_per_query: 3
-#     suggestions_per_seed: 3
-#     max_expand: 5
-#
-# task_system:
-#   enabled: true
-#   min_delay: 5             # 更长的任务间隔
-#   max_delay: 10
-#   skip_completed: true
-#   debug_mode: false
-#   task_types:
-#     url_reward: true
-#     quiz: false            # 禁用不稳定的任务
-#     poll: false
-#
-# bing_theme:
-#   enabled: false
-#
-# monitoring:
-#   enabled: true
-#   check_interval: 5
-#   check_points_before_task: true
-#   alert_on_no_increase: true
-#   max_no_increase_count: 3
-#   real_time_display: true
-#   health_check:
-#     enabled: true
-#     interval: 30
-#     save_reports: true
-#
-# notification:
-#   enabled: false
-#
-# scheduler:
-#   enabled: true
-#   mode: "random"           # 随机时间执行
-#   random_start_hour: 8
-#   random_end_hour: 22
-#   fixed_hour: 10
-#   fixed_minute: 0
-#
-# error_handling:
-#   max_retries: 2           # 减少重试次数
-#   retry_delay: 10          # 更长的重试延迟
-#   exponential_backoff: true
-#
-# logging:
-#   level: "INFO"
-#   file: "logs/automator.log"
-#   console: true
+# 健康监控
+monitoring:
+  health_check:
+    enabled: false
+    interval: 30

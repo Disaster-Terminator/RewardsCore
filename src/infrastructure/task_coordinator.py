@@ -7,7 +7,7 @@ TaskCoordinator - 任务协调器 (依赖注入版)
 
 import logging
 import argparse
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from playwright.async_api import Page, BrowserContext
 from ui.real_time_status import StatusManager
@@ -116,14 +116,30 @@ class TaskCoordinator:
 
     async def _do_login(self, page: Any, account_mgr: Any, context: Any) -> None:
         """执行登录流程"""
+        import os
+        
         self.logger.warning("  未登录，需要登录")
 
         if account_mgr.use_state_machine:
             auto_login_config = self.config.get("login.auto_login", {})
             auto_login_enabled = auto_login_config.get("enabled", False)
-            email = auto_login_config.get("email", "") or self.config.get("account.email", "")
-            password = auto_login_config.get("password", "") or self.config.get("account.password", "")
-            totp_secret = auto_login_config.get("totp_secret", "") or self.config.get("account.totp_secret", "")
+            
+            # 优先从环境变量读取凭据（更安全），然后从配置文件读取
+            email = (
+                os.environ.get("MS_REWARDS_EMAIL") or
+                auto_login_config.get("email", "") or
+                self.config.get("account.email", "")
+            )
+            password = (
+                os.environ.get("MS_REWARDS_PASSWORD") or
+                auto_login_config.get("password", "") or
+                self.config.get("account.password", "")
+            )
+            totp_secret = (
+                os.environ.get("MS_REWARDS_TOTP_SECRET") or
+                auto_login_config.get("totp_secret", "") or
+                self.config.get("account.totp_secret", "")
+            )
 
             if auto_login_enabled and email and password:
                 self.logger.info("  尝试自动登录...")

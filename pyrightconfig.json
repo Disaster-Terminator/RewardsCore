@@ -1,0 +1,4 @@
+{
+  "extraPaths": ["src"],
+  "typeCheckingMode": "basic"
+}

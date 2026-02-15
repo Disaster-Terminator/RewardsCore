@@ -36,7 +36,9 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  python main.py                          # 立即执行一次任务
+  python main.py                          # 立即执行一次任务（完整配置）
+  python main.py --usermode               # 用户模式（3+3搜索，拟人行为，防检测）
+  python main.py --dev                    # 开发模式（2+2搜索，最小等待）
   python main.py --headless               # 无头模式执行
   python main.py --mode fast              # 快速模式（减少等待时间）
   python main.py --schedule               # 调度模式（每天自动执行）
@@ -61,7 +63,13 @@ def parse_arguments():
     parser.add_argument(
         "--dev",
         action="store_true",
-        help="开发模式（快速配置：3次搜索，2秒间隔，DEBUG日志）"
+        help="开发模式（2+2搜索，无拟人行为，最小等待时间，DEBUG日志）"
+    )
+
+    parser.add_argument(
+        "--usermode",
+        action="store_true",
+        help="用户模式（3+3搜索，保留拟人行为和防检测，INFO日志）"
     )
 
     # 浏览器选项
@@ -301,13 +309,18 @@ async def main():
     args = parse_arguments()
 
     # 初始化日志
+    # dev模式: DEBUG日志, 快速配置
+    # usermode模式: INFO日志, 完整配置（模拟真实使用）
+    # 默认: INFO日志, 完整配置
     log_level = "DEBUG" if args.dry_run or args.dev else "INFO"
     setup_logging(log_level=log_level, log_file="logs/automator.log", console=True)
     logger = logging.getLogger(__name__)
 
     # 加载配置
+    # dev模式: 2+2搜索，无拟人行为，最小等待时间
+    # usermode模式: 3+3搜索，保留拟人行为和防检测
     try:
-        config = ConfigManager(args.config, dev_mode=args.dev)
+        config = ConfigManager(args.config, dev_mode=args.dev, user_mode=args.usermode)
 
         # 验证配置
         logger.info("验证配置文件...")

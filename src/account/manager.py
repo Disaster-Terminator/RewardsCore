@@ -567,9 +567,6 @@ class AccountManager:
             await page.wait_for_load_state("networkidle", timeout=10000)
             await page.wait_for_timeout(2000)
             
-            # 注册 dialog 处理器（以防万一）
-            await self.edge_popup_handler.setup_dialog_handler(page)
-            
             await page.wait_for_timeout(1000)
             
             # 使用状态机处理登录
