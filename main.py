@@ -36,9 +36,9 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  python main.py                          # 立即执行一次任务（完整配置）
-  python main.py --usermode               # 用户模式（3+3搜索，拟人行为，防检测）
-  python main.py --dev                    # 开发模式（2+2搜索，最小等待）
+  python main.py                          # 生产环境（完整配置，30+20搜索）
+  python main.py --usermode               # 测试模式（3+3搜索，验证稳定性）
+  python main.py --dev                    # 开发模式（2+2搜索，快速迭代）
   python main.py --headless               # 无头模式执行
   python main.py --mode fast              # 快速模式（减少等待时间）
   python main.py --schedule               # 调度模式（每天自动执行）

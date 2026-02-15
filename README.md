@@ -202,7 +202,7 @@ python main.py
 # 生产环境（完整搜索）
 python main.py
 
-# 用户模式（测试真实使用场景）
+# 测试模式（3+3搜索，验证稳定性）
 python main.py --usermode
 
 # 开发模式（快速迭代）
