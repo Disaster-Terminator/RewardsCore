@@ -125,6 +125,9 @@ async def diagnose_task_discovery():
     try:
         from playwright.async_api import async_playwright
         import yaml
+        import asyncio
+        from datetime import datetime
+        import json
         
         config_path = project_root / "config.yaml"
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -171,6 +174,41 @@ async def diagnose_task_discovery():
             print("\n✓ 已保存:")
             print("  - debug_rewards_page.png")
             print("  - debug_rewards_page.html")
+            
+            # 导航到 dashboard 和 earn 页面并保存 HTML
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            diagnostics_dir = project_root / "logs" / "diagnostics"
+            diagnostics_dir.mkdir(parents=True, exist_ok=True)
+
+            # Dashboard 页面
+            print("\n导航到 dashboard 页面...")
+            try:
+                await page.goto("https://rewards.microsoft.com/dashboard", wait_until="networkidle")
+                await page.wait_for_load_state("domcontentloaded")
+                dashboard_html = await page.content()
+                dashboard_html_path = diagnostics_dir / f"dashboard_{timestamp}.html"
+                with open(dashboard_html_path, "w", encoding="utf-8") as f:
+                    f.write(dashboard_html)
+                await page.screenshot(path=diagnostics_dir / f"dashboard_{timestamp}.png")
+                print(f"  ✓ 已保存: {dashboard_html_path}")
+                print(f"  ✓ 已保存: {diagnostics_dir / f'dashboard_{timestamp}.png'}")
+            except Exception as e:
+                print(f"  ✗ 导航到 dashboard 页面失败: {e}")
+
+            # Earn 页面
+            print("\n导航到 earn 页面...")
+            try:
+                await page.goto("https://rewards.microsoft.com/earn", wait_until="networkidle")
+                await page.wait_for_load_state("domcontentloaded")
+                earn_html = await page.content()
+                earn_html_path = diagnostics_dir / f"earn_{timestamp}.html"
+                with open(earn_html_path, "w", encoding="utf-8") as f:
+                    f.write(earn_html)
+                await page.screenshot(path=diagnostics_dir / f"earn_{timestamp}.png")
+                print(f"  ✓ 已保存: {earn_html_path}")
+                print(f"  ✓ 已保存: {diagnostics_dir / f'earn_{timestamp}.png'}")
+            except Exception as e:
+                print(f"  ✗ 导航到 earn 页面失败: {e}")
             
             print("\n按Enter继续...")
             input()
