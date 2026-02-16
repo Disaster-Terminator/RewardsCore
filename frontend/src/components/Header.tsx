@@ -71,12 +71,14 @@ export default function Header() {
   }
 
   return (
-    <header className={clsx(
+    <header 
+      data-tauri-drag-region
+      className={clsx(
       'h-14 backdrop-blur-md border-b flex items-center justify-between px-5 sticky top-0 z-40 transition-all duration-300',
       sidebarCollapsed ? 'ml-16' : 'ml-60',
       darkMode 
-        ? 'bg-surface-300/80 border-dark-600/50' 
-        : 'bg-white/80 border-gray-200'
+        ? 'bg-surface-300/70 border-dark-600/50' 
+        : 'bg-white/70 border-gray-200'
     )}>
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2.5">

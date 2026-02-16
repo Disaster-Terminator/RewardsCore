@@ -21,8 +21,12 @@
         "fullscreen": false,
         "center": true,
         "decorations": true,
-        "transparent": false,
-        "shadow": true
+        "transparent": true,
+        "shadow": true,
+        "windowEffects": {
+          "effects": ["mica"],
+          "state": "active"
+        }
       }
     ],
     "security": {

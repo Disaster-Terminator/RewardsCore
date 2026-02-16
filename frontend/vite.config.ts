@@ -2,12 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+const isTauri = process.env.TAURI_ENV_DEBUG !== undefined
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  define: {
+    __TAURI_ENV_DEBUG__: JSON.stringify(process.env.TAURI_ENV_DEBUG || ''),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
   },
   server: {
     port: 3000,
@@ -24,6 +30,14 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: !isTauri,
+    minify: isTauri ? 'terser' : 'esbuild',
+    terserOptions: isTauri ? {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    } : undefined,
   },
+  clearScreen: false,
 })

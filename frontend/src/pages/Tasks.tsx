@@ -107,11 +107,11 @@ function OptionToggle({
           className="sr-only"
         />
         <div className={clsx(
-          'w-10 h-6 rounded-full transition-all duration-200',
+          'w-10 h-6 rounded-full transition-all duration-200 flex items-center',
           checked ? 'bg-primary-500/30' : darkMode ? 'bg-dark-600' : 'bg-gray-300'
         )}>
           <div className={clsx(
-            'w-4 h-4 rounded-full mt-1 transition-all duration-200 shadow-sm',
+            'w-4 h-4 rounded-full transition-all duration-200 shadow-sm',
             checked 
               ? 'translate-x-5 bg-primary-400 shadow-primary-400/50' 
               : darkMode ? 'translate-x-1 bg-dark-400' : 'translate-x-1 bg-gray-500'

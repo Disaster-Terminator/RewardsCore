@@ -136,6 +136,9 @@ interface Store {
   lastDataUpdate: string | null
   dataLoading: boolean
   dataError: string | null
+  backendReady: boolean
+  backendPort: number | null
+  lastHeartbeat: string | null
 
   toggleSidebar: () => void
   toggleDarkMode: () => void
@@ -150,6 +153,9 @@ interface Store {
   setLastDataUpdate: (time: string) => void
   setDataLoading: (loading: boolean) => void
   setDataError: (error: string | null) => void
+  setBackendReady: (ready: boolean) => void
+  setBackendPort: (port: number | null) => void
+  setLastHeartbeat: (time: string) => void
 }
 
 export const useStore = create<Store>((set) => ({
@@ -165,6 +171,9 @@ export const useStore = create<Store>((set) => ({
   lastDataUpdate: null,
   dataLoading: true,
   dataError: null,
+  backendReady: false,
+  backendPort: null,
+  lastHeartbeat: null,
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
@@ -179,4 +188,7 @@ export const useStore = create<Store>((set) => ({
   setLastDataUpdate: (time) => set({ lastDataUpdate: time }),
   setDataLoading: (loading) => set({ dataLoading: loading }),
   setDataError: (error) => set({ dataError: error }),
+  setBackendReady: (ready) => set({ backendReady: ready }),
+  setBackendPort: (port) => set({ backendPort: port }),
+  setLastHeartbeat: (time) => set({ lastHeartbeat: time }),
 }))

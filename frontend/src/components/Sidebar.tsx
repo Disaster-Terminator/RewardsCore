@@ -50,8 +50,8 @@ export default function Sidebar() {
         animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         className={cn(
-          'fixed left-0 top-0 h-full border-r z-50 flex flex-col',
-          darkMode ? 'bg-surface-300 border-dark-600/50' : 'bg-white border-gray-200'
+          'fixed left-0 top-0 h-full border-r z-50 flex flex-col backdrop-blur-md',
+          darkMode ? 'bg-surface-300/70 border-dark-600/50' : 'bg-white/70 border-gray-200'
         )}
       >
         <div className={cn(
