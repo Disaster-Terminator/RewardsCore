@@ -336,6 +336,8 @@ class BrowserSimulator:
         await self.apply_stealth(context)
         
         # 预设主题Cookie（在创建页面之前，确保桌面和移动端主题一致）
+        # 同时检查是否需要主题持久化恢复
+        theme_manager = None
         try:
             from ui.bing_theme_manager import BingThemeManager
             theme_manager = BingThemeManager(self.config)
@@ -362,10 +364,8 @@ class BrowserSimulator:
         
         # 集成主题持久化：在创建上下文后尝试恢复主题设置
         # 注意：只有当主题管理功能启用且持久化启用时才执行
-        try:
-            from ui.bing_theme_manager import BingThemeManager
-            theme_manager = BingThemeManager(self.config)
-            if theme_manager.enabled and theme_manager.persistence_enabled:
+        if theme_manager and theme_manager.enabled and theme_manager.persistence_enabled:
+            try:
                 logger.debug("尝试在新上下文中恢复主题设置...")
                 # 导航到Bing首页以便应用主题
                 await main_page.goto("https://www.bing.com", wait_until="domcontentloaded", timeout=10000)
@@ -377,8 +377,8 @@ class BrowserSimulator:
                     logger.debug("✓ 在新上下文中成功恢复主题设置")
                 else:
                     logger.debug("在新上下文中恢复主题设置失败，将使用默认设置")
-        except Exception as e:
-            logger.debug(f"上下文主题恢复过程中发生异常: {e}")
+            except Exception as e:
+                logger.debug(f"上下文主题恢复过程中发生异常: {e}")
         
         logger.info(f"浏览器上下文创建成功: {device_type}, 视口: {viewport}")
         return context, main_page

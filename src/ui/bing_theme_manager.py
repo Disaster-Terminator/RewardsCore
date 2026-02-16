@@ -7,11 +7,11 @@ import asyncio
 import json
 import logging
 import os
-import time
+import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
-from playwright.async_api import Page, BrowserContext, TimeoutError as PlaywrightTimeout, Error as PlaywrightError
+from playwright.async_api import Page, BrowserContext
 
 logger = logging.getLogger(__name__)
 
@@ -346,19 +346,19 @@ class BingThemeManager:
             是否设置成功
         """
         try:
-            await page.evaluate(f"""
-                () => {{
-                    const theme = '{theme}';
+            await page.evaluate(
+                """
+                (theme) => {
                     const timestamp = Date.now();
 
-                    try {{
+                    try {
                         // 在localStorage中设置持久化标记
-                        const persistenceData = {{
+                        const persistenceData = {
                             theme: theme,
                             timestamp: timestamp,
                             source: 'bing_theme_manager',
                             version: '1.0'
-                        }};
+                        };
 
                         localStorage.setItem('bing-theme-persistence', JSON.stringify(persistenceData));
                         localStorage.setItem('theme-preference', theme);
@@ -373,12 +373,14 @@ class BingThemeManager:
                         document.body.setAttribute('data-persistent-theme', theme);
 
                         return true;
-                    }} catch (e) {{
+                    } catch (e) {
                         console.debug('设置持久化标记失败:', e);
                         return false;
-                    }}
-                }}
-            """)
+                    }
+                }
+                """,
+                theme,
+            )
 
             logger.debug(f"✓ 浏览器持久化标记设置完成: {theme}")
             return True
@@ -1463,9 +1465,10 @@ class BingThemeManager:
             # 设置localStorage中的主题值
             theme_value = "1" if theme == "dark" else "0"
 
-            await page.evaluate(f"""
-                () => {{
-                    try {{
+            await page.evaluate(
+                """
+                ({ theme, theme_value }) => {
+                    try {
                         // 设置多种可能的localStorage键
                         const themeKeys = [
                             'bing-theme',
@@ -1475,34 +1478,36 @@ class BingThemeManager:
                             'SRCHHPGUSR'
                         ];
 
-                        const themeValue = '{theme}';
-                        const themeNum = '{theme_value}';
+                        const themeValue = theme;
+                        const themeNum = theme_value;
 
                         // 设置各种格式的主题值
-                        for (const key of themeKeys) {{
+                        for (const key of themeKeys) {
                             localStorage.setItem(key, themeValue);
                             localStorage.setItem(key + '-mode', themeValue);
                             localStorage.setItem(key + '-setting', themeNum);
-                        }}
+                        }
 
                         // 设置Bing特定的主题参数
-                        localStorage.setItem('SRCHHPGUSR', `THEME=${{themeNum}}`);
+                        localStorage.setItem('SRCHHPGUSR', `THEME=${themeNum}`);
                         localStorage.setItem('bing-theme-preference', themeValue);
 
                         // 触发存储事件
-                        window.dispatchEvent(new StorageEvent('storage', {{
+                        window.dispatchEvent(new StorageEvent('storage', {
                             key: 'theme',
                             newValue: themeValue,
                             storageArea: localStorage
-                        }}));
+                        }));
 
                         return true;
-                    }} catch (e) {{
+                    } catch (e) {
                         console.debug('localStorage设置失败:', e);
                         return false;
-                    }}
-                }}
-            """)
+                    }
+                }
+                """,
+                {"theme": theme, "theme_value": theme_value},
+            )
 
             # 刷新页面使设置生效
             await page.reload(wait_until="domcontentloaded", timeout=10000)
@@ -1522,11 +1527,11 @@ class BingThemeManager:
 
             theme_value = "1" if theme == "dark" else "0"
 
-            result = await page.evaluate(f"""
-                () => {{
-                    try {{
-                        const theme = '{theme}';
-                        const themeNum = '{theme_value}';
+            result = await page.evaluate(
+                """
+                ({ theme, theme_value }) => {
+                    try {
+                        const themeNum = theme_value;
 
                         // 方法1: 直接设置CSS类
                         document.documentElement.className =
@@ -1544,46 +1549,48 @@ class BingThemeManager:
 
                         // 方法3: 设置CSS变量
                         const root = document.documentElement;
-                        if (theme === 'dark') {{
+                        if (theme === 'dark') {
                             root.style.setProperty('--bs-body-bg', '#212529');
                             root.style.setProperty('--bs-body-color', '#ffffff');
                             root.style.setProperty('--background-color', '#212529');
                             root.style.setProperty('--text-color', '#ffffff');
-                        }} else {{
+                        } else {
                             root.style.setProperty('--bs-body-bg', '#ffffff');
                             root.style.setProperty('--bs-body-color', '#212529');
                             root.style.setProperty('--background-color', '#ffffff');
                             root.style.setProperty('--text-color', '#212529');
-                        }}
+                        }
 
                         // 方法4: 设置color-scheme
                         root.style.setProperty('color-scheme', theme);
                         document.body.style.setProperty('color-scheme', theme);
 
                         // 方法5: 触发主题变更事件
-                        const themeChangeEvent = new CustomEvent('themechange', {{
-                            detail: {{ theme: theme, value: themeNum }}
-                        }});
+                        const themeChangeEvent = new CustomEvent('themechange', {
+                            detail: { theme: theme, value: themeNum }
+                        });
                         document.dispatchEvent(themeChangeEvent);
 
                         // 方法6: 尝试调用Bing的主题设置函数（如果存在）
-                        if (typeof window.setTheme === 'function') {{
+                        if (typeof window.setTheme === 'function') {
                             window.setTheme(theme);
-                        }}
-                        if (typeof window.changeTheme === 'function') {{
+                        }
+                        if (typeof window.changeTheme === 'function') {
                             window.changeTheme(theme);
-                        }}
-                        if (typeof window.updateTheme === 'function') {{
+                        }
+                        if (typeof window.updateTheme === 'function') {
                             window.updateTheme(theme);
-                        }}
+                        }
 
                         return true;
-                    }} catch (e) {{
+                    } catch (e) {
                         console.debug('JavaScript主题设置失败:', e);
                         return false;
-                    }}
-                }}
-            """)
+                    }
+                }
+                """,
+                {"theme": theme, "theme_value": theme_value},
+            )
 
             if result:
                 logger.debug("✓ JavaScript注入设置主题完成")
@@ -1604,17 +1611,18 @@ class BingThemeManager:
 
             await page.add_style_tag(content=css_content)
 
-            await page.evaluate(f"""
-                () => {{
-                    const theme = '{theme}';
-
+            await page.evaluate(
+                """
+                (theme) => {
                     document.documentElement.setAttribute('data-forced-theme', theme);
                     document.body.setAttribute('data-forced-theme', theme);
 
                     document.documentElement.classList.add('forced-' + theme + '-theme');
                     document.body.classList.add('forced-' + theme + '-theme');
-                }}
-            """)
+                }
+                """,
+                theme,
+            )
 
             logger.debug("✓ 强制CSS设置主题完成")
             return True
@@ -1676,10 +1684,10 @@ class BingThemeManager:
 
                 for selector in theme_selectors:
                     try:
-                        if theme == "dark" and "深色" in selector:
-                            pass
-                        elif theme == "light" and "浅色" in selector:
-                            pass
+                        if theme == "dark" and "浅色" in selector:
+                            continue
+                        if theme == "light" and "深色" in selector:
+                            continue
                         element = await page.query_selector(selector)
                         if element:
                             await element.click()
@@ -1793,18 +1801,21 @@ class BingThemeManager:
 
             theme_url = f"https://www.bing.com/?THEME={theme_value}"
             logger.debug(f"导航到主题URL: {theme_url}")
-            await page.goto(theme_url, wait_until="networkidle", timeout=15000)
+            await page.goto(theme_url, wait_until="domcontentloaded", timeout=15000)
             await asyncio.sleep(2)
 
             try:
-                await page.evaluate(f"""
-                    () => {{
-                        localStorage.setItem('bing-theme', '{theme}');
-                        localStorage.setItem('theme', '{theme}');
-                        document.documentElement.setAttribute('data-theme', '{theme}');
-                        document.body.setAttribute('data-theme', '{theme}');
-                    }}
-                """)
+                await page.evaluate(
+                    """
+                    (theme) => {
+                        localStorage.setItem('bing-theme', theme);
+                        localStorage.setItem('theme', theme);
+                        document.documentElement.setAttribute('data-theme', theme);
+                        document.body.setAttribute('data-theme', theme);
+                    }
+                    """,
+                    theme,
+                )
                 logger.debug("✓ 设置localStorage和DOM属性")
             except Exception as e:
                 logger.debug(f"设置localStorage失败: {e}")
@@ -2166,21 +2177,24 @@ class BingThemeManager:
 
             logger.info(f"步骤2: 导航到带主题参数的URL")
             theme_url = f"https://www.bing.com/?THEME={theme_value}"
-            await page.goto(theme_url, wait_until="networkidle", timeout=15000)
+            await page.goto(theme_url, wait_until="domcontentloaded", timeout=15000)
             await asyncio.sleep(1)
             logger.info(f"  ✓ 已导航到: {theme_url}")
 
             logger.info(f"步骤3: 设置LocalStorage和DOM属性")
-            await page.evaluate(f"""
-                () => {{
-                    localStorage.setItem('bing-theme', '{theme}');
-                    localStorage.setItem('theme', '{theme}');
-                    localStorage.setItem('theme-preference', '{theme}');
-                    document.documentElement.setAttribute('data-theme', '{theme}');
-                    document.body.setAttribute('data-theme', '{theme}');
-                    document.documentElement.setAttribute('data-bs-theme', '{theme}');
-                }}
-            """)
+            await page.evaluate(
+                """
+                (theme) => {
+                    localStorage.setItem('bing-theme', theme);
+                    localStorage.setItem('theme', theme);
+                    localStorage.setItem('theme-preference', theme);
+                    document.documentElement.setAttribute('data-theme', theme);
+                    document.body.setAttribute('data-theme', theme);
+                    document.documentElement.setAttribute('data-bs-theme', theme);
+                }
+                """,
+                theme,
+            )
             logger.info("  ✓ LocalStorage和DOM属性已设置")
 
             logger.info(f"步骤4: 注入强制主题CSS样式")
@@ -2225,7 +2239,6 @@ class BingThemeManager:
                     break
 
             if srchhpgusr_value:
-                import re
                 if 'WEBTHEME=' in srchhpgusr_value:
                     srchhpgusr_value = re.sub(r'WEBTHEME=[0-2]', f'WEBTHEME={theme_value}', srchhpgusr_value)
                 else:
@@ -3072,15 +3085,17 @@ class BingThemeManager:
             await page.add_style_tag(content=css_content)
 
             # 设置基本的页面属性
-            await page.evaluate(f"""
-                () => {{
-                    const theme = '{theme}';
+            await page.evaluate(
+                """
+                (theme) => {
                     document.documentElement.setAttribute('data-fallback-theme', theme);
                     document.body.setAttribute('data-fallback-theme', theme);
                     document.documentElement.classList.add('fallback-' + theme + '-theme');
                     document.body.classList.add('fallback-' + theme + '-theme');
-                }}
-            """)
+                }
+                """,
+                theme,
+            )
 
             logger.debug("✓ CSS主题样式应用完成")
             return True
@@ -3104,10 +3119,10 @@ class BingThemeManager:
             logger.debug(f"应用最小化{theme}主题标记...")
 
             # 仅设置最基本的标记
-            await page.evaluate(f"""
-                () => {{
-                    const theme = '{theme}';
-                    try {{
+            await page.evaluate(
+                """
+                (theme) => {
+                    try {
                         // 设置最基本的属性
                         document.documentElement.setAttribute('data-minimal-theme', theme);
                         document.body.setAttribute('data-minimal-theme', theme);
@@ -3119,12 +3134,14 @@ class BingThemeManager:
                         localStorage.setItem('theme-fallback', theme);
 
                         return true;
-                    }} catch (e) {{
+                    } catch (e) {
                         console.debug('最小化主题标记设置异常:', e);
                         return false;
-                    }}
-                }}
-            """)
+                    }
+                }
+                """,
+                theme,
+            )
 
             logger.debug("✓ 最小化主题标记应用完成")
             return True
