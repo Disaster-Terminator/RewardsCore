@@ -331,8 +331,6 @@ class AccountManager:
         Returns:
             是否登录成功
         """
-        import asyncio
-
         logger.info("=" * 60)
         logger.info("请在浏览器中手动登录")
         logger.info("=" * 60)
@@ -600,7 +598,6 @@ class AccountManager:
             return False
         except Exception as e:
             logger.error(f"自动登录异常: {e}", exc_info=True)
-            return False
             return False
 
     def get_storage_state_path(self) -> str:

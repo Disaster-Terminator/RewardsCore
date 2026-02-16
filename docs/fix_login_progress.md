@@ -2,7 +2,7 @@
 
 ## 分支信息
 - **分支名称**: `fix/login`
-- **工作树路径**: `C:\Users\Disas\OneDrive\Desktop\my code\MS-Rewards-Automator-login`
+- **工作树路径**: `path/to/MS-Rewards-Automator-login`
 
 ## 问题描述
 
