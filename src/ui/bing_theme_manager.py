@@ -6,10 +6,12 @@ Bing主题管理器模块
 import asyncio
 import json
 import logging
+import os
+import time
 from pathlib import Path
-from typing import Any
+from typing import Optional, Dict, Any
 
-from playwright.async_api import BrowserContext, Page
+from playwright.async_api import Page, BrowserContext, TimeoutError as PlaywrightTimeout, Error as PlaywrightError
 
 logger = logging.getLogger(__name__)
 
