@@ -40,10 +40,9 @@ class TabManager:
             return
 
         self.is_monitoring = False
-        # 移除事件监听器
         try:
             self.context.remove_listener("page", self._handle_new_page)
-        except Exception:
+        except (RuntimeError, ValueError):
             pass
         logger.debug("标签页监听已停止")
 

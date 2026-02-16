@@ -203,7 +203,7 @@ class HumanBehaviorSimulator:
             return False
 
     async def _move_mouse_naturally(
-        self, page: Any, target_x: float, target_y: float, steps: int = None
+        self, page: Any, target_x: float, target_y: float, steps: int | None = None
     ) -> None:
         """
         Move mouse to target position with natural Bezier curve movement.

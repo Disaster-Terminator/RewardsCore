@@ -9,8 +9,13 @@ import random
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
-# Python 3.9+ 使用内置 zoneinfo，Python 3.8 使用 backports
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    try:
+        from backports.zoneinfo import ZoneInfo
+    except ImportError:
+        ZoneInfo = None
 
 logger = logging.getLogger(__name__)
 
