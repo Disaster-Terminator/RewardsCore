@@ -26,12 +26,25 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["src", "infrastructure", "browser", "login", "search", "account", "tasks", "ui"]
 
-[tool.black]
-line-length = 100
-target-version = ["py310"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "real: marks tests that require real browser (deselected by default)",
+    "slow: marks tests as slow",
+]
+addopts = "-v --tb=short -m 'not real'"
