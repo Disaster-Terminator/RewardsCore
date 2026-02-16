@@ -368,7 +368,7 @@ class TestBingThemeManager:
     @pytest.mark.asyncio
     async def test_set_theme_by_settings_no_settings_button(self, theme_manager, mock_page):
         """测试设置页面找不到设置按钮"""
-        mock_page.wait_for_selector.side_effect = Exception("Not found")
+        mock_page.wait_for_selector.side_effect = PlaywrightError("Not found")
         
         result = await theme_manager._set_theme_by_settings(mock_page, "dark")
         
@@ -382,7 +382,8 @@ class TestBingThemeManager:
         
         mock_page.wait_for_selector.side_effect = [
             mock_settings_button,  # 设置按钮找到
-            Exception("Theme option not found")  # 主题选项未找到
+            *[PlaywrightError("Not found") for _ in range(20)],  # 其余选择器都失败
+            *[PlaywrightError("Theme option not found") for _ in range(20)],  # 主题选项都失败
         ]
         
         result = await theme_manager._set_theme_by_settings(mock_page, "dark")
@@ -396,14 +397,25 @@ class TestBingThemeManager:
         mock_settings_button = AsyncMock()
         mock_settings_button.is_visible.return_value = True
         mock_theme_option = AsyncMock()
+        mock_theme_option.evaluate.return_value = "button"  # 模拟元素类型
+        mock_theme_option.click = AsyncMock()
+        
+        # 设置按钮循环：12个选择器，第一个成功
+        # 主题选项循环：13个选择器，第一个成功
+        # 保存按钮循环：13个选择器，全部失败
+        settings_selectors_count = 12
+        theme_selectors_count = 13
+        save_selectors_count = 13
         
         mock_page.wait_for_selector.side_effect = [
-            mock_settings_button,  # 设置按钮
-            mock_theme_option,     # 主题选项
-            Exception("Save button not found")  # 保存按钮未找到
+            mock_settings_button,  # 设置按钮 - 第一个选择器成功
+            *[PlaywrightError("Not found") for _ in range(settings_selectors_count - 1)],  # 其余选择器都失败
+            mock_theme_option,  # 主题选项 - 第一个选择器成功
+            *[PlaywrightError("Not found") for _ in range(theme_selectors_count - 1)],  # 其余选择器都失败
+            *[PlaywrightError("Save button not found") for _ in range(save_selectors_count)],  # 保存按钮都失败
         ]
         
-        with patch.object(theme_manager, 'detect_current_theme', return_value="dark"):
+        with patch.object(theme_manager, '_quick_theme_check', return_value=True):
             result = await theme_manager._set_theme_by_settings(mock_page, "dark")
         
         assert result is True  # 即使没有保存按钮，如果主题设置成功也返回True
@@ -1425,7 +1437,7 @@ class TestBingThemeManagerVerification:
         """测试详细持久化验证 - 页面刷新失败"""
         with patch.object(theme_manager, 'detect_current_theme', return_value="dark"):
             with patch.object(theme_manager, '_verify_theme_by_all_methods', return_value={}):
-                mock_page.reload.side_effect = Exception("刷新失败")
+                mock_page.reload.side_effect = PlaywrightError("刷新失败")
                 
                 result = await theme_manager._verify_theme_persistence_detailed(mock_page, "dark")
         

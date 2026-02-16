@@ -205,8 +205,8 @@ class BingThemeManager:
             
             return True
             
-        except Exception as e:
-            logger.debug(f"验证主题状态时发生异常: {e}")
+        except (KeyError, TypeError, ValueError) as e:
+            logger.debug(f"验证主题状态时数据格式错误: {e}")
             return False
     
     async def restore_theme_from_state(self, page: Page) -> bool:
@@ -1541,7 +1541,10 @@ class BingThemeManager:
             logger.debug("✓ localStorage设置主题完成")
             return True
             
-        except Exception as e:
+        except PlaywrightTimeout:
+            logger.debug("localStorage设置主题超时")
+            return False
+        except PlaywrightError as e:
             logger.debug(f"localStorage设置主题失败: {e}")
             return False
     
@@ -1621,7 +1624,10 @@ class BingThemeManager:
             
             return False
             
-        except Exception as e:
+        except PlaywrightTimeout:
+            logger.debug("JavaScript注入设置主题超时")
+            return False
+        except PlaywrightError as e:
             logger.debug(f"JavaScript注入设置主题失败: {e}")
             return False
     
@@ -1653,7 +1659,10 @@ class BingThemeManager:
             logger.debug("✓ 强制CSS设置主题完成")
             return True
             
-        except Exception as e:
+        except PlaywrightTimeout:
+            logger.debug("强制CSS设置主题超时")
+            return False
+        except PlaywrightError as e:
             logger.debug(f"强制CSS设置主题失败: {e}")
             return False
     
@@ -1838,7 +1847,7 @@ class BingThemeManager:
                     if settings_button and await settings_button.is_visible():
                         logger.debug(f"找到设置按钮: {selector}")
                         break
-                except Exception:
+                except (PlaywrightTimeout, PlaywrightError):
                     continue
             
             if not settings_button:
@@ -1875,18 +1884,17 @@ class BingThemeManager:
                     if theme_option:
                         logger.debug(f"找到主题选项: {selector}")
                         break
-                except Exception:
+                except (PlaywrightTimeout, PlaywrightError):
                     continue
             
             if not theme_option:
                 logger.debug("未找到主题选项")
-                # 尝试通过文本查找
                 try:
                     theme_text = "Dark" if theme == "dark" else "Light"
                     theme_option = await page.get_by_text(theme_text).first
                     if theme_option:
                         logger.debug(f"通过文本找到主题选项: {theme_text}")
-                except Exception:
+                except (PlaywrightTimeout, PlaywrightError):
                     return False
             
             if not theme_option:
@@ -1933,7 +1941,7 @@ class BingThemeManager:
                     if save_button and await save_button.is_visible():
                         logger.debug(f"找到保存按钮: {selector}")
                         break
-                except Exception:
+                except (PlaywrightTimeout, PlaywrightError):
                     continue
             
             if save_button:
@@ -2481,7 +2489,7 @@ class BingThemeManager:
                 await asyncio.sleep(2)  # 等待主题应用
                 persistence_result["refresh_successful"] = True
                 logger.debug("页面刷新成功")
-            except Exception as e:
+            except (PlaywrightTimeout, PlaywrightError) as e:
                 persistence_result["refresh_successful"] = False
                 persistence_result["error"] = f"页面刷新失败: {str(e)}"
                 logger.warning(f"页面刷新失败: {e}")
