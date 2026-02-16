@@ -4,11 +4,10 @@ Logged In Handler.
 Detects when user is successfully logged in.
 """
 
-
+from typing import List, Dict
 from playwright.async_api import Page
-
-from ..login_state_machine import LoginState
 from ..state_handler import StateHandler
+from ..login_state_machine import LoginState
 
 
 class LoggedInHandler(StateHandler):
@@ -74,7 +73,7 @@ class LoggedInHandler(StateHandler):
 
         return False
 
-    async def handle(self, page: Page, credentials: dict[str, str]) -> bool:
+    async def handle(self, page: Page, credentials: Dict[str, str]) -> bool:
         """
         Handle logged in state (no action needed).
 
@@ -88,7 +87,7 @@ class LoggedInHandler(StateHandler):
         self.logger.info("User is already logged in")
         return True
 
-    def get_next_states(self) -> list[LoginState]:
+    def get_next_states(self) -> List[LoginState]:
         """
         No next states (terminal state).
 
