@@ -4,23 +4,21 @@ SystemInitializer - 系统初始化器
 负责所有核心组件的初始化工作。
 遵循单一职责原则，将初始化逻辑从 main.py 中分离。
 """
-
+from typing import Any, Tuple
 import logging
-from typing import Tuple, Any, Optional
 
+from account.manager import AccountManager
+from account.points_detector import PointsDetector
 from browser.anti_ban_module import AntiBanModule
 from browser.simulator import BrowserSimulator
-from search.search_term_generator import SearchTermGenerator
-from search.search_engine import SearchEngine
-from search.query_engine import QueryEngine
-from account.points_detector import PointsDetector
-from account.manager import AccountManager
-from infrastructure.state_monitor import StateMonitor
 from infrastructure.error_handler import ErrorHandler
-from infrastructure.notificator import Notificator
 from infrastructure.health_monitor import HealthMonitor
+from infrastructure.notificator import Notificator
+from infrastructure.state_monitor import StateMonitor
+from search.query_engine import QueryEngine
+from search.search_engine import SearchEngine
+from search.search_term_generator import SearchTermGenerator
 from ui.real_time_status import StatusManager
-
 
 class SystemInitializer:
     """
@@ -133,7 +131,7 @@ class SystemInitializer:
                 self.config.config["search"]["wait_interval"] = {"min": 15, "max": 30}
             self.config.config["browser"]["slow_mo"] = 200
 
-    def _init_query_engine(self) -> Optional[QueryEngine]:
+    def _init_query_engine(self) -> \g<0>QueryEngine]:
         """初始化查询引擎"""
         if not self.config.get("query_engine.enabled", False):
             return None
@@ -144,4 +142,4 @@ class SystemInitializer:
             return query_engine
         except Exception as e:
             self.logger.warning(f"  QueryEngine 初始化失败，使用传统生成器: {e}")
-            return None
+            return None\n

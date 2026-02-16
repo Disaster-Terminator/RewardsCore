@@ -7,11 +7,9 @@ Dependency Injection Container - 依赖注入容器
 - 自动解析依赖
 - 工厂方法注册
 """
-
-from typing import Any, Callable, Dict, Type, Optional, TypeVar, get_type_hints
 from functools import wraps
+from typing import Any, Callable, TypeVar
 import inspect
-
 
 T = TypeVar('T')
 
@@ -37,16 +35,16 @@ class Container:
     """
 
     def __init__(self):
-        self._services: Dict[str, Any] = {}
-        self._factories: Dict[str, Callable] = {}
-        self._types: Dict[str, Type] = {}
-        self._lifetimes: Dict[str, str] = {}  # singleton, transient, factory
+        self._services: dict[str, Any] = {}
+        self._factories: dict[str, Callable] = {}
+        self._types: dict[str, Type] = {}
+        self._lifetimes: dict[str, str] = {}  # singleton, transient, factory
 
     def register_singleton(
         self,
         service_type: Type[T],
-        instance: Optional[T] = None,
-        factory: Optional[Callable[..., T]] = None
+        instance: \g<0>T] = None,
+        factory: \g<0>Callable[..., T]] = None
     ) -> 'Container':
         """
         注册单例服务
@@ -76,7 +74,7 @@ class Container:
     def register_transient(
         self,
         service_type: Type[T],
-        factory: Optional[Callable[..., T]] = None
+        factory: \g<0>Callable[..., T]] = None
     ) -> 'Container':
         """
         注册瞬态服务（每次请求创建新实例）
@@ -258,7 +256,7 @@ class Container:
 # 依赖注入装饰器
 # ============================================================
 
-_injector_container: Optional[Container] = None
+_injector_container: \g<0>Container] = None
 
 
 def set_container(container: Container) -> None:
@@ -388,4 +386,4 @@ def register_services(container: Container, config: Any) -> Container:
     container.register_transient(AccountManager)
     container.register_transient(TaskManager)
 
-    return container
+    return container\n

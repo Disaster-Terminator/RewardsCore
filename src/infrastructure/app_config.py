@@ -4,10 +4,8 @@ AppConfig - 类型化配置模型
 使用 dataclass 提供类型安全的配置访问。
 支持嵌套配置访问、默认值和配置验证。
 """
-
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
+from typing import Any
 
 @dataclass
 class SearchConfig:
@@ -63,8 +61,8 @@ class LoginConfig:
 @dataclass
 class QuerySourcesConfig:
     """查询源配置"""
-    local_file: Dict[str, bool] = field(default_factory=lambda: {"enabled": True})
-    bing_suggestions: Dict[str, bool] = field(default_factory=lambda: {"enabled": True})
+    local_file: dict[str, bool] = field(default_factory=lambda: {"enabled": True})
+    bing_suggestions: dict[str, bool] = field(default_factory=lambda: {"enabled": True})
 
 
 @dataclass
@@ -223,7 +221,7 @@ class AppConfig:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> 'AppConfig':
+    def from_dict(cls, config_dict: dict[str, Any]) -> 'AppConfig':
         """
         从字典创建配置对象
 
@@ -321,7 +319,7 @@ class AppConfig:
             ),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         result = {}
         for key, value in self.__dict__.items():
@@ -334,4 +332,4 @@ class AppConfig:
                 }
             else:
                 result[key] = value
-        return result
+        return result\n

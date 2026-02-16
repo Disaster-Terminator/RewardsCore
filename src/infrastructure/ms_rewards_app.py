@@ -15,25 +15,23 @@ MSRewardsApp - 系统总线
 - TaskCoordinator: 负责协调具体任务的执行
 - 各子系统组件（BrowserSimulator、SearchEngine等）: 被组装和调用
 """
-
+from typing import Any
 import asyncio
 import logging
-from typing import Optional, Any, Dict
 
+from account.manager import AccountManager
+from account.points_detector import PointsDetector
 from browser.anti_ban_module import AntiBanModule
 from browser.simulator import BrowserSimulator
-from search.search_term_generator import SearchTermGenerator
-from search.search_engine import SearchEngine
-from search.query_engine import QueryEngine
-from account.points_detector import PointsDetector
-from account.manager import AccountManager
-from infrastructure.state_monitor import StateMonitor
 from infrastructure.error_handler import ErrorHandler
-from infrastructure.notificator import Notificator
 from infrastructure.health_monitor import HealthMonitor
-from ui.real_time_status import StatusManager
+from infrastructure.notificator import Notificator
+from infrastructure.state_monitor import StateMonitor
+from search.query_engine import QueryEngine
+from search.search_engine import SearchEngine
+from search.search_term_generator import SearchTermGenerator
 from tasks import TaskManager
-
+from ui.real_time_status import StatusManager
 
 class MSRewardsApp:
     """
@@ -73,14 +71,14 @@ class MSRewardsApp:
 
         # 核心组件（延迟初始化）
         # 这些组件会在首次使用时通过SystemInitializer创建
-        self.browser_sim: Optional[BrowserSimulator] = None
-        self.search_engine: Optional[SearchEngine] = None
-        self.account_mgr: Optional[AccountManager] = None
-        self.state_monitor: Optional[StateMonitor] = None
-        self.error_handler: Optional[ErrorHandler] = None
-        self.notificator: Optional[Notificator] = None
-        self.health_monitor: Optional[HealthMonitor] = None
-        self.task_manager: Optional[TaskManager] = None
+        self.browser_sim: \g<0>BrowserSimulator] = None
+        self.search_engine: \g<0>SearchEngine] = None
+        self.account_mgr: \g<0>AccountManager] = None
+        self.state_monitor: \g<0>StateMonitor] = None
+        self.error_handler: \g<0>ErrorHandler] = None
+        self.notificator: \g<0>Notificator] = None
+        self.health_monitor: \g<0>HealthMonitor] = None
+        self.task_manager: \g<0>TaskManager] = None
 
         # 浏览器实例（运行时创建）
         self.browser = None
@@ -230,7 +228,7 @@ class MSRewardsApp:
     async def _handle_login(self) -> None:
         """处理登录流程"""
         await self.coordinator.handle_login(self.page, self.context)
-        
+
         if await self._is_page_crashed():
             self.logger.warning("  登录检测后页面已崩溃，重建浏览器上下文...")
             await self._recreate_page()
@@ -239,7 +237,7 @@ class MSRewardsApp:
         """检查初始积分"""
         initial_points = await self.state_monitor.check_points_before_task(self.page)
         StatusManager.update_points(initial_points, initial_points)
-        
+
         if await self._is_page_crashed():
             self.logger.warning("  积分检测后页面已崩溃，重建浏览器上下文...")
             await self._recreate_page()
@@ -383,4 +381,4 @@ class MSRewardsApp:
         rotator = LogRotation()
         rotator.cleanup_all()
 
-        self.logger.info("\n✅ 任务执行完成")
+        self.logger.info("\n✅ 任务执行完成")\n

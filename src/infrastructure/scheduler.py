@@ -2,13 +2,12 @@
 任务调度器模块
 支持时区选择、定时+随机偏移调度
 """
-
+from datetime import datetime, timedelta
+from typing import Callable
 import asyncio
 import logging
 import random
 import sys
-from datetime import datetime, timedelta
-from typing import Callable, Optional
 
 # Python 3.9+ 使用内置 zoneinfo，Python 3.8 使用 backports
 if sys.version_info >= (3, 9):
@@ -28,7 +27,7 @@ class TaskScheduler:
     def __init__(self, config):
         """
         初始化任务调度器
-        
+
         Args:
             config: ConfigManager 实例
         """
@@ -83,7 +82,7 @@ class TaskScheduler:
     def calculate_next_run_time(self) -> datetime:
         """
         计算下次运行时间
-        
+
         Returns:
             下次运行的 datetime 对象（带时区）
         """
@@ -107,7 +106,7 @@ class TaskScheduler:
     def _calculate_scheduled_time(self, now: datetime) -> datetime:
         """
         计算定时+随机偏移模式的下次运行时间
-        
+
         用户选择一个整点时间，脚本在该时间 ± max_offset_minutes 范围内随机执行
         """
         scheduled_hour = self.scheduled_hour
@@ -115,7 +114,7 @@ class TaskScheduler:
 
         offset_minutes = random.randint(-max_offset, max_offset)
         total_minutes = scheduled_hour * 60 + offset_minutes
-        
+
         actual_hour = total_minutes // 60
         actual_minute = total_minutes % 60
 
@@ -205,7 +204,7 @@ class TaskScheduler:
     async def run_scheduled_task(self, task_func: Callable, run_once_first: bool = True) -> None:
         """
         运行调度任务
-        
+
         Args:
             task_func: 要执行的任务函数（异步）
             run_once_first: 是否先执行一次再进入调度（默认True）
@@ -268,7 +267,7 @@ class TaskScheduler:
     def get_status(self) -> dict:
         """
         获取调度器状态
-        
+
         Returns:
             状态字典
         """
@@ -298,4 +297,4 @@ class TaskScheduler:
                 "fixed_minute": self.fixed_minute
             }
 
-        return status
+        return status\n

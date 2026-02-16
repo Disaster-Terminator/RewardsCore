@@ -4,12 +4,12 @@ TaskCoordinator - 任务协调器 (依赖注入版)
 负责协调和执行各类任务的逻辑。
 使用依赖注入接收依赖项，提高可测试性和可维护性。
 """
-
-import logging
+from typing import Any
 import argparse
-from typing import TYPE_CHECKING, Any, Dict, Optional
+import logging
 
 from playwright.async_api import Page, BrowserContext
+
 from ui.real_time_status import StatusManager
 
 if TYPE_CHECKING:
@@ -34,11 +34,11 @@ class TaskCoordinator:
         config: 'ConfigManager',
         args: argparse.Namespace,
         logger: logging.Logger,
-        account_manager: Optional['AccountManager'] = None,
-        search_engine: Optional['SearchEngine'] = None,
-        state_monitor: Optional['StateMonitor'] = None,
-        health_monitor: Optional['HealthMonitor'] = None,
-        browser_sim: Optional['BrowserSimulator'] = None,
+        account_manager: \g<0>'AccountManager'] = None,
+        search_engine: \g<0>'SearchEngine'] = None,
+        state_monitor: \g<0>'StateMonitor'] = None,
+        health_monitor: \g<0>'HealthMonitor'] = None,
+        browser_sim: \g<0>'BrowserSimulator'] = None,
     ):
         """
         初始化任务协调器
@@ -117,13 +117,13 @@ class TaskCoordinator:
     async def _do_login(self, page: Any, account_mgr: Any, context: Any) -> None:
         """执行登录流程"""
         import os
-        
+
         self.logger.warning("  未登录，需要登录")
 
         if account_mgr.use_state_machine:
             auto_login_config = self.config.get("login.auto_login", {})
             auto_login_enabled = auto_login_config.get("enabled", False)
-            
+
             # 优先从环境变量读取凭据（更安全），然后从配置文件读取
             email = (
                 os.environ.get("MS_REWARDS_EMAIL") or
@@ -321,7 +321,7 @@ class TaskCoordinator:
                     self.logger.info("  使用现有桌面页面执行任务...")
                 except Exception:
                     self.logger.warning("  传入的页面已失效，需要重建...")
-                
+
                 # 只有在页面无效时才创建新上下文
                 if not page_valid:
                     if browser_sim and browser_sim.browser:
@@ -441,4 +441,4 @@ class TaskCoordinator:
         if not browser_sim.browser:
             logger.info("  创建桌面浏览器...")
             browser_sim.browser = await browser_sim.create_desktop_browser(self.args.browser)
-            logger.info("  ✓ 桌面浏览器创建成功")
+            logger.info("  ✓ 桌面浏览器创建成功")\n

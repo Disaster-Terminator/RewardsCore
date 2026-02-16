@@ -1,0 +1,20 @@
+[33mef926ff[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/ci-test-workflow[m[33m, [m[1;31morigin/feature/ci-test-workflow[m[33m)[m fix: 修复所有 lint 错误
+[33mdaf9c23[m fix: 修复所有 lint 错误
+[33m3bda0f7[m fix: 修复 lint 错误
+[33mc4d0915[m fix: 修复 src/account/manager.py 的 lint 错误
+[33mf40548d[m feat(ci): 添加 CI 测试工作流和 PR 检查工作流
+[33m3674d9c[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m feat(scheduler): 添加时区支持、定时+随机偏移调度、启动执行一次功能
+[33mcf62d6f[m chore: 更新环境检查模块和依赖版本
+[33m86ae043[m docs: 更新文档，添加健康监控和进度跟踪功能说明
+[33m751d1ce[m feat(health-monitor): 增强健康监控功能
+[33m1012a60[m fix: 修正 README.md 中的命令示例（移除不存在的 --verbose 和 --headless=false）
+[33mf44f485[m fix: 修正调度器参数说明，与实际代码保持一致（--schedule, --schedule-now）
+[33mfd508fb[m fix: 修正 BRANCH_GUIDE.md 中的 Dev 快速验证命令，移除不必要的 --no-schedule 参数
+[33m1eb350c[m docs: 更新分支验收标准 + fix: 重命名test_reporter避免pytest误捕捉
+[33mfbc2b8c[m[33m ([m[1;31morigin/feature/scheduler-enhanced[m[33m, [m[1;31morigin/feature/notifications[m[33m)[m docs: 更新分支指南，添加调度器分支和行为说明
+[33mfa1a74d[m docs: 全面修正文档错误
+[33me67bc2b[m docs: 统一术语，usermode 改为测试模式
+[33m6668912[m docs: 明确用户使用流程，默认模式为生产环境
+[33mf7f019f[m chore: 从仓库移除 config.yaml，更新配置注释
+[33mcfed444[m chore: 从仓库移除 config.yaml，更新 example 注释
+[33m269f407[m docs: 更新 README 添加 --usermode 参数说明，清理重复章节

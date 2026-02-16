@@ -5,12 +5,9 @@
 注意：此文件中的模型为备用定义。
 主要的配置类在 app_config.py 中定义。
 """
-
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
 from datetime import datetime
 from enum import Enum
-
 
 class DeviceType(Enum):
     """设备类型"""
@@ -86,10 +83,10 @@ class ErrorHandlingConfig:
 class AccountState:
     """账户状态"""
     logged_in: bool = False
-    current_points: Optional[int] = None
+    current_points: \g<0>int] = None
     desktop_searches_completed: int = 0
     mobile_searches_completed: int = 0
-    last_check_time: Optional[datetime] = None
+    last_check_time: \g<0>datetime] = None
     session_valid: bool = False
 
 
@@ -98,7 +95,7 @@ class SearchTerm:
     """搜索词"""
     term: str
     used_count: int = 0
-    last_used: Optional[datetime] = None
+    last_used: \g<0>datetime] = None
     source: str = "file"
 
 
@@ -109,9 +106,9 @@ class SearchResult:
     success: bool
     timestamp: datetime
     device_type: DeviceType
-    points_before: Optional[int] = None
-    points_after: Optional[int] = None
-    error_message: Optional[str] = None
+    points_before: \g<0>int] = None
+    points_after: \g<0>int] = None
+    error_message: \g<0>str] = None
 
 
 @dataclass
@@ -120,15 +117,15 @@ class SearchSession:
     session_id: str
     start_time: datetime
     device_type: DeviceType
-    end_time: Optional[datetime] = None
-    search_results: List[SearchResult] = field(default_factory=list)
+    end_time: \g<0>datetime] = None
+    search_results: list[SearchResult] = field(default_factory=list)
     total_searches: int = 0
     successful_searches: int = 0
     failed_searches: int = 0
     points_gained: int = 0
     status: SearchStatus = SearchStatus.PENDING
     error_count: int = 0
-    alerts: List[Dict] = field(default_factory=list)
+    alerts: list[Dict] = field(default_factory=list)
 
 
 @dataclass
@@ -139,12 +136,12 @@ class DailyReport:
     desktop_searches: int = 0
     mobile_searches: int = 0
     total_searches: int = 0
-    points_start: Optional[int] = None
-    points_end: Optional[int] = None
+    points_start: \g<0>int] = None
+    points_end: \g<0>int] = None
     points_gained: int = 0
-    sessions: List[SearchSession] = field(default_factory=list)
-    alerts: List[Dict] = field(default_factory=list)
-    errors: List[Dict] = field(default_factory=list)
+    sessions: list[SearchSession] = field(default_factory=list)
+    alerts: list[Dict] = field(default_factory=list)
+    errors: list[Dict] = field(default_factory=list)
     status: str = "completed"
     notes: str = ""
 
@@ -156,15 +153,15 @@ class TaskStatus:
     completed: bool = False
     progress: int = 0
     max_progress: int = 0
-    last_updated: Optional[datetime] = None
+    last_updated: \g<0>datetime] = None
 
 
 @dataclass
 class RewardsAccount:
     """Rewards 账户信息"""
-    email: Optional[str] = None
-    current_points: Optional[int] = None
-    lifetime_points: Optional[int] = None
-    tasks: List[TaskStatus] = field(default_factory=list)
-    last_login: Optional[datetime] = None
-    session_valid: bool = False
+    email: \g<0>str] = None
+    current_points: \g<0>int] = None
+    lifetime_points: \g<0>int] = None
+    tasks: list[TaskStatus] = field(default_factory=list)
+    last_login: \g<0>datetime] = None
+    session_valid: bool = False\n

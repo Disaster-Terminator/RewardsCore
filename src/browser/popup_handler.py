@@ -4,11 +4,9 @@ Browser Popup Handler - 浏览器弹窗处理器
 处理各种浏览器弹窗，包括 Edge 登录促销弹窗、对话框等。
 从 login 模块解耦，移到 browser 模块。
 """
-
-from typing import Any, Optional
-import logging
+from typing import Any
 import asyncio
-
+import logging
 
 class BrowserPopupHandler:
     """
@@ -55,7 +53,7 @@ class BrowserPopupHandler:
         'button[id*="Cancel"]',
     ]
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         """初始化弹窗处理器"""
         self.logger = logger or logging.getLogger(self.__class__.__name__)
         self._popup_handled = False
@@ -260,4 +258,4 @@ class BrowserPopupHandler:
 
 
 # 兼容性别名
-EdgePopupHandler = BrowserPopupHandler
+EdgePopupHandler = BrowserPopupHandler\n

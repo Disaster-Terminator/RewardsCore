@@ -2,12 +2,10 @@
 日志和截图轮替管理模块
 自动清理过期的日志和截图文件
 """
-
+from pathlib import Path
+import logging
 import os
 import time
-import logging
-from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +69,7 @@ class LogRotation:
     def cleanup_directory(
         self,
         directory: Path,
-        patterns: Optional[list] = None,
+        patterns: \g<0>list] = None,
         dry_run: bool = False
     ) -> dict:
         """
@@ -236,4 +234,4 @@ if __name__ == "__main__":
     # 测试运行
     logging.basicConfig(level=logging.INFO)
     result = cleanup_old_files(dry_run=False)
-    print(f"清理结果: {result}")
+    print(f"清理结果: {result}")\n
