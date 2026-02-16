@@ -34,8 +34,7 @@ jobs:
         run: ruff format --check .
 
       - name: Run MyPy type check
-        run: mypy src/ --ignore-missing-imports
-        continue-on-error: true
+        run: mypy src/ --ignore-missing-imports || true
 
   unit-tests:
     name: Unit Tests
