@@ -7,7 +7,19 @@ use tauri_plugin_shell::ShellExt;
 static BACKEND_PORT: AtomicU16 = AtomicU16::new(0);
 static BACKEND_CHILD: Mutex<Option<CommandChild>> = Mutex::new(None);
 
-const DEFAULT_PORTS: [u16; 10] = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009];
+const FALLBACK_PORT: u16 = 8000;
+const DEFAULT_PORTS: [u16; 10] = [
+    FALLBACK_PORT,
+    FALLBACK_PORT + 1,
+    FALLBACK_PORT + 2,
+    FALLBACK_PORT + 3,
+    FALLBACK_PORT + 4,
+    FALLBACK_PORT + 5,
+    FALLBACK_PORT + 6,
+    FALLBACK_PORT + 7,
+    FALLBACK_PORT + 8,
+    FALLBACK_PORT + 9,
+];
 
 fn find_available_port() -> u16 {
     if let Some(port) = portpicker::pick_unused_port() {
@@ -23,19 +35,20 @@ fn find_available_port() -> u16 {
         }
     }
 
-    let fallback = 8000;
     log::error!(
-        "No available ports found in range 8000-8009, using {} as fallback",
-        fallback
+        "No available ports found in range {}-{}, using {} as fallback",
+        FALLBACK_PORT,
+        FALLBACK_PORT + 9,
+        FALLBACK_PORT
     );
-    fallback
+    FALLBACK_PORT
 }
 
 #[tauri::command]
 fn get_backend_port() -> u16 {
     let port = BACKEND_PORT.load(Ordering::SeqCst);
     if port == 0 {
-        8000
+        FALLBACK_PORT
     } else {
         port
     }
@@ -138,11 +151,10 @@ pub fn run() {
             #[cfg(debug_assertions)]
             {
                 log::info!(
-                    "Running in development mode. Using fixed port 8000 for backend."
+                    "Running in development mode. Using fixed port {} for backend.",
+                    FALLBACK_PORT
                 );
-                log::info!(
-                    "Make sure to start the Python backend manually: python web_server.py"
-                );
+                log::info!("Make sure to start the Python backend manually: python web_server.py");
             }
 
             Ok(())
