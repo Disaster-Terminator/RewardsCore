@@ -202,7 +202,7 @@ class SchedulerConfig:
     random_end_hour: int = 22
     fixed_hour: int = 10
     fixed_minute: int = 0
-    timezone: str = "local"
+    timezone: str = "Asia/Shanghai"
     run_once_on_start: bool = False
 
 
@@ -357,7 +357,7 @@ class AppConfig:
                 random_end_hour=get_nested(scheduler_dict, "random_end_hour", 22),
                 fixed_hour=get_nested(scheduler_dict, "fixed_hour", 10),
                 fixed_minute=get_nested(scheduler_dict, "fixed_minute", 0),
-                timezone=get_nested(scheduler_dict, "timezone", "local"),
+                timezone=get_nested(scheduler_dict, "timezone", "Asia/Shanghai"),
                 run_once_on_start=get_nested(scheduler_dict, "run_once_on_start", False),
             ),
             error_handling=ErrorHandlingConfig(
