@@ -202,7 +202,7 @@ class HumanBehaviorSimulator:
             self.logger.error(f"Failed to human-click {selector}: {e}")
             return False
 
-    async def _move_mouse_naturally(
+    async def move_mouse_naturally(
         self, page: Any, target_x: float, target_y: float, steps: int | None = None
     ) -> None:
         """
@@ -274,7 +274,7 @@ class HumanBehaviorSimulator:
             # Fallback to direct movement
             await page.mouse.move(target_x, target_y)
 
-    def _get_typing_delay(self) -> float:
+    def get_typing_delay(self) -> float:
         """
         Get a realistic typing delay in milliseconds.
 

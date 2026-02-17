@@ -60,7 +60,12 @@ DEFAULT_CONFIG = {
     "query_engine": {
         "enabled": False,
         "cache_ttl": 3600,
-        "sources": {"local_file": {"enabled": True}, "bing_suggestions": {"enabled": True}},
+        "sources": {
+            "local_file": {"enabled": True},
+            "bing_suggestions": {"enabled": True},
+            "duckduckgo": {"enabled": True},
+            "wikipedia": {"enabled": True},
+        },
         "bing_api": {
             "rate_limit": 10,
             "max_retries": 3,
@@ -109,6 +114,28 @@ DEFAULT_CONFIG = {
         "random_end_hour": 22,
         "fixed_hour": 10,
         "fixed_minute": 0,
+    },
+    "anti_detection": {
+        "use_stealth": True,
+        "random_viewport": True,
+        "human_behavior_level": "medium",
+        "scroll_behavior": {
+            "enabled": True,
+            "min_scrolls": 2,
+            "max_scrolls": 5,
+            "scroll_delay_min": 500,
+            "scroll_delay_max": 2000,
+        },
+        "mouse_movement": {
+            "enabled": True,
+            "micro_movement_probability": 0.3,
+        },
+        "typing": {
+            "use_gaussian_delay": True,
+            "avg_delay_ms": 120,
+            "std_delay_ms": 30,
+            "pause_probability": 0.1,
+        },
     },
     "error_handling": {"max_retries": 3, "retry_delay": 5, "exponential_backoff": True},
     "logging": {"level": "INFO", "file": "logs/automator.log", "console": True},

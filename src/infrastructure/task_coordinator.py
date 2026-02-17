@@ -409,10 +409,16 @@ class TaskCoordinator:
             from browser.anti_ban_module import AntiBanModule
             from search.search_engine import SearchEngine
             from search.search_term_generator import SearchTermGenerator
+            from ui.real_time_status import StatusManager
 
             term_gen = SearchTermGenerator(self.config)
             anti_ban = AntiBanModule(self.config)
-            self._search_engine = SearchEngine(self.config, term_gen, anti_ban)
+            self._search_engine = SearchEngine(
+                self.config,
+                term_gen,
+                anti_ban,
+                status_manager=StatusManager,
+            )
         return self._search_engine
 
     def _get_state_monitor(self) -> Any:

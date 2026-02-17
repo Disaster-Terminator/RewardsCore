@@ -228,6 +228,11 @@ class MSRewardsApp:
                 f"desktop_{self.args.browser}",
                 storage_state=self.config.get("account.storage_state_path"),
             )
+
+            if self.health_monitor:
+                self.health_monitor.register_browser(self.browser, self.context)
+                self.logger.debug("已注册浏览器到健康监控器")
+
             self.logger.info("✓ 浏览器实例创建成功")
         else:
             self.logger.info("✓ 使用现有的浏览器实例")
