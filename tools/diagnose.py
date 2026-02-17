@@ -6,7 +6,6 @@
 
 import argparse
 import asyncio
-import json
 import sys
 from datetime import datetime
 from importlib.util import find_spec
@@ -127,9 +126,9 @@ async def diagnose_task_discovery():
     print("=" * 50)
 
     try:
-        import yaml
-
         from playwright.async_api import async_playwright
+
+        import yaml
 
         config_path = project_root / "config.yaml"
         with open(config_path, encoding="utf-8") as f:
