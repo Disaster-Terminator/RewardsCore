@@ -19,6 +19,7 @@
 |------|------|
 | [分支管理指南](reference/BRANCH_GUIDE.md) | 开发工作流、分支策略和验收标准 |
 | [调度器文档](reference/SCHEDULER.md) | 调度器功能、配置和执行模式 |
+| [配置参考](reference/CONFIG.md) | 完整配置项说明和示例 |
 | [技术参考](reports/技术参考.md) | 反检测策略、健康监控和性能优化 |
 
 ### 开发报告
@@ -52,7 +53,8 @@ docs/
 │   └── 用户指南.md
 ├── reference/                   # 技术参考
 │   ├── BRANCH_GUIDE.md          # 分支管理指南
-│   └── SCHEDULER.md             # 调度器文档
+│   ├── SCHEDULER.md             # 调度器文档
+│   └── CONFIG.md                # 配置参考
 ├── reports/                     # 开发报告
 │   ├── 技术参考.md              # 核心技术参考
 │   └── archive/                 # 已完成报告归档

@@ -83,8 +83,10 @@ DEFAULT_CONFIG = {
         "whatsapp": {"enabled": False, "phone": "", "apikey": ""},
     },
     "scheduler": {
-        "enabled": False,
-        "mode": "random",
+        "enabled": True,
+        "mode": "scheduled",
+        "scheduled_hour": 17,
+        "max_offset_minutes": 45,
         "random_start_hour": 8,
         "random_end_hour": 22,
         "fixed_hour": 10,
@@ -122,6 +124,9 @@ DEV_MODE_OVERRIDES = {
         "debug_mode": True,
         "max_tasks": 2,
     },
+    "scheduler": {
+        "enabled": False,
+    },
     "logging": {"level": "DEBUG"},
 }
 
@@ -155,6 +160,9 @@ USER_MODE_OVERRIDES = {
     "task_system": {
         "enabled": False,
         "debug_mode": False,
+    },
+    "scheduler": {
+        "enabled": False,
     },
     "logging": {"level": "INFO"},
 }

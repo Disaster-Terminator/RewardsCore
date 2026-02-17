@@ -178,45 +178,18 @@ python main.py
 
 ### 3. 常用命令
 
-#### 基本使用
-
 ```bash
-# 生产环境（完整搜索）
+# 生产环境（完整搜索，自动调度）
 python main.py
 
-# 测试模式（3+3搜索，验证稳定性）
-python main.py --usermode
-
-# 开发模式（快速迭代）
-python main.py --dev
-
-# 无头模式（后台运行）
+# 后台运行（服务器部署）
 python main.py --headless
 
-# 慢速模式（更安全）
-python main.py --mode slow
+# 用户模式（3+3搜索，验证稳定性）
+python main.py --user
 
-# 启动调度器（每天自动执行）
-python main.py --schedule
-
-# 仅执行桌面搜索
-python main.py --desktop-only
-
-# 仅执行移动搜索
-python main.py --mobile-only
-```
-
-#### 调试和测试
-
-```bash
-# 模拟执行（不执行真实搜索）
-python main.py --dry-run
-
-# 详细日志输出（开发模式自带DEBUG日志）
+# 开发模式（快速调试）
 python main.py --dev
-
-# 跳过日常任务
-python main.py --skip-daily-tasks
 ```
 
 ### 4. 查看执行结果
