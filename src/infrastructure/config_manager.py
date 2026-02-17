@@ -118,7 +118,7 @@ DEV_MODE_OVERRIDES = {
         "persistence_enabled": True,
     },
     "task_system": {
-        "enabled": False,
+        "enabled": True,
         "debug_mode": True,
         "max_tasks": 2,
     },

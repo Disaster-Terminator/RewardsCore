@@ -276,22 +276,29 @@ class RealTimeStatusDisplay:
             return
 
         print("\n" + "=" * 60)
-        print("🎉 任务执行完成！")
+        self._safe_print("✓ 任务执行完成！")
         print("=" * 60)
 
         if self.start_time:
             total_time = time.time() - self.start_time
             total_time_str = self._format_duration(total_time)
-            print(f"⏱️  总执行时间: {total_time_str}")
+            print(f"总执行时间: {total_time_str}")
 
-        print(f"🖥️  桌面搜索: {self.desktop_searches_completed}/{self.desktop_searches_total}")
-        print(f"📱 移动搜索: {self.mobile_searches_completed}/{self.mobile_searches_total}")
-        print(f"💰 积分获得: +{self.points_gained}")
+        print(f"桌面搜索: {self.desktop_searches_completed}/{self.desktop_searches_total}")
+        print(f"移动搜索: {self.mobile_searches_completed}/{self.mobile_searches_total}")
+        print(f"积分获得: +{self.points_gained}")
 
         if self.error_count > 0 or self.warning_count > 0:
-            print(f"⚠️  错误/警告: {self.error_count}/{self.warning_count}")
+            print(f"错误/警告: {self.error_count}/{self.warning_count}")
 
         print("=" * 60)
+
+    def _safe_print(self, message: str):
+        """安全打印，处理编码问题"""
+        try:
+            print(message)
+        except UnicodeEncodeError:
+            print(message.encode("ascii", "replace").decode("ascii"))
 
     def show_simple_status(self, message: str):
         """
