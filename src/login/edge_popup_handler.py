@@ -7,4 +7,4 @@ Edge Popup Handler - 浏览器弹窗处理器
 
 from browser.popup_handler import BrowserPopupHandler, EdgePopupHandler
 
-__all__ = ['BrowserPopupHandler', 'EdgePopupHandler']
+__all__ = ["BrowserPopupHandler", "EdgePopupHandler"]

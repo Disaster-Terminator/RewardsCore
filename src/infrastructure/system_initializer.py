@@ -6,20 +6,19 @@ SystemInitializer - 系统初始化器
 """
 
 import logging
-from typing import Tuple, Any, Optional
+from typing import Any
 
+from account.manager import AccountManager
+from account.points_detector import PointsDetector
 from browser.anti_ban_module import AntiBanModule
 from browser.simulator import BrowserSimulator
-from search.search_term_generator import SearchTermGenerator
-from search.search_engine import SearchEngine
-from search.query_engine import QueryEngine
-from account.points_detector import PointsDetector
-from account.manager import AccountManager
-from infrastructure.state_monitor import StateMonitor
 from infrastructure.error_handler import ErrorHandler
-from infrastructure.notificator import Notificator
 from infrastructure.health_monitor import HealthMonitor
-from ui.real_time_status import StatusManager
+from infrastructure.notificator import Notificator
+from infrastructure.state_monitor import StateMonitor
+from search.query_engine import QueryEngine
+from search.search_engine import SearchEngine
+from search.search_term_generator import SearchTermGenerator
 
 
 class SystemInitializer:
@@ -42,7 +41,7 @@ class SystemInitializer:
         self.args = args
         self.logger = logger
 
-    def initialize_components(self) -> Tuple:
+    def initialize_components(self) -> tuple:
         """
         初始化所有核心组件
 
@@ -69,12 +68,7 @@ class SystemInitializer:
         query_engine = self._init_query_engine()
 
         # 创建搜索引擎
-        search_engine = SearchEngine(
-            self.config,
-            term_gen,
-            anti_ban,
-            query_engine=query_engine
-        )
+        search_engine = SearchEngine(self.config, term_gen, anti_ban, query_engine=query_engine)
 
         # 创建账户管理器
         account_mgr = AccountManager(self.config)
@@ -100,13 +94,14 @@ class SystemInitializer:
             state_monitor,
             error_handler,
             notificator,
-            health_monitor
+            health_monitor,
         )
 
     def _apply_cli_args(self) -> None:
         """应用命令行参数到配置"""
         # 如果没有登录状态且没有明确指定 --headless，自动切换到有头模式
         import os
+
         storage_state_path = self.config.get("account.storage_state_path", "storage_state.json")
         has_login_state = os.path.exists(storage_state_path)
 
@@ -133,7 +128,7 @@ class SystemInitializer:
                 self.config.config["search"]["wait_interval"] = {"min": 15, "max": 30}
             self.config.config["browser"]["slow_mo"] = 200
 
-    def _init_query_engine(self) -> Optional[QueryEngine]:
+    def _init_query_engine(self) -> QueryEngine | None:
         """初始化查询引擎"""
         if not self.config.get("query_engine.enabled", False):
             return None
