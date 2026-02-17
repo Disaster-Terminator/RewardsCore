@@ -26,7 +26,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 import { refreshData, startTask, stopTask, fetchStatus } from '../api'
-import { cn } from '@/lib/utils'
+import { cn, getErrorMessage } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -410,8 +410,7 @@ export default function Dashboard() {
       await fetchStatus()
     } catch (error: unknown) {
       console.error('Failed to start task:', error)
-      const errorObj = error as { response?: { data?: { detail?: string } }; message?: string }
-      const errorMsg = errorObj?.response?.data?.detail || errorObj?.message || '启动任务失败'
+      const errorMsg = getErrorMessage(error, '启动任务失败')
       setActionFeedback({ type: 'error', message: errorMsg })
     } finally {
       setTimeout(() => setIsStarting(false), 300)
@@ -427,8 +426,7 @@ export default function Dashboard() {
       await fetchStatus()
     } catch (error: unknown) {
       console.error('Failed to stop task:', error)
-      const errorObj = error as { response?: { data?: { detail?: string } }; message?: string }
-      const errorMsg = errorObj?.response?.data?.detail || errorObj?.message || '停止任务失败'
+      const errorMsg = getErrorMessage(error, '停止任务失败')
       setActionFeedback({ type: 'error', message: errorMsg })
     } finally {
       setTimeout(() => setIsStopping(false), 300)

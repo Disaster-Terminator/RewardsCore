@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useStore, TaskStatus, Health, Points, Config, HistoryItem } from '../store'
 
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window
-const isDev = typeof window !== 'undefined' && !('__TAURI_INTERNALS__' in window)
+const isTauriProduction = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 let API_BASE = '/api'
 let dynamicPort: number | null = null
@@ -11,7 +11,9 @@ let isConnecting = false
 let connectionPromise: Promise<void> | null = null
 
 const getApiBase = async (): Promise<string> => {
-  if (isTauri && !isDev) {
+  // Only use dynamic port in Tauri production mode
+  // In Tauri dev mode, use Vite proxy (/api)
+  if (isTauriProduction) {
     if (dynamicPort) {
       return `http://localhost:${dynamicPort}/api`
     }
@@ -152,8 +154,10 @@ export const stopHeartbeat = () => {
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let reconnectAttempts = 0
+let wsHeartbeatInterval: ReturnType<typeof setInterval> | null = null
 const MAX_RECONNECT_DELAY = 30000
 const INITIAL_RECONNECT_DELAY = 500
+const WS_HEARTBEAT_INTERVAL = 30000
 
 const scheduleReconnect = () => {
   if (reconnectTimer) {
@@ -184,7 +188,7 @@ export const connectWebSocket = async (): Promise<void> => {
   connectionPromise = new Promise(async (resolve) => {
     let wsUrl: string
     
-    if (isTauri && !isDev) {
+    if (isTauriProduction) {
       let port = dynamicPort
       if (!port) {
         try {
@@ -237,6 +241,16 @@ export const connectWebSocket = async (): Promise<void> => {
         reconnectTimer = null
       }
       isConnecting = false
+      
+      if (wsHeartbeatInterval) {
+        clearInterval(wsHeartbeatInterval)
+      }
+      wsHeartbeatInterval = setInterval(() => {
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }))
+        }
+      }, WS_HEARTBEAT_INTERVAL)
+      
       resolve()
     }
 
@@ -245,6 +259,10 @@ export const connectWebSocket = async (): Promise<void> => {
       console.log('WebSocket disconnected:', event.code, event.reason)
       useStore.getState().setWsConnected(false)
       isConnecting = false
+      if (wsHeartbeatInterval) {
+        clearInterval(wsHeartbeatInterval)
+        wsHeartbeatInterval = null
+      }
       scheduleReconnect()
       resolve()
     }
@@ -279,6 +297,13 @@ export const connectWebSocket = async (): Promise<void> => {
           case 'task_event':
             console.log('Task event:', data.event, data.message)
             break
+          case 'ping':
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'pong' }))
+            }
+            break
+          case 'pong':
+            break
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error)
@@ -293,6 +318,10 @@ export const disconnectWebSocket = () => {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
+  }
+  if (wsHeartbeatInterval) {
+    clearInterval(wsHeartbeatInterval)
+    wsHeartbeatInterval = null
   }
   if (ws) {
     ws.onclose = null

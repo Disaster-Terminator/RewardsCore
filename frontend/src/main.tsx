@@ -13,12 +13,16 @@ const init = async (retryCount = 0): Promise<void> => {
   
   try {
     await initializeTauriEvents()
+    console.log('Tauri events initialized')
     
     await connectWebSocket()
+    console.log('WebSocket connection attempted')
     
     await initializeData()
+    console.log('Data initialized')
     
     startHeartbeat()
+    console.log('Heartbeat started')
     
     console.log('Application initialized successfully')
   } catch (error) {

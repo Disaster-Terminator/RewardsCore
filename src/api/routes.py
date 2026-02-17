@@ -145,7 +145,7 @@ async def stop_task(request: Request):
     task_service = services["task_service"]
 
     if not task_service.is_running:
-        raise HTTPException(status_code=400, detail="没有正在运行的任务")
+        return {"message": "没有正在运行的任务", "status": "idle"}
 
     await task_service.stop_task()
     return {"message": "任务已停止", "status": "stopped"}

@@ -37,6 +37,7 @@ class TaskService:
         self.is_running = False
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
+        self._stopping = False
 
         self.status = {
             "is_running": False,
@@ -246,6 +247,11 @@ class TaskService:
         if not self.is_running:
             return
 
+        if self._stopping:
+            logger.info("任务正在停止中，跳过重复停止请求")
+            return
+
+        self._stopping = True
         logger.info("正在停止任务...")
         self._stop_event.set()
 
@@ -255,8 +261,11 @@ class TaskService:
                 await self._task
             except asyncio.CancelledError:
                 pass
+            except Exception as e:
+                logger.warning(f"停止任务时出现异常: {e}")
 
         self.is_running = False
+        self._stopping = False
         self.status["is_running"] = False
         self.status["current_operation"] = "已停止"
 

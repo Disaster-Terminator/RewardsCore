@@ -22,7 +22,6 @@ export default function Header() {
     health,
     darkMode,
     toggleDarkMode,
-    sidebarCollapsed,
     lastDataUpdate,
     wsConnected,
     backendReady,
@@ -122,7 +121,6 @@ export default function Header() {
       data-tauri-drag-region
       className={clsx(
         'h-14 backdrop-blur-xl border-b flex items-center justify-between px-5 sticky top-0 z-40 transition-all duration-300',
-        sidebarCollapsed ? 'ml-16' : 'ml-60',
         darkMode ? 'bg-surface/60 border-border' : 'bg-white/60 border-border-light',
         isRunning && 'border-b-2 border-b-success-500/30'
       )}
@@ -263,32 +261,32 @@ export default function Header() {
           onClick={isRunning ? handleStop : handleStart}
           disabled={!backendReady || isStarting || isStopping}
           className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300',
+            'flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-300 whitespace-nowrap',
             isRunning
-              ? 'bg-danger-500 text-white hover:bg-danger-600 shadow-glow-danger'
-              : 'bg-gradient-to-r from-primary-500 to-cyan-500 text-dark-900 hover:shadow-glow-primary',
+              ? 'bg-danger-500 text-white hover:bg-danger-600'
+              : 'bg-gradient-to-r from-primary-500 to-cyan-500 text-dark-900',
             (isStarting || isStopping) && 'opacity-70 cursor-wait',
             !backendReady && 'opacity-50 cursor-not-allowed'
           )}
         >
           {isStarting ? (
             <>
-              <RefreshCw size={16} className="animate-spin" />
+              <RefreshCw size={14} className="animate-spin flex-shrink-0" />
               <span>启动中...</span>
             </>
           ) : isStopping ? (
             <>
-              <RefreshCw size={16} className="animate-spin" />
+              <RefreshCw size={14} className="animate-spin flex-shrink-0" />
               <span>停止中...</span>
             </>
           ) : isRunning ? (
             <>
-              <Square size={16} />
+              <Square size={14} className="flex-shrink-0" />
               <span>停止任务</span>
             </>
           ) : (
             <>
-              <Play size={16} />
+              <Play size={14} className="flex-shrink-0" />
               <span>启动任务</span>
             </>
           )}

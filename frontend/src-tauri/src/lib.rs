@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Mutex;
+
 use tauri::Emitter;
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
@@ -8,39 +9,13 @@ static BACKEND_PORT: AtomicU16 = AtomicU16::new(0);
 static BACKEND_CHILD: Mutex<Option<CommandChild>> = Mutex::new(None);
 
 const FALLBACK_PORT: u16 = 8000;
-const DEFAULT_PORTS: [u16; 10] = [
-    FALLBACK_PORT,
-    FALLBACK_PORT + 1,
-    FALLBACK_PORT + 2,
-    FALLBACK_PORT + 3,
-    FALLBACK_PORT + 4,
-    FALLBACK_PORT + 5,
-    FALLBACK_PORT + 6,
-    FALLBACK_PORT + 7,
-    FALLBACK_PORT + 8,
-    FALLBACK_PORT + 9,
-];
 
 fn find_available_port() -> u16 {
     if let Some(port) = portpicker::pick_unused_port() {
         return port;
     }
 
-    log::warn!("portpicker failed, trying default ports");
-
-    for port in DEFAULT_PORTS {
-        if portpicker::is_port_free(port) {
-            log::info!("Found available default port: {}", port);
-            return port;
-        }
-    }
-
-    log::error!(
-        "No available ports found in range {}-{}, using {} as fallback",
-        FALLBACK_PORT,
-        FALLBACK_PORT + 9,
-        FALLBACK_PORT
-    );
+    log::warn!("portpicker failed, using fallback port");
     FALLBACK_PORT
 }
 
