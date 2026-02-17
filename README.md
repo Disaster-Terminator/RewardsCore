@@ -167,7 +167,7 @@ python main.py
 | 模式 | 桌面搜索 | 移动搜索 | 拟人行为 | 防检测 | 用途 |
 |------|----------|----------|----------|--------|------|
 | 默认 | 30 | 20 | ✅ | ✅ | **生产环境（用户使用）** |
-| `--usermode` | 3 | 3 | ✅ | ✅ | 鲁棒性测试 |
+| `--user` | 3 | 3 | ✅ | ✅ | 鲁棒性测试 |
 | `--dev` | 2 | 2 | ❌ | ❌ | 快速迭代调试 |
 
 **登录方式**：
@@ -257,10 +257,10 @@ search:
 
 # 调度配置
 scheduler:
-  enabled: true         # 启用调度器
-  mode: "random"        # 随机时间模式
-  random_start_hour: 8  # 开始时间
-  random_end_hour: 22   # 结束时间
+  enabled: true           # 启用调度器
+  mode: "scheduled"       # 定时模式
+  scheduled_hour: 17      # 基准执行时间
+  max_offset_minutes: 45  # 随机偏移范围
 
 # 通知配置
 notification:
@@ -283,8 +283,7 @@ notification:
 ### ✅ 推荐的安全使用方式
 
 - **使用本地运行**: 在家庭网络环境中运行，避免使用云服务器
-- **启用慢速模式**: `python main.py --mode slow`
-- **启用随机调度**: `python main.py --schedule`
+- **禁用调度器**: 在 config.yaml 中设置 `scheduler.enabled: false`
 - **限制执行频率**: 不要短时间内多次运行
 - **监控日志**: 定期检查执行日志，及时发现异常
 

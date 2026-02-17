@@ -200,7 +200,7 @@ gh pr create --base main --head hotfix/urgent-fix --title "hotfix: 紧急修复�
 | **3. 集成测试** | 模块协作 | `pytest tests/integration/` | 全部通过 | 停止 |
 | **4. Dev快速验证** | 基本流程 | `python main.py --dev --headless` | 退出码0 | **立即停止** |
 | **5. 自动化诊断** | 完整验证+诊断 | `python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test integrated` | 无严重问题 | 停止，查看报告 |
-| **6. 有头验收** | 开发者确认 | `python main.py --dev` 或 `--usermode` | 人工确认 | 不合并 |
+| **6. 有头验收** | 开发者确认 | `python main.py --dev` 或 `--user` | 人工确认 | 不合并 |
 
 ### 4.3 阶段4：Dev快速验证（快速失败）
 
@@ -263,7 +263,7 @@ python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test in
 ```bash
 python main.py --dev          # 快速验收
 # 或
-python main.py --usermode     # 完整行为验收
+python main.py --user         # 完整行为验收
 ```
 
 **验收检查项：**
@@ -463,10 +463,10 @@ notification:
 # feature/scheduler-enhanced 分支
 scheduler:
   enabled: true
-  mode: "random"
-  random_start_hour: 8
-  random_end_hour: 22
-  run_once_on_start: true  # 启动时先执行一次
+  mode: "scheduled"
+  scheduled_hour: 17
+  max_offset_minutes: 45
+  run_once_on_start: true
 ```
 
 ### 6.3 调度器行为说明

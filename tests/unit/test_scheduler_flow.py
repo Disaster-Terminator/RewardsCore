@@ -122,7 +122,9 @@ async def run_scheduler_test(test_delay_seconds: int = 5, config_path: str = "co
     print("测试结果")
     print("=" * 60)
 
-    status_icon = lambda x: "✓" if x else "✗"
+    def status_icon(x):
+        return "✓" if x else "✗"
+
     print(f"  [{status_icon(result.init_success)}] 配置初始化")
     print(f"  [{status_icon(result.task_executed)}] 首次任务执行")
     print(f"  [{status_icon(result.scheduler_started)}] 调度器启动")
@@ -152,6 +154,25 @@ async def run_quick_test():
 async def run_full_test():
     """完整测试（5秒延迟）"""
     return await run_scheduler_test(test_delay_seconds=5)
+
+
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_scheduler_basic_flow():
+    """测试调度器基本流程"""
+    result = await run_scheduler_test(test_delay_seconds=2)
+    assert result.is_passed(), f"调度器测试失败: {result.errors}"
+
+
+@pytest.mark.asyncio
+async def test_scheduler_config_defaults():
+    """测试调度器默认配置"""
+    config = ConfigManager("config.example.yaml")
+    assert config.get("scheduler.enabled") == True
+    assert config.get("scheduler.scheduled_hour") == 17
+    assert config.get("scheduler.max_offset_minutes") == 45
 
 
 if __name__ == "__main__":
