@@ -230,7 +230,16 @@ class ConfigManager:
 
     def _apply_execution_mode(self) -> None:
         """应用执行模式预设配置"""
-        mode = self.config.get("execution", {}).get("mode", "normal")
+        execution = self.config.get("execution")
+        if isinstance(execution, dict):
+            mode = execution.get("mode", "normal")
+        else:
+            if execution is not None:
+                logger.warning(
+                    "配置项 execution 应为字典类型，实际为 %s，已忽略并使用 normal",
+                    type(execution).__name__,
+                )
+            mode = "normal"
         if mode not in EXECUTION_MODE_PRESETS:
             logger.warning(f"未知的执行模式: {mode}，使用 normal")
             mode = "normal"

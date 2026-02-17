@@ -16,10 +16,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from infrastructure.config_manager import ConfigManager
 from infrastructure.scheduler import TaskScheduler
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 

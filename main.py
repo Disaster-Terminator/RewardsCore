@@ -88,7 +88,11 @@ def parse_arguments():
         help="自主测试类型 (默认: full)",
     )
 
-    parser.add_argument("--quick-test", action="store_true", help="快速测试模式（减少等待时间）")
+    parser.add_argument(
+        "--quick-test",
+        action="store_true",
+        help="自主测试快速模式：仅在 --autonomous-test 下生效，缩短测试检查间隔（不影响搜索等待/slow_mo）",
+    )
 
     parser.add_argument("--config", default="config.yaml", help="配置文件路径 (默认: config.yaml)")
 
@@ -283,7 +287,7 @@ async def main():
     if args.autonomous_test:
         return await run_autonomous_test(args)
 
-    scheduler_enabled = config.get("scheduler.enabled", False)
+    scheduler_enabled = config.get("scheduler.enabled", True)
 
     if scheduler_enabled:
         logger.info("启动调度模式...")
