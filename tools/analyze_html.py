@@ -7,7 +7,7 @@ def find_cards_in_json(data, path=""):
     if isinstance(data, dict):
         if "className" in data:
             cls = str(data["className"])
-            cls = ' '.join(cls.split())
+            cls = " ".join(cls.split())
             if "rounded-2xl" in cls and "bg-neutralBg1" in cls:
                 print(f"\n--- Potential Card Found at {path} ---")
                 print(f"Class: {cls}")
@@ -20,7 +20,7 @@ def find_cards_in_json(data, path=""):
         for i, item in enumerate(data):
             find_cards_in_json(item, f"{path}[{i}]")
     elif isinstance(data, str):
-        if data.strip().startswith('{') and data.strip().endswith('}'):
+        if data.strip().startswith("{") and data.strip().endswith("}"):
             try:
                 nested = json.loads(data)
                 find_cards_in_json(nested, path + "(parsed)")
@@ -31,19 +31,19 @@ def find_cards_in_json(data, path=""):
 def analyze_html(file_path):
     print(f"Analyzing {file_path}...")
     try:
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         print(f"Error reading file: {e}")
         return
 
-    matches = re.findall(r'self\.__next_f\.push\(\[(.*?)\]\)', content)
+    matches = re.findall(r"self\.__next_f\.push\(\[(.*?)\]\)", content)
 
     print(f"Found {len(matches)} data pushes.")
 
     for i, match in enumerate(matches):
         try:
-            parts = match.split(',', 1)
+            parts = match.split(",", 1)
             if len(parts) < 2:
                 continue
 
@@ -54,7 +54,7 @@ def analyze_html(file_path):
                     payload = json.loads(payload_str)
                     if isinstance(payload, str):
                         try:
-                            if payload.strip().startswith('{') or payload.strip().startswith('['):
+                            if payload.strip().startswith("{") or payload.strip().startswith("["):
                                 data = json.loads(payload)
                                 find_cards_in_json(data, f"Block{i}")
                             else:

@@ -193,9 +193,7 @@ async def diagnose_task_discovery():
 
             print("\n导航到 earn 页面...")
             try:
-                await page.goto(
-                    "https://rewards.microsoft.com/earn", wait_until="networkidle"
-                )
+                await page.goto("https://rewards.microsoft.com/earn", wait_until="networkidle")
                 await page.wait_for_load_state("domcontentloaded")
                 earn_html = await page.content()
                 earn_html_path = diagnostics_dir / f"earn_{timestamp}.html"
