@@ -15,11 +15,11 @@ log_dir.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_dir / "automator.log", encoding='utf-8'),
-    ]
+        logging.FileHandler(log_dir / "automator.log", encoding="utf-8"),
+    ],
 )
 
 import uvicorn  # noqa: E402
@@ -61,6 +61,7 @@ def create_web_app() -> FastAPI:
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
         from api.app import connection_manager
+
         if not connection_manager:
             await websocket.close(code=1011, reason="Server not ready")
             return
@@ -69,24 +70,28 @@ def create_web_app() -> FastAPI:
         try:
             while True:
                 try:
-                    data = await asyncio.wait_for(
-                        websocket.receive_text(),
-                        timeout=60.0
-                    )
+                    data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
                     try:
                         import json
+
                         message = json.loads(data)
                         if message.get("type") == "ping":
                             await connection_manager.send_personal_message(
-                                {"type": "pong", "timestamp": __import__('datetime').datetime.now().isoformat()},
-                                websocket
+                                {
+                                    "type": "pong",
+                                    "timestamp": __import__("datetime").datetime.now().isoformat(),
+                                },
+                                websocket,
                             )
                     except json.JSONDecodeError:
                         pass
                 except asyncio.TimeoutError:
                     await connection_manager.send_personal_message(
-                        {"type": "ping", "timestamp": __import__('datetime').datetime.now().isoformat()},
-                        websocket
+                        {
+                            "type": "ping",
+                            "timestamp": __import__("datetime").datetime.now().isoformat(),
+                        },
+                        websocket,
                     )
         except WebSocketDisconnect:
             pass

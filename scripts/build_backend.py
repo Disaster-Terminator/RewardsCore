@@ -12,8 +12,10 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 SRC_TAURI_DIR = FRONTEND_DIR / "src-tauri"
 BINARIES_DIR = SRC_TAURI_DIR / "binaries"
 
+
 def get_target_triple():
     import platform
+
     system = platform.system().lower()
     machine = platform.machine().lower()
 
@@ -35,6 +37,7 @@ def get_target_triple():
 
     raise RuntimeError(f"Unsupported platform: {system} {machine}")
 
+
 def build_backend():
     target = get_target_triple()
 
@@ -51,13 +54,19 @@ def build_backend():
     print(f"Output: {output_path}")
 
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--onefile",
         "--noconsole",
-        "--name", f"backend-{target}",
-        "--distpath", str(BINARIES_DIR),
-        "--workpath", str(PROJECT_ROOT / "build" / "backend_build"),
-        "--specpath", str(PROJECT_ROOT / "build"),
+        "--name",
+        f"backend-{target}",
+        "--distpath",
+        str(BINARIES_DIR),
+        "--workpath",
+        str(PROJECT_ROOT / "build" / "backend_build"),
+        "--specpath",
+        str(PROJECT_ROOT / "build"),
         str(PROJECT_ROOT / "web_server.py"),
     ]
 
@@ -101,6 +110,7 @@ def build_backend():
 
     print(f"Backend built successfully: {output_path}")
     return output_path
+
 
 if __name__ == "__main__":
     build_backend()

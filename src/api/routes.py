@@ -86,11 +86,11 @@ class PointsResponse(BaseModel):
 def get_services(request: Request):
     """获取服务实例"""
     services = {
-        "task_service": getattr(request.app.state, 'task_service', None),
-        "config_service": getattr(request.app.state, 'config_service', None),
-        "log_service": getattr(request.app.state, 'log_service', None),
-        "health_service": getattr(request.app.state, 'health_service', None),
-        "connection_manager": getattr(request.app.state, 'connection_manager', None),
+        "task_service": getattr(request.app.state, "task_service", None),
+        "config_service": getattr(request.app.state, "config_service", None),
+        "log_service": getattr(request.app.state, "log_service", None),
+        "health_service": getattr(request.app.state, "health_service", None),
+        "connection_manager": getattr(request.app.state, "connection_manager", None),
     }
 
     for name, service in services.items():
@@ -120,13 +120,15 @@ async def start_task(request: Request, task_request: TaskStartRequest):
         if task_service.is_running:
             raise HTTPException(status_code=400, detail="任务正在运行中")
 
-        asyncio.create_task(task_service.start_task(
-            mode=task_request.mode,
-            headless=task_request.headless,
-            desktop_only=task_request.desktop_only,
-            mobile_only=task_request.mobile_only,
-            skip_daily_tasks=task_request.skip_daily_tasks,
-        ))
+        asyncio.create_task(
+            task_service.start_task(
+                mode=task_request.mode,
+                headless=task_request.headless,
+                desktop_only=task_request.desktop_only,
+                mobile_only=task_request.mobile_only,
+                skip_daily_tasks=task_request.skip_daily_tasks,
+            )
+        )
 
         return {"message": "任务已启动", "status": "starting"}
     except HTTPException:

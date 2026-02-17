@@ -91,11 +91,9 @@ class ConnectionManager:
         Args:
             status: 状态数据
         """
-        await self.broadcast({
-            "type": "status_update",
-            "timestamp": datetime.now().isoformat(),
-            "data": status
-        })
+        await self.broadcast(
+            {"type": "status_update", "timestamp": datetime.now().isoformat(), "data": status}
+        )
 
     async def broadcast_log(self, log_line: str):
         """
@@ -104,11 +102,9 @@ class ConnectionManager:
         Args:
             log_line: 日志行
         """
-        await self.broadcast({
-            "type": "log",
-            "timestamp": datetime.now().isoformat(),
-            "data": log_line
-        })
+        await self.broadcast(
+            {"type": "log", "timestamp": datetime.now().isoformat(), "data": log_line}
+        )
 
     async def broadcast_health(self, health: dict[str, Any]):
         """
@@ -117,11 +113,9 @@ class ConnectionManager:
         Args:
             health: 健康状态数据
         """
-        await self.broadcast({
-            "type": "health_update",
-            "timestamp": datetime.now().isoformat(),
-            "data": health
-        })
+        await self.broadcast(
+            {"type": "health_update", "timestamp": datetime.now().isoformat(), "data": health}
+        )
 
     async def broadcast_points(self, points: dict[str, Any]):
         """
@@ -130,13 +124,13 @@ class ConnectionManager:
         Args:
             points: 积分数据
         """
-        await self.broadcast({
-            "type": "points_update",
-            "timestamp": datetime.now().isoformat(),
-            "data": points
-        })
+        await self.broadcast(
+            {"type": "points_update", "timestamp": datetime.now().isoformat(), "data": points}
+        )
 
-    async def broadcast_task_event(self, event_type: str, message: str, details: dict[str, Any] = None):
+    async def broadcast_task_event(
+        self, event_type: str, message: str, details: dict[str, Any] = None
+    ):
         """
         广播任务事件
 
@@ -145,10 +139,12 @@ class ConnectionManager:
             message: 事件消息
             details: 事件详情
         """
-        await self.broadcast({
-            "type": "task_event",
-            "event": event_type,
-            "timestamp": datetime.now().isoformat(),
-            "message": message,
-            "details": details or {}
-        })
+        await self.broadcast(
+            {
+                "type": "task_event",
+                "event": event_type,
+                "timestamp": datetime.now().isoformat(),
+                "message": message,
+                "details": details or {},
+            }
+        )

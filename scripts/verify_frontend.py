@@ -29,9 +29,7 @@ class FrontendVerifier:
         """运行命令并返回结果"""
         if cwd is None:
             cwd = self.base_dir
-        result = subprocess.run(
-            cmd, shell=True, cwd=cwd, capture_output=True, text=True
-        )
+        result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
         return result.returncode, result.stdout, result.stderr
 
     def check(self, name, condition, message=""):
@@ -49,14 +47,12 @@ class FrontendVerifier:
         print("\n[阶段1] 依赖检查")
         print("-" * 40)
 
-        code, _, err = self.run_command(
-            'python -c "import fastapi, uvicorn, websockets"'
+        code, _, err = self.run_command('python -c "import fastapi, uvicorn, websockets"')
+        self.check(
+            "Python 依赖 (fastapi, uvicorn, websockets)", code == 0, err.strip() if err else ""
         )
-        self.check("Python 依赖 (fastapi, uvicorn, websockets)", code == 0, err.strip() if err else "")
 
-        code, _, err = self.run_command(
-            'python -c "import yaml, psutil"'
-        )
+        code, _, err = self.run_command('python -c "import yaml, psutil"')
         self.check("Python 依赖 (yaml, psutil)", code == 0, err.strip() if err else "")
 
         frontend_dir = self.base_dir / "frontend"
@@ -87,8 +83,8 @@ class FrontendVerifier:
         if code == 0:
             self.check("TypeScript 类型检查", True)
         else:
-            error_lines = err.strip().split('\n')[:5] if err else out.strip().split('\n')[:5]
-            self.check("TypeScript 类型检查", False, '\n'.join(error_lines))
+            error_lines = err.strip().split("\n")[:5] if err else out.strip().split("\n")[:5]
+            self.check("TypeScript 类型检查", False, "\n".join(error_lines))
 
         return self.failed == 0
 
@@ -102,6 +98,7 @@ class FrontendVerifier:
 
         if dist_dir.exists():
             import shutil
+
             shutil.rmtree(dist_dir)
 
         code, out, err = self.run_command("npm run build", cwd=frontend_dir)
@@ -109,8 +106,8 @@ class FrontendVerifier:
         if code == 0:
             self.check("前端构建命令执行", True)
         else:
-            error_lines = err.strip().split('\n')[:5] if err else out.strip().split('\n')[:5]
-            self.check("前端构建命令执行", False, '\n'.join(error_lines))
+            error_lines = err.strip().split("\n")[:5] if err else out.strip().split("\n")[:5]
+            self.check("前端构建命令执行", False, "\n".join(error_lines))
             return False
 
         self.check("dist/index.html 存在", (dist_dir / "index.html").exists())
@@ -157,7 +154,7 @@ class FrontendVerifier:
                         self.check(
                             f"GET {endpoint}",
                             len(missing) == 0,
-                            f"Missing keys: {missing}" if missing else ""
+                            f"Missing keys: {missing}" if missing else "",
                         )
                     else:
                         self.check(f"GET {endpoint}", False, f"Status: {resp.status_code}")
@@ -194,9 +191,7 @@ class FrontendVerifier:
         try:
             try:
                 resp = requests.put(
-                    f"{base_url}/api/config",
-                    json={"search": {"desktop_count": 35}},
-                    timeout=10
+                    f"{base_url}/api/config", json={"search": {"desktop_count": 35}}, timeout=10
                 )
                 self.check("PUT /api/config (配置更新)", resp.status_code == 200)
             except Exception as e:
@@ -218,12 +213,9 @@ class FrontendVerifier:
 
             try:
                 resp = requests.post(
-                    f"{base_url}/api/task/start",
-                    json={"mode": "dev", "headless": True},
-                    timeout=10
+                    f"{base_url}/api/task/start", json={"mode": "dev", "headless": True}, timeout=10
                 )
-                self.check("POST /api/task/start (启动任务)",
-                          resp.status_code in [200, 400])
+                self.check("POST /api/task/start (启动任务)", resp.status_code in [200, 400])
             except Exception as e:
                 self.check("POST /api/task/start (启动任务)", False, str(e))
 
@@ -248,7 +240,7 @@ class FrontendVerifier:
             cwd=self.base_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env=env
+            env=env,
         )
 
     def _stop_server(self):

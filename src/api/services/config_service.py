@@ -31,7 +31,7 @@ class ConfigService:
         """加载配置文件"""
         try:
             if self.config_path.exists():
-                with open(self.config_path, encoding='utf-8') as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     self._config = yaml.safe_load(f) or {}
                 logger.info(f"配置已加载: {self.config_path}")
             else:
@@ -75,7 +75,7 @@ class ConfigService:
                 "telegram": {
                     "bot_token": "",
                     "chat_id": "",
-                }
+                },
             },
             "scheduler": {
                 "enabled": False,
@@ -113,7 +113,7 @@ class ConfigService:
         Returns:
             配置值
         """
-        keys = key.split('.')
+        keys = key.split(".")
         value = self._config
 
         for k in keys:
@@ -132,7 +132,7 @@ class ConfigService:
             key: 配置键 (支持点号分隔的嵌套键)
             value: 配置值
         """
-        keys = key.split('.')
+        keys = key.split(".")
         config = self._config
 
         for k in keys[:-1]:
@@ -149,6 +149,7 @@ class ConfigService:
         Args:
             updates: 更新内容
         """
+
         def deep_update(base: dict, updates: dict):
             for key, value in updates.items():
                 if isinstance(value, dict) and key in base and isinstance(base[key], dict):
@@ -162,7 +163,7 @@ class ConfigService:
     def _save_config(self):
         """保存配置到文件"""
         try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
+            with open(self.config_path, "w", encoding="utf-8") as f:
                 yaml.dump(self._config, f, allow_unicode=True, default_flow_style=False)
             logger.info(f"配置已保存: {self.config_path}")
         except Exception as e:

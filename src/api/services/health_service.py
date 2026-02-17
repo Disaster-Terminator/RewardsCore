@@ -46,7 +46,9 @@ class HealthService:
                     "success_rate": 0.0,
                 },
                 "uptime_seconds": time.time() - self.start_time,
-                "recommendations": self._generate_recommendations(system_health, network_health, browser_health),
+                "recommendations": self._generate_recommendations(
+                    system_health, network_health, browser_health
+                ),
             }
 
             return self._last_health
@@ -68,7 +70,7 @@ class HealthService:
         try:
             cpu_percent = psutil.cpu_percent(interval=0.5)
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             status = "healthy"
             issues = []
@@ -143,14 +145,14 @@ class HealthService:
             browser_processes = 0
             browser_memory = 0
 
-            browser_names = ['chrome', 'chromium', 'msedge', 'firefox']
+            browser_names = ["chrome", "chromium", "msedge", "firefox"]
 
-            for proc in psutil.process_iter(['name', 'memory_info']):
+            for proc in psutil.process_iter(["name", "memory_info"]):
                 try:
-                    name = proc.info['name'].lower()
+                    name = proc.info["name"].lower()
                     if any(b in name for b in browser_names):
                         browser_processes += 1
-                        browser_memory += proc.info['memory_info'].rss
+                        browser_memory += proc.info["memory_info"].rss
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
 

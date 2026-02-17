@@ -90,12 +90,13 @@ class TaskService:
 
         if self._history_file.exists():
             try:
-                with open(self._history_file, encoding='utf-8') as f:
+                with open(self._history_file, encoding="utf-8") as f:
                     all_history = json.load(f)
 
                 cutoff = datetime.now().timestamp() - (days * 24 * 3600)
                 history = [
-                    h for h in all_history
+                    h
+                    for h in all_history
                     if datetime.fromisoformat(h["timestamp"]).timestamp() >= cutoff
                 ]
             except Exception as e:
@@ -121,27 +122,27 @@ class TaskService:
         desktop_count = self.config_service.get("search.desktop_count", 30)
         mobile_count = self.config_service.get("search.mobile_count", 20)
 
-        self.status.update({
-            "is_running": True,
-            "current_operation": "初始化",
-            "progress": 0,
-            "desktop_searches_completed": 0,
-            "desktop_searches_total": desktop_count,
-            "mobile_searches_completed": 0,
-            "mobile_searches_total": mobile_count,
-            "initial_points": None,
-            "current_points": None,
-            "points_gained": 0,
-            "error_count": 0,
-            "warning_count": 0,
-            "start_time": time.time(),
-            "elapsed_seconds": 0.0,
-        })
+        self.status.update(
+            {
+                "is_running": True,
+                "current_operation": "初始化",
+                "progress": 0,
+                "desktop_searches_completed": 0,
+                "desktop_searches_total": desktop_count,
+                "mobile_searches_completed": 0,
+                "mobile_searches_total": mobile_count,
+                "initial_points": None,
+                "current_points": None,
+                "points_gained": 0,
+                "error_count": 0,
+                "warning_count": 0,
+                "start_time": time.time(),
+                "elapsed_seconds": 0.0,
+            }
+        )
 
         await self.connection_manager.broadcast_task_event(
-            "started",
-            "任务已启动",
-            {"mode": mode, "headless": headless}
+            "started", "任务已启动", {"mode": mode, "headless": headless}
         )
 
         await self._broadcast_status_update()
@@ -173,13 +174,15 @@ class TaskService:
             self.status["points_gained"] = current - initial if initial else 0
             asyncio.create_task(self._broadcast_points_update())
 
-        StatusManager.set_callbacks({
-            'operation': operation_callback,
-            'progress': progress_callback,
-            'desktop_searches': desktop_search_callback,
-            'mobile_searches': mobile_search_callback,
-            'points': points_callback,
-        })
+        StatusManager.set_callbacks(
+            {
+                "operation": operation_callback,
+                "progress": progress_callback,
+                "desktop_searches": desktop_search_callback,
+                "mobile_searches": mobile_search_callback,
+                "points": points_callback,
+            }
+        )
 
         try:
             config = ConfigManager("config.yaml")
@@ -215,8 +218,10 @@ class TaskService:
                 {
                     "exit_code": exit_code,
                     "points_gained": self.status["points_gained"],
-                    "duration": time.time() - self.status["start_time"] if self.status["start_time"] else 0,
-                }
+                    "duration": time.time() - self.status["start_time"]
+                    if self.status["start_time"]
+                    else 0,
+                },
             )
 
         except asyncio.CancelledError:
@@ -272,19 +277,23 @@ class TaskService:
 
             history = []
             if self._history_file.exists():
-                with open(self._history_file, encoding='utf-8') as f:
+                with open(self._history_file, encoding="utf-8") as f:
                     history = json.load(f)
 
-            history.append({
-                "timestamp": datetime.now().isoformat(),
-                "points_gained": self.status["points_gained"],
-                "desktop_searches": self.status["desktop_searches_completed"],
-                "mobile_searches": self.status["mobile_searches_completed"],
-                "errors": self.status["error_count"],
-                "duration_seconds": time.time() - self.status["start_time"] if self.status["start_time"] else 0,
-            })
+            history.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "points_gained": self.status["points_gained"],
+                    "desktop_searches": self.status["desktop_searches_completed"],
+                    "mobile_searches": self.status["mobile_searches_completed"],
+                    "errors": self.status["error_count"],
+                    "duration_seconds": time.time() - self.status["start_time"]
+                    if self.status["start_time"]
+                    else 0,
+                }
+            )
 
-            with open(self._history_file, 'w', encoding='utf-8') as f:
+            with open(self._history_file, "w", encoding="utf-8") as f:
                 json.dump(history[-100:], f, ensure_ascii=False, indent=2)
 
         except Exception as e:

@@ -38,7 +38,7 @@ class LogService:
         self._connection_manager: ConnectionManager | None = None
         self._async_loop: asyncio.AbstractEventLoop | None = None
 
-    def set_connection_manager(self, manager: 'ConnectionManager'):
+    def set_connection_manager(self, manager: "ConnectionManager"):
         """设置 WebSocket 连接管理器"""
         self._connection_manager = manager
 
@@ -71,7 +71,7 @@ class LogService:
                 self.log_file.parent.mkdir(parents=True, exist_ok=True)
                 self.log_file.touch()
 
-            with open(self.log_file, encoding='utf-8', errors='replace') as f:
+            with open(self.log_file, encoding="utf-8", errors="replace") as f:
                 f.seek(0, 2)
 
                 while not self._stop_event.is_set():
@@ -100,8 +100,7 @@ class LogService:
         if self._connection_manager and self._async_loop and not self._stop_event.is_set():
             try:
                 future = asyncio.run_coroutine_threadsafe(
-                    self._connection_manager.broadcast_log(line),
-                    self._async_loop
+                    self._connection_manager.broadcast_log(line), self._async_loop
                 )
                 future.result(timeout=1.0)
             except Exception as e:
@@ -121,7 +120,7 @@ class LogService:
             if not self.log_file.exists():
                 return []
 
-            with open(self.log_file, encoding='utf-8', errors='replace') as f:
+            with open(self.log_file, encoding="utf-8", errors="replace") as f:
                 all_lines = f.readlines()
                 return [line.strip() for line in all_lines[-lines:]]
 
@@ -165,7 +164,7 @@ class LogService:
                 return []
 
             results = []
-            with open(self.log_file, encoding='utf-8', errors='replace') as f:
+            with open(self.log_file, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     if keyword.lower() in line.lower():
                         results.append(line.strip())
@@ -194,11 +193,11 @@ class LogService:
             error_count = 0
             warning_count = 0
 
-            with open(self.log_file, encoding='utf-8', errors='replace') as f:
+            with open(self.log_file, encoding="utf-8", errors="replace") as f:
                 for line in f:
-                    if 'ERROR' in line:
+                    if "ERROR" in line:
                         error_count += 1
-                    elif 'WARNING' in line:
+                    elif "WARNING" in line:
                         warning_count += 1
 
             return {
