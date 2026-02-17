@@ -126,9 +126,8 @@ async def diagnose_task_discovery():
     print("=" * 50)
 
     try:
-        from playwright.async_api import async_playwright
-
         import yaml
+        from playwright.async_api import async_playwright
 
         config_path = project_root / "config.yaml"
         with open(config_path, encoding="utf-8") as f:
