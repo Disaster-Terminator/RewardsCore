@@ -4,7 +4,6 @@ Supports the new React-based rewards.bing.com dashboard (2025+)
 """
 
 import logging
-from typing import List
 
 from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeout
@@ -22,27 +21,24 @@ class TaskParser:
         self.config = config
         self.debug_mode = config.get("task_system.debug_mode", False) if config else False
 
-    async def discover_tasks(self, page: Page) -> List[TaskMetadata]:
+    async def discover_tasks(self, page: Page) -> list[TaskMetadata]:
         """
         Navigate to dashboard and discover all available tasks
         """
         self.logger.info("Discovering tasks from dashboard...")
 
         try:
-            # Navigate to rewards dashboard if not already there
             current_url = page.url
-            on_rewards_page = "rewards.microsoft.com" in current_url or "rewards.bing.com" in current_url
+            on_rewards_page = (
+                "rewards.microsoft.com" in current_url or "rewards.bing.com" in current_url
+            )
             if not on_rewards_page:
                 await page.goto(
-                    "https://rewards.bing.com/",
-                    wait_until="domcontentloaded",
-                    timeout=30000
+                    "https://rewards.bing.com/", wait_until="domcontentloaded", timeout=30000
                 )
 
-            # Wait for OAuth redirect to complete (if any)
             await self._wait_for_dashboard(page)
 
-            # DIAGNOSTIC: Log current state
             self.logger.info(f"Final URL: {page.url}")
             try:
                 page_title = await page.title()
@@ -50,16 +46,13 @@ class TaskParser:
             except Exception:
                 pass
 
-            # Check if on login page
             if await self._is_login_page(page):
                 self.logger.error("Detected login page, cannot discover tasks")
                 self.logger.info("  提示: 会话可能已过期，请重新登录")
                 return []
 
-            # Wait for React content to finish loading
             await self._wait_for_content_load(page)
 
-            # Parse tasks from the page
             tasks = await self._parse_tasks_from_page(page)
 
             self.logger.info(f"Discovered {len(tasks)} tasks")
@@ -94,7 +87,11 @@ class TaskParser:
                 except PlaywrightTimeout:
                     self.logger.warning("  OAuth 自动登录超时，尝试直接导航到 dashboard...")
                     try:
-                        await page.goto("https://rewards.bing.com/dashboard", wait_until="networkidle", timeout=30000)
+                        await page.goto(
+                            "https://rewards.bing.com/dashboard",
+                            wait_until="networkidle",
+                            timeout=30000,
+                        )
                         await page.wait_for_timeout(2000)
                         new_url = page.url
                         self.logger.info(f"  导航后 URL: {new_url}")
@@ -122,7 +119,11 @@ class TaskParser:
                     self.logger.info("  页面已包含 dashboard 内容，继续执行")
                 else:
                     self.logger.warning("  页面不包含 dashboard 内容，尝试强制导航...")
-                    await page.goto("https://rewards.bing.com/dashboard", wait_until="networkidle", timeout=30000)
+                    await page.goto(
+                        "https://rewards.bing.com/dashboard",
+                        wait_until="networkidle",
+                        timeout=30000,
+                    )
                     await page.wait_for_timeout(2000)
             except Exception as e:
                 self.logger.warning(f"  内容检查失败: {e}")
@@ -149,7 +150,7 @@ class TaskParser:
             "section#offers",
             "section#snapshot",
             "section[id*='streak']",
-            "section[id*='offer']"
+            "section[id*='offer']",
         ]
         section_found = False
 
@@ -171,8 +172,14 @@ class TaskParser:
             try:
                 current_url = page.url
                 if "login" in current_url.lower() or "oauth" in current_url.lower():
-                    self.logger.warning("  Page navigated away, attempting to return to dashboard...")
-                    await page.goto("https://rewards.bing.com/dashboard", wait_until="domcontentloaded", timeout=30000)
+                    self.logger.warning(
+                        "  Page navigated away, attempting to return to dashboard..."
+                    )
+                    await page.goto(
+                        "https://rewards.bing.com/dashboard",
+                        wait_until="domcontentloaded",
+                        timeout=30000,
+                    )
                     await page.wait_for_timeout(2000)
             except Exception:
                 pass
@@ -203,7 +210,7 @@ class TaskParser:
             login_selectors = [
                 'input[name="loginfmt"]',
                 'input[type="email"]',
-                '#i0116',
+                "#i0116",
             ]
 
             for selector in login_selectors:
@@ -215,7 +222,7 @@ class TaskParser:
         except Exception:
             return False
 
-    async def _parse_tasks_from_page(self, page: Page) -> List[TaskMetadata]:
+    async def _parse_tasks_from_page(self, page: Page) -> list[TaskMetadata]:
         """
         Parse task elements from the dashboard page.
         Uses JavaScript evaluation to extract structured task data from the React DOM.
@@ -229,29 +236,24 @@ class TaskParser:
                     const tasks = [];
                     const seenHrefs = new Set();
 
-                    // Helper to find closest clickable parent or self
                     function getClickable(el) {
                         return el.closest('a') || el.closest('button') || el;
                     }
 
-                    // 1. Try to find cards using new CSS classes (2025 update)
                     const newCardSelectors = [
                         'div[class*="rounded-2xl"][class*="bg-neutralBg1"]',
                         '[class*="mai:rounded-cornerCardRewards"]',
-                        'div[class*="rounded-2xl"]'  // Broader catch-all for cards
+                        'div[class*="rounded-2xl"]'
                     ];
 
                     let cardElements = [];
                     for (const selector of newCardSelectors) {
                         const els = document.querySelectorAll(selector);
                         if (els.length > 0) {
-                            // Add found elements, avoid duplicates in the DOM element list if possible,
-                            // but simpler to just add and let href deduplication handle it later
                             cardElements.push(...Array.from(els));
                         }
                     }
 
-                    // Always look for section-based cards as well to ensure coverage
                     const sectionIds = ['streaks', 'offers', 'snapshot', 'dailyset', 'more-activities', 'daily-sets'];
                     let sections = [];
 
@@ -259,18 +261,15 @@ class TaskParser:
                         const section = document.querySelector(`section#${sectionId}`);
                         if (section) sections.push(section);
                     }
-                    
-                    // Also look for sections by class or other attributes
+
                     const otherSections = document.querySelectorAll('section, div[data-test="daily-set-card"]');
                     sections.push(...Array.from(otherSections));
 
                     for (const section of sections) {
-                        // Look for clickable elements within sections
                         const cards = section.querySelectorAll('a[href], button[href], [role="link"], [data-href], button, div[role="button"]');
                         cardElements.push(...Array.from(cards));
                     }
-                    
-                    // Fallback: if we still have very few elements, try a broad search
+
                     if (cardElements.length < 5) {
                          const mainContent = document.querySelector('main, [role="main"], #main, .main-content');
                          if (mainContent) {
@@ -279,21 +278,17 @@ class TaskParser:
                          }
                     }
 
-
                     for (const el of cardElements) {
                         const clickable = getClickable(el);
                         const tagName = clickable.tagName.toLowerCase();
 
-                        // Extract href
                         let href = clickable.getAttribute('href') || clickable.getAttribute('data-href') || '';
 
-                        // If no href on clickable, check if parent has href (for nested structures)
                         if (!href && el !== clickable) {
                              const parentLink = el.closest('a');
                              if (parentLink) href = parentLink.getAttribute('href') || '';
                         }
 
-                        // Skip navigation links and redeem links
                         if (href === '/earn' || href === '/dashboard' ||
                             href.includes('/redeem/') || href === '/about' || href === '/refer' ||
                             href === '/' || href === '#' || href.includes('/orderhistory') ||
@@ -304,7 +299,6 @@ class TaskParser:
                             continue;
                         }
 
-                        // Avoid duplicates
                         if (href && seenHrefs.has(href)) continue;
                         if (href) seenHrefs.add(href);
 
@@ -319,7 +313,6 @@ class TaskParser:
                         }
 
                         let title = '';
-                        // Try to find title in common heading tags
                         const headings = clickable.querySelectorAll('h3, h4, .text-body1, .text-body1Strong, .text-subtitle2, [class*="title"], [class*="header"]');
                         for (const h of headings) {
                             const t = h.innerText.trim();
@@ -330,22 +323,18 @@ class TaskParser:
                         }
 
                         if (!title) {
-                            // Split by newlines and take the longest logical line
                             const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 2);
                             if (lines.length > 0) {
-                                // Usually the first line is the title, or the one that's not points
                                 title = lines.find(l => !l.match(/^\\d+$/) && !l.includes('积分') && !l.includes('points') && !l.match(/^\\d+\\s*$/)) || lines[0];
                             } else {
                                 title = ariaLabel;
                             }
                         }
 
-                        // Filter out numeric-only titles (likely points display)
                         if (!title || title.match(/^\\d+$/) || title.match(/^\\d+\\s*$/)) continue;
 
                         const isButton = (tagName === 'button' || clickable.getAttribute('role') === 'button') && !href;
-                        
-                        // Must have href or be a button
+
                         if (!href && !isButton) continue;
 
                         let points = 0;
@@ -371,15 +360,13 @@ class TaskParser:
                             'svg[class*="check"], [aria-label*="Completed"], [aria-label*="完成"]'
                         );
                         if (completedEl) completed = true;
-                        
-                        // Check for success background color (New Next.js UI)
-                        if (clickable.querySelector('.bg-statusSuccessBg3') || 
+
+                        if (clickable.querySelector('.bg-statusSuccessBg3') ||
                             el.querySelector('.bg-statusSuccessBg3')) {
                             completed = true;
                         }
 
-                        // Check for progress text (e.g. "4/4 tasks")
-                        const progressMatch = text.match(/(\d+)\/(\d+)\s*(?:个任务|tasks)/);
+                        const progressMatch = text.match(/(\\d+)\\/(\\d+)\\s*(?:个任务|tasks)/);
                         if (progressMatch) {
                             if (progressMatch[1] === progressMatch[2]) {
                                 completed = true;
@@ -392,8 +379,6 @@ class TaskParser:
                             combined.includes('completed')) {
                             completed = true;
                         }
-
-                        const isButton = tagName === 'button' && !href;
 
                         tasks.push({
                             sectionId: 'unknown',
@@ -420,12 +405,12 @@ class TaskParser:
 
             for i, raw in enumerate(raw_tasks):
                 try:
-                    title = raw.get('title', f'Task {i + 1}')
-                    href = raw.get('href', '')
-                    points = raw.get('points', 0)
-                    task_type = raw.get('taskType', 'urlreward')
-                    completed = raw.get('completed', False)
-                    section_id = raw.get('sectionId', '')
+                    title = raw.get("title", f"Task {i + 1}")
+                    href = raw.get("href", "")
+                    points = raw.get("points", 0)
+                    task_type = raw.get("taskType", "urlreward")
+                    completed = raw.get("completed", False)
+                    section_id = raw.get("sectionId", "")
 
                     metadata = TaskMetadata(
                         task_id=f"{section_id}_{i}",
@@ -434,10 +419,12 @@ class TaskParser:
                         points=points,
                         is_completed=completed,
                         destination_url=href,
-                        promotion_type=task_type
+                        promotion_type=task_type,
                     )
                     tasks.append(metadata)
-                    self.logger.debug(f"  ✓ Parsed: {title} (type={task_type}, pts={points}, done={completed})")
+                    self.logger.debug(
+                        f"  ✓ Parsed: {title} (type={task_type}, pts={points}, done={completed})"
+                    )
                 except Exception as e:
                     self.logger.debug(f"  ✗ Failed to parse task {i}: {e}")
                     continue
@@ -456,6 +443,7 @@ class TaskParser:
 
         import os
         from datetime import datetime
+
         os.makedirs("logs/diagnostics", exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -478,11 +466,11 @@ class TaskParser:
         """Determine task type from promotion type"""
         promotion_type_lower = promotion_type.lower()
 
-        if 'quiz' in promotion_type_lower:
-            return 'quiz'
-        elif 'poll' in promotion_type_lower:
-            return 'poll'
-        elif 'urlreward' in promotion_type_lower or 'url' in promotion_type_lower:
-            return 'urlreward'
+        if "quiz" in promotion_type_lower:
+            return "quiz"
+        elif "poll" in promotion_type_lower:
+            return "poll"
+        elif "urlreward" in promotion_type_lower or "url" in promotion_type_lower:
+            return "urlreward"
         else:
-            return 'urlreward'
+            return "urlreward"
