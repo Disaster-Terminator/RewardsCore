@@ -2,6 +2,7 @@
 测试任务识别脚本
 验证task_parser能否正确识别earn页面的任务
 """
+
 import asyncio
 import json
 from pathlib import Path
@@ -67,7 +68,7 @@ async def test_task_recognition():
 
         for i, task in enumerate(tasks):
             status = "✅ 已完成" if task.is_completed else "⭕ 未完成"
-            print(f"\n[{i+1}] {task.title}")
+            print(f"\n[{i + 1}] {task.title}")
             print(f"    类型: {task.task_type} | 积分: {task.points} | {status}")
             print(f"    URL: {task.destination_url[:60]}...")
 
@@ -88,22 +89,27 @@ async def test_task_recognition():
         output_path = Path("logs/diagnostics/task_recognition_test.json")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "total_tasks": len(tasks),
-                "completed": completed_count,
-                "incomplete": incomplete_count,
-                "total_points": total_points,
-                "tasks": [
-                    {
-                        "title": t.title,
-                        "type": t.task_type,
-                        "points": t.points,
-                        "completed": t.is_completed,
-                        "url": t.destination_url
-                    }
-                    for t in tasks
-                ]
-            }, f, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "total_tasks": len(tasks),
+                    "completed": completed_count,
+                    "incomplete": incomplete_count,
+                    "total_points": total_points,
+                    "tasks": [
+                        {
+                            "title": t.title,
+                            "type": t.task_type,
+                            "points": t.points,
+                            "completed": t.is_completed,
+                            "url": t.destination_url,
+                        }
+                        for t in tasks
+                    ],
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
         print(f"\n结果已保存到: {output_path}")
 
         await browser.close()

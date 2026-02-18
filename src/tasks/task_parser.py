@@ -40,7 +40,11 @@ class TaskParser:
 
                 if "dashboard" not in current_url:
                     self.logger.info("导航到dashboard...")
-                    await page.goto("https://rewards.bing.com/dashboard", wait_until="networkidle", timeout=60000)
+                    await page.goto(
+                        "https://rewards.bing.com/dashboard",
+                        wait_until="networkidle",
+                        timeout=60000,
+                    )
                     await page.wait_for_load_state("domcontentloaded")
                     await page.wait_for_timeout(2000)
 
@@ -198,12 +202,14 @@ class TaskParser:
                     }
                 """)
 
-                task_links = result.get('taskLinks', 0)
-                total_links = result.get('totalLinks', 0)
-                has_section = result.get('hasSection', False)
-                has_content = result.get('hasContent', False)
+                task_links = result.get("taskLinks", 0)
+                total_links = result.get("totalLinks", 0)
+                has_section = result.get("hasSection", False)
+                has_content = result.get("hasContent", False)
 
-                self.logger.debug(f"  Check: {task_links} task links, {total_links} total, section={has_section}, content={has_content} (attempt {i + 1})")
+                self.logger.debug(
+                    f"  Check: {task_links} task links, {total_links} total, section={has_section}, content={has_content} (attempt {i + 1})"
+                )
 
                 if task_links >= 1:
                     self.logger.info(f"  Found {task_links} task links after {i + 1} checks")
@@ -211,7 +217,9 @@ class TaskParser:
                     return
 
                 if has_section and has_content and i >= 5:
-                    self.logger.info(f"  Page loaded with sections but no task links after {i + 1}s")
+                    self.logger.info(
+                        f"  Page loaded with sections but no task links after {i + 1}s"
+                    )
                     await page.wait_for_timeout(2000)
                     return
 

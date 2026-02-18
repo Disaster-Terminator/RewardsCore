@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from playwright.async_api import BrowserContext, Page
 
+from account.points_detector import PointsDetector
 from ui.real_time_status import StatusManager
 
 if TYPE_CHECKING:
@@ -349,20 +350,37 @@ class TaskCoordinator:
                     pending_count = len(tasks) - completed_count
                     self.logger.info(f"    待完成: {pending_count}, 已完成: {completed_count}")
 
-                    # 执行任务
                     if tasks:
+                        points_detector = PointsDetector()
+
+                        points_before = state_monitor.session_data.get("initial_points", 0)
+                        self.logger.info(f"  任务前积分: {points_before}")
+
                         self.logger.info("  开始执行任务...")
                         report = await task_manager.execute_tasks(page, tasks)
 
+                        points_after = await points_detector.get_current_points(
+                            page, skip_navigation=False
+                        )
+                        if points_after is None:
+                            points_after = points_before
+                        self.logger.info(f"  任务后积分: {points_after}")
+
+                        actual_points_gained = max(0, points_after - points_before)
+                        if actual_points_gained != report.points_earned:
+                            self.logger.warning(
+                                f"  ⚠️ 积分验证: 报告 {report.points_earned}, 实际 {actual_points_gained}"
+                            )
+
                         state_monitor.session_data["tasks_completed"] = report.completed
                         state_monitor.session_data["tasks_failed"] = report.failed
-                        state_monitor.session_data["points_gained"] += report.points_earned
+                        state_monitor.session_data["points_gained"] += actual_points_gained
 
                         self.logger.info("  ✓ 任务执行完成")
                         self.logger.info(
                             f"    完成: {report.completed}, 失败: {report.failed}, 跳过: {report.skipped}"
                         )
-                        self.logger.info(f"    获得积分: +{report.points_earned}")
+                        self.logger.info(f"    实际获得积分: +{actual_points_gained}")
 
             except ImportError as e:
                 self.logger.warning(f"  ⚠ 任务系统模块导入失败: {e}")
@@ -380,7 +398,7 @@ class TaskCoordinator:
                 self.logger.info("  [模拟] 将执行日常任务")
 
         StatusManager.update_progress(7, 8)
-        return page  # 返回页面引用
+        return page
 
     def _log_task_debug_info(self) -> None:
         """记录任务调试信息"""

@@ -1,6 +1,7 @@
 """
 诊断脚本：自动触发登录后分析earn页面结构
 """
+
 import asyncio
 import json
 from pathlib import Path
@@ -99,7 +100,7 @@ async def diagnose():
         print(f"    找到 {len(sections)} 个板块")
         for sec in sections:
             print(f"\n    板块 [{sec['id']}]: {sec['linkCount']} 个链接")
-            for link in sec['links']:
+            for link in sec["links"]:
                 print(f"      → {link['href']}: {link['text'][:30]}")
 
         print("\n[4] 分析所有任务链接...")
@@ -186,12 +187,17 @@ async def diagnose():
         output_path = Path("logs/diagnostics/earn_structure.json")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "url": page.url,
-                "sections": sections,
-                "all_tasks": all_tasks,
-                "completion_samples": completion_info
-            }, f, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "url": page.url,
+                    "sections": sections,
+                    "all_tasks": all_tasks,
+                    "completion_samples": completion_info,
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
         print(f"\n[6] 结果已保存到: {output_path}")
 
         await browser.close()

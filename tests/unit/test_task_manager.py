@@ -402,7 +402,7 @@ class TestTaskManager:
             async def execute(self, page):
                 import asyncio
 
-                await asyncio.sleep(70)
+                await asyncio.sleep(3)
                 return True
 
         manager = TaskManager(mock_config)
@@ -418,7 +418,12 @@ class TestTaskManager:
         )
         slow_task = SlowTask(slow_metadata)
 
-        report = await manager.execute_tasks(mock_page, [slow_task])
+        with patch("asyncio.wait_for") as mock_wait_for:
+            import asyncio
+
+            mock_wait_for.side_effect = asyncio.TimeoutError()
+
+            report = await manager.execute_tasks(mock_page, [slow_task])
 
         assert report.failed == 1
         assert any(d["status"] == "timeout" for d in report.task_details)
