@@ -10,7 +10,7 @@ from playwright.async_api import TimeoutError as PlaywrightTimeout
 
 from tasks.task_base import TaskMetadata
 
-SKIP_HREFS = [
+_DEFAULT_SKIP_HREFS = [
     "/earn",
     "/dashboard",
     "/about",
@@ -30,22 +30,22 @@ SKIP_HREFS = [
     "microsoft-edge://",
 ]
 
-SKIP_TEXT_PATTERNS = ["抽奖", "sweepstakes"]
+_DEFAULT_SKIP_TEXT_PATTERNS = ["抽奖", "sweepstakes"]
 
-COMPLETED_TEXT_PATTERNS = ["已完成", "completed"]
+_DEFAULT_COMPLETED_TEXT_PATTERNS = ["已完成", "completed"]
 
-POINTS_SELECTOR = ".text-caption1Stronger"
+_DEFAULT_POINTS_SELECTOR = ".text-caption1Stronger"
 
-COMPLETED_CIRCLE_CLASS = "bg-statusSuccessBg3"
-INCOMPLETE_CIRCLE_CLASS = "border-neutralStroke1"
+_DEFAULT_COMPLETED_CIRCLE_CLASS = "bg-statusSuccessBg3"
+_DEFAULT_INCOMPLETE_CIRCLE_CLASS = "border-neutralStroke1"
 
-LOGIN_SELECTORS = [
+_DEFAULT_LOGIN_SELECTORS = [
     'input[name="loginfmt"]',
     'input[type="email"]',
     "#i0116",
 ]
 
-EARN_LINK_SELECTOR = 'a[href="/earn"], a[href^="/earn?"], a[href*="rewards.bing.com/earn"]'
+_DEFAULT_EARN_LINK_SELECTOR = 'a[href="/earn"], a[href^="/earn?"], a[href*="rewards.bing.com/earn"]'
 
 
 class TaskParser:
@@ -59,6 +59,30 @@ class TaskParser:
         self.logger = logging.getLogger(__name__)
         self.config = config
         self.debug_mode = config.get("task_system.debug_mode", False) if config else False
+        self._init_parser_config()
+
+    def _init_parser_config(self):
+        """Initialize parser configuration from config or use defaults"""
+        parser_config = self.config.get("task_system.task_parser", {}) if self.config else {}
+
+        self.skip_hrefs = parser_config.get("skip_hrefs", _DEFAULT_SKIP_HREFS)
+        self.skip_text_patterns = parser_config.get(
+            "skip_text_patterns", _DEFAULT_SKIP_TEXT_PATTERNS
+        )
+        self.completed_text_patterns = parser_config.get(
+            "completed_text_patterns", _DEFAULT_COMPLETED_TEXT_PATTERNS
+        )
+        self.points_selector = parser_config.get("points_selector", _DEFAULT_POINTS_SELECTOR)
+        self.completed_circle_class = parser_config.get(
+            "completed_circle_class", _DEFAULT_COMPLETED_CIRCLE_CLASS
+        )
+        self.incomplete_circle_class = parser_config.get(
+            "incomplete_circle_class", _DEFAULT_INCOMPLETE_CIRCLE_CLASS
+        )
+        self.login_selectors = parser_config.get("login_selectors", _DEFAULT_LOGIN_SELECTORS)
+        self.earn_link_selector = parser_config.get(
+            "earn_link_selector", _DEFAULT_EARN_LINK_SELECTOR
+        )
 
     async def discover_tasks(self, page: Page) -> list[TaskMetadata]:
         """
@@ -86,7 +110,7 @@ class TaskParser:
                     await page.wait_for_timeout(2000)
 
                 self.logger.info("Clicking earn link to navigate to earn page...")
-                earn_link = page.locator(EARN_LINK_SELECTOR)
+                earn_link = page.locator(self.earn_link_selector)
                 if await earn_link.count() > 0:
                     await earn_link.first.click()
                     await page.wait_for_load_state("networkidle", timeout=30000)
@@ -281,7 +305,7 @@ class TaskParser:
     async def _is_login_page(self, page: Page) -> bool:
         """Check if currently on login page"""
         try:
-            for selector in LOGIN_SELECTORS:
+            for selector in self.login_selectors:
                 element = await page.query_selector(selector)
                 if element:
                     return True
@@ -289,6 +313,173 @@ class TaskParser:
             return False
         except Exception:
             return False
+
+    def _build_js_should_skip(self) -> str:
+        """Build JavaScript shouldSkip function"""
+        return """
+            function shouldSkip(href, text, skipHrefs, skipTextPatterns) {
+                const hrefLower = href.toLowerCase();
+                const combined = (href + ' ' + text).toLowerCase();
+
+                if (hrefLower.startsWith('microsoft-edge://')) return true;
+                if (hrefLower.includes('xbox.com')) return true;
+                if (hrefLower === '#' || hrefLower.endsWith('#')) return true;
+
+                for (const skip of skipHrefs) {
+                    if (skip.startsWith('/') || skip === '/') {
+                        if (hrefLower === skip || hrefLower.endsWith(skip)) return true;
+                        if (hrefLower.startsWith(skip + '?')) return true;
+                    } else {
+                        if (hrefLower.includes(skip)) return true;
+                    }
+                }
+
+                for (const pattern of skipTextPatterns) {
+                    if (combined.includes(pattern.toLowerCase())) return true;
+                }
+
+                if (hrefLower.includes('referandearn') || hrefLower.includes('/redeem')) return true;
+
+                return false;
+            }
+        """
+
+    def _build_js_extract_points(self) -> str:
+        """Build JavaScript extractPoints function"""
+        return """
+            function extractPoints(el, pointsSelector) {
+                const pointsEl = el.querySelector(pointsSelector);
+                if (pointsEl) {
+                    const num = pointsEl.innerText.trim().match(/\\d+/);
+                    if (num) return parseInt(num[0]);
+                }
+
+                const text = el.innerText || '';
+                const match = text.match(/\\+(\\d+)/) ||
+                             text.match(/(\\d+)\\s*(?:points?|pts?|积分|分)/i);
+                if (match) return parseInt(match[1]);
+                return 0;
+            }
+        """
+
+    def _build_js_is_completed(self) -> str:
+        """Build JavaScript isCompleted function"""
+        return """
+            function isCompleted(el, completedTextPatterns, completedCircleClass, incompleteCircleClass) {
+                const text = (el.innerText || '').toLowerCase();
+
+                for (const pattern of completedTextPatterns) {
+                    if (text.includes(pattern.toLowerCase())) return true;
+                }
+
+                const progressMatch = text.match(/(\\d+)\\/(\\d+)/);
+                if (progressMatch && progressMatch[1] === progressMatch[2]) return true;
+
+                const circleEl = el.querySelector('[class*="rounded-full"]');
+                if (circleEl) {
+                    const circleClass = circleEl.className || '';
+                    if (circleClass.includes(completedCircleClass)) return true;
+                    if (circleClass.includes(incompleteCircleClass)) return false;
+
+                    const style = window.getComputedStyle(circleEl);
+                    const bgColor = style.backgroundColor || '';
+                    if (bgColor.includes('rgb') && !bgColor.includes('rgba(0, 0, 0, 0)')) {
+                        return true;
+                    }
+                }
+
+                const checkmark = el.querySelector('[class*="checkmark"], [aria-label*="complete"], [aria-label*="done"]');
+                if (checkmark) return true;
+
+                return false;
+            }
+        """
+
+    def _build_js_extract_title(self) -> str:
+        """Build JavaScript extractTitle function"""
+        return """
+            function extractTitle(el) {
+                const text = el.innerText || '';
+                const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 2);
+
+                for (const line of lines) {
+                    if (line.match(/^\\d+$/) || line.match(/^\\d+\\/\\d+/)) continue;
+                    if (line.includes('到期') || line.includes('过期')) continue;
+                    if (line.match(/^\\+?\\d+\\s*(积分|points?)?$/i)) continue;
+                    return line.substring(0, 100);
+                }
+                return '';
+            }
+        """
+
+    def _build_js_get_task_type(self) -> str:
+        """Build JavaScript getTaskType function"""
+        return """
+            function getTaskType(href, text) {
+                const combined = (href + ' ' + text).toLowerCase();
+                if (combined.includes('quiz') || combined.includes('测验')) return 'quiz';
+                if (combined.includes('poll') || combined.includes('投票')) return 'poll';
+                return 'urlreward';
+            }
+        """
+
+    def _build_js_main_parser(self) -> str:
+        """Build main JavaScript parser function"""
+        return """
+            ([skipHrefs, skipTextPatterns, completedTextPatterns, pointsSelector, completedCircleClass, incompleteCircleClass]) => {
+                const tasks = [];
+                const seenHrefs = new Set();
+                const debug = [];
+
+                const main = document.querySelector('main, [role="main"]') || document.body;
+                const links = main.querySelectorAll('a[href]');
+                debug.push('Total links: ' + links.length);
+
+                for (const link of links) {
+                    const href = link.getAttribute('href') || '';
+                    if (!href || seenHrefs.has(href)) continue;
+
+                    const text = link.innerText || '';
+                    debug.push('Checking: ' + href.substring(0, 50) + ' | text: ' + text.substring(0, 30));
+
+                    if (shouldSkip(href, text, skipHrefs, skipTextPatterns)) {
+                        debug.push('  Skipped by shouldSkip');
+                        continue;
+                    }
+
+                    seenHrefs.add(href);
+
+                    const title = extractTitle(link);
+                    debug.push('  Title: ' + title);
+                    if (!title) continue;
+
+                    const points = extractPoints(link, pointsSelector);
+                    const completed = isCompleted(link, completedTextPatterns, completedCircleClass, incompleteCircleClass);
+                    const taskType = getTaskType(href, text);
+
+                    tasks.push({
+                        title: title,
+                        href: href,
+                        points: points,
+                        taskType: taskType,
+                        completed: completed
+                    });
+                }
+
+                return { tasks: tasks, debug: debug };
+            }
+        """
+
+    def _build_full_js_parser(self) -> str:
+        """Build complete JavaScript parser with all helper functions"""
+        return (
+            self._build_js_should_skip()
+            + self._build_js_extract_points()
+            + self._build_js_is_completed()
+            + self._build_js_extract_title()
+            + self._build_js_get_task_type()
+            + self._build_js_main_parser()
+        )
 
     async def _parse_tasks_from_page(self, page: Page) -> list[TaskMetadata]:
         """
@@ -306,148 +497,16 @@ class TaskParser:
         tasks = []
 
         try:
+            js_parser = self._build_full_js_parser()
             raw_tasks = await page.evaluate(
-                """
-                ([skipHrefs, skipTextPatterns, completedTextPatterns, pointsSelector, completedCircleClass, incompleteCircleClass]) => {
-                    const tasks = [];
-                    const seenHrefs = new Set();
-                    const debug = [];
-
-                    function shouldSkip(href, text) {
-                        const hrefLower = href.toLowerCase();
-                        const combined = (href + ' ' + text).toLowerCase();
-
-                        if (hrefLower.startsWith('microsoft-edge://')) return true;
-                        if (hrefLower.includes('xbox.com')) return true;
-
-                        if (hrefLower === '#' || hrefLower.endsWith('#')) return true;
-
-                        for (const skip of skipHrefs) {
-                            if (skip.startsWith('/') || skip === '/') {
-                                if (hrefLower === skip || hrefLower.endsWith(skip)) return true;
-                                if (hrefLower.startsWith(skip + '?')) return true;
-                            } else {
-                                if (hrefLower.includes(skip)) return true;
-                            }
-                        }
-
-                        for (const pattern of skipTextPatterns) {
-                            if (combined.includes(pattern.toLowerCase())) return true;
-                        }
-
-                        if (hrefLower.includes('referandearn') || hrefLower.includes('/redeem')) return true;
-
-                        return false;
-                    }
-
-                    function extractPoints(el) {
-                        const pointsEl = el.querySelector(pointsSelector);
-                        if (pointsEl) {
-                            const num = pointsEl.innerText.trim().match(/\\d+/);
-                            if (num) return parseInt(num[0]);
-                        }
-
-                        const text = el.innerText || '';
-                        const match = text.match(/\\+(\\d+)/) ||
-                                     text.match(/(\\d+)\\s*(?:points?|pts?|积分|分)/i);
-                        if (match) return parseInt(match[1]);
-                        return 0;
-                    }
-
-                    function isCompleted(el) {
-                        const text = (el.innerText || '').toLowerCase();
-
-                        for (const pattern of completedTextPatterns) {
-                            if (text.includes(pattern.toLowerCase())) return true;
-                        }
-
-                        const progressMatch = text.match(/(\\d+)\\/(\\d+)/);
-                        if (progressMatch && progressMatch[1] === progressMatch[2]) return true;
-
-                        const circleEl = el.querySelector('[class*="rounded-full"]');
-                        if (circleEl) {
-                            const circleClass = circleEl.className || '';
-                            if (circleClass.includes(completedCircleClass)) return true;
-                            if (circleClass.includes(incompleteCircleClass)) return false;
-
-                            const style = window.getComputedStyle(circleEl);
-                            const bgColor = style.backgroundColor || '';
-                            if (bgColor.includes('rgb') && !bgColor.includes('rgba(0, 0, 0, 0)')) {
-                                return true;
-                            }
-                        }
-
-                        const checkmark = el.querySelector('[class*="checkmark"], [aria-label*="complete"], [aria-label*="done"]');
-                        if (checkmark) return true;
-
-                        return false;
-                    }
-
-                    function extractTitle(el) {
-                        const text = el.innerText || '';
-                        const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 2);
-
-                        for (const line of lines) {
-                            if (line.match(/^\\d+$/) || line.match(/^\\d+\\/\\d+/)) continue;
-                            if (line.includes('到期') || line.includes('过期')) continue;
-                            if (line.match(/^\\+?\\d+\\s*(积分|points?)?$/i)) continue;
-                            return line.substring(0, 100);
-                        }
-                        return '';
-                    }
-
-                    function getTaskType(href, text) {
-                        const combined = (href + ' ' + text).toLowerCase();
-                        if (combined.includes('quiz') || combined.includes('测验')) return 'quiz';
-                        if (combined.includes('poll') || combined.includes('投票')) return 'poll';
-                        return 'urlreward';
-                    }
-
-                    const main = document.querySelector('main, [role="main"]') || document.body;
-                    const links = main.querySelectorAll('a[href]');
-                    debug.push('Total links: ' + links.length);
-
-                    for (const link of links) {
-                        const href = link.getAttribute('href') || '';
-                        if (!href || seenHrefs.has(href)) continue;
-
-                        const text = link.innerText || '';
-                        debug.push('Checking: ' + href.substring(0, 50) + ' | text: ' + text.substring(0, 30));
-
-                        if (shouldSkip(href, text)) {
-                            debug.push('  Skipped by shouldSkip');
-                            continue;
-                        }
-
-                        seenHrefs.add(href);
-
-                        const title = extractTitle(link);
-                        debug.push('  Title: ' + title);
-                        if (!title) continue;
-
-                        const points = extractPoints(link);
-                        const completed = isCompleted(link);
-                        const taskType = getTaskType(href, text);
-
-                        tasks.push({
-                            title: title,
-                            href: href,
-                            points: points,
-                            taskType: taskType,
-                            completed: completed
-                        });
-                    }
-
-                    return { tasks: tasks, debug: debug };
-                }
-            """,
+                js_parser,
                 [
-                    SKIP_HREFS,
-                    SKIP_TEXT_PATTERNS,
-                    COMPLETED_TEXT_PATTERNS,
-                    POINTS_SELECTOR,
-                    COMPLETED_CIRCLE_CLASS,
-                    INCOMPLETE_CIRCLE_CLASS,
+                    self.skip_hrefs,
+                    self.skip_text_patterns,
+                    self.completed_text_patterns,
+                    self.points_selector,
+                    self.completed_circle_class,
+                    self.incomplete_circle_class,
                 ],
             )
 
