@@ -34,11 +34,6 @@ SKIP_TEXT_PATTERNS = ["抽奖", "sweepstakes"]
 
 COMPLETED_TEXT_PATTERNS = ["已完成", "completed"]
 
-TASK_TYPE_KEYWORDS = {
-    "quiz": ["quiz", "测验"],
-    "poll": ["poll", "投票"],
-}
-
 POINTS_SELECTOR = ".text-caption1Stronger"
 
 COMPLETED_CIRCLE_CLASS = "bg-statusSuccessBg3"
@@ -456,13 +451,13 @@ class TaskParser:
                 ],
             )
 
-            if not raw_tasks:
+            debug_info = raw_tasks.get("debug", [])
+            task_list = raw_tasks.get("tasks", [])
+
+            if not task_list:
                 self.logger.warning("No task elements found on page")
                 await self._save_diagnostics(page)
                 return tasks
-
-            debug_info = raw_tasks.get("debug", [])
-            task_list = raw_tasks.get("tasks", [])
 
             for line in debug_info[:20]:
                 self.logger.debug(f"  JS DEBUG: {line}")
