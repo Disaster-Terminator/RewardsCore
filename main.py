@@ -271,10 +271,10 @@ async def main():
                 logger.warning(f"  - {warning}")
 
         if args.dry_run:
-            print(validator.get_validation_report())
+            logger.info(validator.get_validation_report())
 
     except Exception as e:
-        print(f"❌ 配置文件加载失败: {e}")
+        logger.error(f"配置文件加载失败: {e}")
         sys.exit(1)
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -311,10 +311,9 @@ async def main():
         logger.info(f"无头模式: {config.get('browser.headless', True)}")
         logger.info("=" * 70)
 
-        if not config.get("browser.headless", True):
-            from ui.real_time_status import StatusManager
+        from ui.real_time_status import StatusManager
 
-            StatusManager.start(config)
+        StatusManager.start(config)
 
         await app.run()
 
