@@ -2,9 +2,13 @@
 Unit tests for TaskManager and Task System components
 """
 
+import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tasks.task_base import Task, TaskExecutionReport, TaskMetadata
 from tasks.task_manager import TaskManager
@@ -309,6 +313,22 @@ class TestTaskManager:
         assert result is not None
         assert result.get_type() == "urlreward"
 
+    def test_task_manager_converts_poll_to_urlreward(self, mock_config):
+        """Test that poll tasks are converted to urlreward tasks"""
+        manager = TaskManager(mock_config)
+
+        metadata = TaskMetadata(
+            task_id="poll-task",
+            task_type="poll",
+            title="Daily Poll Question",
+            points=10,
+            is_completed=False,
+        )
+
+        result = manager._create_task_from_metadata(metadata)
+        assert result is not None
+        assert result.get_type() == "urlreward"
+
     def test_task_manager_create_task_skips_unregistered_type(self, mock_config):
         """Test that unregistered task types return None"""
         manager = TaskManager(mock_config)
@@ -395,6 +415,47 @@ class TestTaskManager:
         assert report.points_earned == 0
 
     @pytest.mark.asyncio
+    async def test_task_manager_execute_tasks_success(self, mock_config):
+        """Test successful task execution with points earned"""
+
+        class SuccessfulTask(Task):
+            async def execute(self, page):
+                return True
+
+        manager = TaskManager(mock_config)
+        manager.task_registry["success"] = SuccessfulTask
+
+        mock_page = AsyncMock()
+
+        task1_metadata = TaskMetadata(
+            task_id="task-1",
+            task_type="success",
+            title="Successful Task 1",
+            points=10,
+            is_completed=False,
+        )
+        task2_metadata = TaskMetadata(
+            task_id="task-2",
+            task_type="success",
+            title="Successful Task 2",
+            points=20,
+            is_completed=False,
+        )
+
+        task1 = SuccessfulTask(task1_metadata)
+        task2 = SuccessfulTask(task2_metadata)
+
+        report = await manager.execute_tasks(mock_page, [task1, task2])
+
+        assert report.total_tasks == 2
+        assert report.completed == 2
+        assert report.failed == 0
+        assert report.skipped == 0
+        assert report.points_earned == 30
+        assert len(report.task_details) == 2
+        assert all(d["status"] == "completed" for d in report.task_details)
+
+    @pytest.mark.asyncio
     async def test_task_manager_execute_tasks_timeout(self, mock_config):
         """Test task execution timeout handling"""
 
@@ -429,6 +490,7 @@ class TestTaskManager:
         assert any(d["status"] == "timeout" for d in report.task_details)
 
 
+@pytest.mark.integration
 class TestTaskManagerIntegration:
     """Integration tests for TaskManager"""
 

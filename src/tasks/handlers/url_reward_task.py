@@ -58,7 +58,7 @@ class UrlRewardTask(Task):
             self.logger.debug(f"🌐 导航到: {url}")
 
             await page.goto(
-                self.metadata.destination_url,
+                url,
                 wait_until="networkidle",
                 timeout=30000,
             )
@@ -103,7 +103,7 @@ class UrlRewardTask(Task):
             return True
         except Exception as e:
             self.logger.debug(f"  搜索任务处理异常: {e}")
-            return True
+            return False
 
     async def _handle_quiz_task(self, page: Page) -> bool:
         """Handle quiz/poll tasks"""
@@ -122,7 +122,7 @@ class UrlRewardTask(Task):
             return True
         except Exception as e:
             self.logger.debug(f"  Quiz任务处理异常: {e}")
-            return True
+            return False
 
     async def _handle_puzzle_task(self, page: Page) -> bool:
         """Handle puzzle tasks"""
@@ -134,7 +134,7 @@ class UrlRewardTask(Task):
             return True
         except Exception as e:
             self.logger.debug(f"  拼图任务处理异常: {e}")
-            return True
+            return False
 
     async def _handle_generic_task(self, page: Page) -> bool:
         """Handle generic URL tasks"""
@@ -145,7 +145,7 @@ class UrlRewardTask(Task):
             return True
         except Exception as e:
             self.logger.debug(f"  通用任务处理异常: {e}")
-            return True
+            return False
 
     async def _scroll_page(self, page: Page):
         """Scroll the page to simulate human behavior"""

@@ -353,15 +353,21 @@ class TaskCoordinator:
                     if tasks:
                         points_detector = PointsDetector()
 
-                        points_before = state_monitor.session_data.get("initial_points", 0)
+                        points_before = getattr(state_monitor, "initial_points", None)
+                        if points_before is None:
+                            points_before = 0
                         self.logger.info(f"  任务前积分: {points_before}")
 
                         self.logger.info("  开始执行任务...")
                         report = await task_manager.execute_tasks(page, tasks)
 
-                        points_after = await points_detector.get_current_points(
-                            page, skip_navigation=False
-                        )
+                        temp_page = await page.context.new_page()
+                        try:
+                            points_after = await points_detector.get_current_points(
+                                temp_page, skip_navigation=False
+                            )
+                        finally:
+                            await temp_page.close()
                         if points_after is None:
                             points_after = points_before
                         self.logger.info(f"  任务后积分: {points_after}")

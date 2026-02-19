@@ -282,14 +282,16 @@ class RealTimeStatusDisplay:
         if self.start_time:
             total_time = time.time() - self.start_time
             total_time_str = self._format_duration(total_time)
-            print(f"总执行时间: {total_time_str}")
+            self._safe_print(f"总执行时间: {total_time_str}")
 
-        print(f"桌面搜索: {self.desktop_searches_completed}/{self.desktop_searches_total}")
-        print(f"移动搜索: {self.mobile_searches_completed}/{self.mobile_searches_total}")
-        print(f"积分获得: +{self.points_gained}")
+        self._safe_print(
+            f"桌面搜索: {self.desktop_searches_completed}/{self.desktop_searches_total}"
+        )
+        self._safe_print(f"移动搜索: {self.mobile_searches_completed}/{self.mobile_searches_total}")
+        self._safe_print(f"积分获得: +{self.points_gained}")
 
         if self.error_count > 0 or self.warning_count > 0:
-            print(f"错误/警告: {self.error_count}/{self.warning_count}")
+            self._safe_print(f"错误/警告: {self.error_count}/{self.warning_count}")
 
         print("=" * 60)
 

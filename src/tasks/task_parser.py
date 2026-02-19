@@ -174,6 +174,17 @@ class TaskParser:
             self.logger.debug(f"  No cookie consent banner: {e}")
 
         max_attempts = 30
+
+        current_url = (getattr(page, "url", "") or "").lower()
+        if any(token in current_url for token in ("login", "signin", "oauth", "consent")):
+            self.logger.info(
+                f"  Detected login/OAuth page ({current_url[:50]}...), redirecting to earn page"
+            )
+            try:
+                await page.goto(self.EARN_URL, wait_until="networkidle", timeout=30000)
+            except Exception as e:
+                self.logger.debug(f"  Redirect failed: {e}")
+
         for i in range(max_attempts):
             try:
                 result = await page.evaluate("""
@@ -271,7 +282,7 @@ class TaskParser:
                     const debug = [];
 
                     const skipHrefs = [
-                        '/earn$', '/dashboard$', '/about$', '/refer$', '^/$', '#',
+                        '/earn', '/dashboard', '/about', '/refer', '/',
                         '/orderhistory', '/faq',
                         'rewards.bing.com/referandearn',
                         'rewards.bing.com/redeem',
@@ -288,8 +299,15 @@ class TaskParser:
                         if (hrefLower.startsWith('microsoft-edge://')) return true;
                         if (hrefLower.includes('xbox.com')) return true;
 
+                        if (hrefLower === '#' || hrefLower.endsWith('#')) return true;
+
                         for (const skip of skipHrefs) {
-                            if (hrefLower === skip || hrefLower.endsWith(skip)) return true;
+                            if (skip.startsWith('/') || skip === '/') {
+                                if (hrefLower === skip || hrefLower.endsWith(skip)) return true;
+                                if (hrefLower.startsWith(skip + '?')) return true;
+                            } else {
+                                if (hrefLower.includes(skip)) return true;
+                            }
                         }
 
                         if (combined.includes('抽奖') || combined.includes('sweepstakes')) return true;
@@ -334,7 +352,7 @@ class TaskParser:
                             }
                         }
 
-                        const checkmark = el.querySelector('[class*="check"], svg');
+                        const checkmark = el.querySelector('[class*="checkmark"], [aria-label*="complete"], [aria-label*="done"]');
                         if (checkmark) return true;
 
                         return false;

@@ -135,15 +135,19 @@ async def diagnose_task_discovery():
 
         storage_state = config.get("account", {}).get("storage_state_path", "storage_state.json")
 
+        use_headless = Path(storage_state).exists()
+        if not use_headless:
+            print("⚠ 未找到会话状态，使用有头模式以便手动登录")
+
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(headless=use_headless)
 
             if Path(storage_state).exists():
                 context = await browser.new_context(storage_state=storage_state)
                 print("✓ 使用已保存的会话状态")
             else:
                 context = await browser.new_context()
-                print("⚠ 未找到会话状态，使用新会话")
+                print("⚠ 未找到会话状态，使用新会话（请手动登录）")
 
             page = await context.new_page()
 

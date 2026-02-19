@@ -37,7 +37,7 @@ def analyze_html(file_path):
         print(f"Error reading file: {e}")
         return
 
-    matches = re.findall(r"self\.__next_f\.push\(\[(.*?)\]\)", content)
+    matches = re.findall(r"self\.__next_f\.push\(\[(.*?)\]\)", content, flags=re.DOTALL)
 
     print(f"Found {len(matches)} data pushes.")
 
