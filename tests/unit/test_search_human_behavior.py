@@ -2,9 +2,13 @@
 Tests for human behavior integration in SearchEngine
 """
 
+import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from search.search_engine import SearchEngine
 
@@ -139,6 +143,54 @@ class TestHumanBehaviorIntegration:
 
         result = await search_engine._fallback_input(mock_page, mock_search_box, "test query")
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_fallback_input_click_type_path(self, search_engine):
+        """Test fallback input with click + type path"""
+        mock_page = AsyncMock()
+        mock_page.keyboard = AsyncMock()
+        mock_page.keyboard.type = AsyncMock()
+
+        mock_search_box = AsyncMock()
+        mock_search_box.fill = AsyncMock(side_effect=Exception("Fill failed"))
+        mock_search_box.click = AsyncMock()
+        mock_search_box.input_value = AsyncMock(return_value="test query")
+
+        result = await search_engine._fallback_input(mock_page, mock_search_box, "test query")
+        assert result is True
+        mock_search_box.click.assert_called_once()
+        mock_page.keyboard.type.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_fallback_input_js_evaluate_path(self, search_engine):
+        """Test fallback input with JS evaluate path"""
+        mock_page = AsyncMock()
+
+        mock_search_box = AsyncMock()
+        mock_search_box.fill = AsyncMock(side_effect=Exception("Fill failed"))
+        mock_search_box.click = AsyncMock(side_effect=Exception("Click failed"))
+        mock_search_box.evaluate = AsyncMock()
+        mock_search_box.input_value = AsyncMock(return_value="test query")
+
+        result = await search_engine._fallback_input(mock_page, mock_search_box, "test query")
+        assert result is True
+        assert mock_search_box.evaluate.call_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_fallback_input_all_methods_fail(self, search_engine):
+        """Test fallback input when all methods fail"""
+        mock_page = AsyncMock()
+        mock_page.keyboard = AsyncMock()
+        mock_page.keyboard.type = AsyncMock(side_effect=Exception("Type failed"))
+
+        mock_search_box = AsyncMock()
+        mock_search_box.fill = AsyncMock(side_effect=Exception("Fill failed"))
+        mock_search_box.click = AsyncMock(side_effect=Exception("Click failed"))
+        mock_search_box.evaluate = AsyncMock(side_effect=Exception("Evaluate failed"))
+        mock_search_box.input_value = AsyncMock(side_effect=Exception("Input value failed"))
+
+        result = await search_engine._fallback_input(mock_page, mock_search_box, "test query")
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_status_manager_dependency_injection(

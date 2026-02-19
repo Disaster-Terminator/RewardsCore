@@ -4,6 +4,7 @@
 """
 
 import logging
+import sys
 import threading
 import time
 from datetime import datetime
@@ -110,7 +111,10 @@ class RealTimeStatusDisplay:
             warning_count = self.warning_count
             search_times = self.search_times.copy()
 
-        print("\033[2J\033[H", end="")
+        if sys.stdout.isatty():
+            print("\033[2J\033[H", end="")
+        else:
+            print("\n" + "=" * 60)
 
         print("🤖 MS Rewards Automator - 实时状态")
         print("=" * 60)

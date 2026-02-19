@@ -3,6 +3,8 @@
 执行搜索任务，协调各个组件
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import random
@@ -21,13 +23,18 @@ logger = logging.getLogger(__name__)
 
 
 class StatusManagerProtocol(Protocol):
+    @classmethod
     def update_desktop_searches(
-        self, current: int, total: int, search_time: float = None
+        cls, current: int, total: int, search_time: float = None
     ) -> None: ...
+
+    @classmethod
     def update_mobile_searches(
-        self, current: int, total: int, search_time: float = None
+        cls, current: int, total: int, search_time: float = None
     ) -> None: ...
-    def update_operation(self, operation: str) -> None: ...
+
+    @classmethod
+    def update_operation(cls, operation: str) -> None: ...
 
 
 class SearchEngine:
@@ -42,7 +49,7 @@ class SearchEngine:
         anti_ban,
         monitor=None,
         query_engine=None,
-        status_manager: StatusManagerProtocol | None = None,
+        status_manager: type[StatusManagerProtocol] | None = None,
         human_behavior: HumanBehaviorSimulator | None = None,
     ):
         """
@@ -54,7 +61,7 @@ class SearchEngine:
             anti_ban: AntiBanModule 实例
             monitor: StateMonitor 实例（可选）
             query_engine: QueryEngine 实例（可选，用于智能查询生成）
-            status_manager: StatusManager 实例（可选，用于进度显示）
+            status_manager: StatusManager 类（可选，用于进度显示，使用 classmethod）
             human_behavior: HumanBehaviorSimulator 实例（可选，用于拟人化行为）
         """
         self.config = config
@@ -224,7 +231,10 @@ class SearchEngine:
                 return await self._verify_input(search_box, term)
             except Exception:
                 try:
-                    await search_box.evaluate(f"el => el.value = '{term}'")
+                    await search_box.evaluate(
+                        "(el, value) => { el.value = value; }",
+                        term,
+                    )
                     await search_box.evaluate("""
                         el => {
                             el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -493,10 +503,11 @@ class SearchEngine:
                     if no_result_indicator:
                         logger.info("搜索无结果（但搜索本身成功）")
                         return True
-                    return True
+                    logger.warning("未找到搜索结果且无'无结果'指示器，可能遇到错误页面")
+                    return False
             except Exception as e:
                 logger.debug(f"检查搜索结果数量失败: {e}")
-                return True
+                return False
 
         except Exception as e:
             logger.error(f"验证搜索结果时出错: {e}")

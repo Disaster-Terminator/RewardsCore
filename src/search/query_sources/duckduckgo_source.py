@@ -35,10 +35,23 @@ class DuckDuckGoSource(QuerySource):
             config: ConfigManager instance
         """
         super().__init__(config)
-        self.timeout = config.get("query_engine.bing_api.timeout", 15)
+        self.timeout = config.get("query_engine.sources.duckduckgo.timeout", 15)
         self._available = True
+        self._session: aiohttp.ClientSession | None = None
 
         self.logger.info("DuckDuckGoSource initialized")
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create aiohttp session"""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
+    async def close(self) -> None:
+        """Close the aiohttp session"""
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+            self._session = None
 
     async def fetch_queries(self, count: int) -> list[str]:
         """
@@ -56,13 +69,13 @@ class DuckDuckGoSource(QuerySource):
             num_seeds = min(count // 3 + 1, len(self.SEED_QUERIES))
             seeds = random.sample(self.SEED_QUERIES, num_seeds)
 
-            async with aiohttp.ClientSession() as session:
-                for seed in seeds:
-                    if len(queries) >= count:
-                        break
+            session = await self._get_session()
+            for seed in seeds:
+                if len(queries) >= count:
+                    break
 
-                    suggestions = await self._fetch_suggestions(session, seed)
-                    queries.extend(suggestions[:3])
+                suggestions = await self._fetch_suggestions(session, seed)
+                queries.extend(suggestions[:3])
 
             queries = queries[:count]
             self.logger.debug(f"Fetched {len(queries)} queries from DuckDuckGo")

@@ -266,12 +266,13 @@ class QueryEngine:
         unique = []
 
         for query in queries:
-            # Normalize: lowercase and strip whitespace
             normalized = query.lower().strip()
 
             if normalized and normalized not in seen:
                 seen.add(normalized)
-                unique.append(query)  # Keep original case
+                unique.append(query)
+
+        self._query_sources = {k: v for k, v in self._query_sources.items() if k in seen}
 
         self.logger.debug(f"Deduplicated {len(queries)} queries to {len(unique)} unique queries")
         return unique
@@ -302,10 +303,10 @@ class QueryEngine:
             query: Query string
 
         Returns:
-            Source name or 'unknown'
+            Source name or 'local_file' (default)
         """
         normalized = query.lower().strip()
-        return self._query_sources.get(normalized, "unknown")
+        return self._query_sources.get(normalized, "local_file")
 
     def get_statistics(self) -> dict:
         """

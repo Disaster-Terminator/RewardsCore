@@ -53,8 +53,10 @@ query_engine:
       enabled: true # 本地搜索词文件
     duckduckgo:
       enabled: true # DuckDuckGo 建议API
+      timeout: 15 # 超时（秒）
     wikipedia:
       enabled: true # Wikipedia 热门话题
+      timeout: 15 # 超时（秒）
     bing_suggestions:
       enabled: true # Bing 建议API
   bing_api:

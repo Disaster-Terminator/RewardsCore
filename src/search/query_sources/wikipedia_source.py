@@ -52,10 +52,25 @@ class WikipediaSource(QuerySource):
             config: ConfigManager instance
         """
         super().__init__(config)
-        self.timeout = config.get("query_engine.bing_api.timeout", 15)
+        wiki_timeout = config.get("query_engine.sources.wikipedia.timeout")
+        bing_timeout = config.get("query_engine.bing_api.timeout", 15)
+        self.timeout = wiki_timeout if wiki_timeout is not None else bing_timeout
         self._available = True
+        self._session: aiohttp.ClientSession | None = None
 
         self.logger.info("WikipediaSource initialized")
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create aiohttp session"""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
+    async def close(self) -> None:
+        """Close the aiohttp session"""
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+            self._session = None
 
     async def fetch_queries(self, count: int) -> list[str]:
         """
@@ -70,24 +85,24 @@ class WikipediaSource(QuerySource):
         queries = []
 
         try:
-            async with aiohttp.ClientSession() as session:
-                num_topics = min(count, len(self.TRENDING_TOPICS))
-                topics = random.sample(self.TRENDING_TOPICS, num_topics)
+            session = await self._get_session()
+            num_topics = min(count, len(self.TRENDING_TOPICS))
+            topics = random.sample(self.TRENDING_TOPICS, num_topics)
 
-                for topic in topics:
-                    if len(queries) >= count:
-                        break
+            for topic in topics:
+                if len(queries) >= count:
+                    break
 
-                    title = await self._fetch_page_title(session, topic)
-                    if title:
-                        queries.append(title)
+                title = await self._fetch_page_title(session, topic)
+                if title:
+                    queries.append(title)
 
-                while len(queries) < count:
-                    random_title = await self._fetch_random_page(session)
-                    if random_title:
-                        queries.append(random_title)
-                    else:
-                        break
+            while len(queries) < count:
+                random_title = await self._fetch_random_page(session)
+                if random_title:
+                    queries.append(random_title)
+                else:
+                    break
 
             queries = queries[:count]
             self.logger.debug(f"Fetched {len(queries)} queries from Wikipedia")
