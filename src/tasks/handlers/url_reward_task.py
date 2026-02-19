@@ -67,15 +67,17 @@ class UrlRewardTask(Task):
 
             await asyncio.sleep(random.uniform(2, 4))
 
-            is_search_task = "bing.com/search" in url.lower()
-            is_quiz_task = "quiz" in url.lower() or "poll" in url.lower()
-            is_puzzle_task = "puzzle" in url.lower() or "spotlight" in url.lower()
+            final_url = page.url.lower()
 
-            if is_search_task:
-                success = await self._handle_search_task(page)
-            elif is_quiz_task:
+            if (
+                self.metadata.task_type in ("quiz", "poll")
+                or "quiz" in final_url
+                or "poll" in final_url
+            ):
                 success = await self._handle_quiz_task(page)
-            elif is_puzzle_task:
+            elif "bing.com/search" in final_url:
+                success = await self._handle_search_task(page)
+            elif "puzzle" in final_url or "spotlight" in final_url:
                 success = await self._handle_puzzle_task(page)
             else:
                 success = await self._handle_generic_task(page)
@@ -93,59 +95,43 @@ class UrlRewardTask(Task):
         """Handle search-based tasks"""
         self.logger.debug("  处理搜索任务...")
 
-        try:
-            await self._scroll_page(page)
+        await self._scroll_page(page)
 
-            search_input = page.locator('input[type="search"], input[name="q"], #sb_form_q')
-            if await search_input.count() > 0:
-                await asyncio.sleep(random.uniform(1, 2))
+        search_input = page.locator('input[type="search"], input[name="q"], #sb_form_q')
+        if await search_input.count() > 0:
+            await asyncio.sleep(random.uniform(1, 2))
 
-            return True
-        except Exception as e:
-            self.logger.debug(f"  搜索任务处理异常: {e}")
-            return False
+        return True
 
     async def _handle_quiz_task(self, page: Page) -> bool:
         """Handle quiz/poll tasks"""
         self.logger.debug("  处理Quiz/Poll任务...")
 
-        try:
-            await self._scroll_page(page)
+        await self._scroll_page(page)
 
-            start_button = page.locator(
-                'button:has-text("Start"), button:has-text("开始"), a:has-text("Start")'
-            )
-            if await start_button.count() > 0:
-                await start_button.first.click()
-                await asyncio.sleep(random.uniform(2, 3))
+        start_button = page.locator(
+            'button:has-text("Start"), button:has-text("开始"), a:has-text("Start")'
+        )
+        if await start_button.count() > 0:
+            await start_button.first.click()
+            await asyncio.sleep(random.uniform(2, 3))
 
-            return True
-        except Exception as e:
-            self.logger.debug(f"  Quiz任务处理异常: {e}")
-            return False
+        return True
 
     async def _handle_puzzle_task(self, page: Page) -> bool:
         """Handle puzzle tasks"""
         self.logger.debug("  处理拼图任务...")
 
-        try:
-            await self._scroll_page(page)
-            await asyncio.sleep(random.uniform(3, 5))
-            return True
-        except Exception as e:
-            self.logger.debug(f"  拼图任务处理异常: {e}")
-            return False
+        await self._scroll_page(page)
+        await asyncio.sleep(random.uniform(3, 5))
+        return True
 
     async def _handle_generic_task(self, page: Page) -> bool:
         """Handle generic URL tasks"""
         self.logger.debug("  处理通用任务...")
 
-        try:
-            await self._scroll_page(page)
-            return True
-        except Exception as e:
-            self.logger.debug(f"  通用任务处理异常: {e}")
-            return False
+        await self._scroll_page(page)
+        return True
 
     async def _scroll_page(self, page: Page):
         """Scroll the page to simulate human behavior"""

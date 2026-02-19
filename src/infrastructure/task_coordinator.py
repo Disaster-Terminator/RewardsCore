@@ -368,15 +368,17 @@ class TaskCoordinator:
                             )
                         finally:
                             await temp_page.close()
-                        if points_after is None:
-                            points_after = points_before
-                        self.logger.info(f"  任务后积分: {points_after}")
 
-                        actual_points_gained = max(0, points_after - points_before)
-                        if actual_points_gained != report.points_earned:
-                            self.logger.warning(
-                                f"  ⚠️ 积分验证: 报告 {report.points_earned}, 实际 {actual_points_gained}"
-                            )
+                        if points_after is None:
+                            self.logger.warning("  ⚠️ 积分检测失败，跳过积分验证")
+                            actual_points_gained = 0
+                        else:
+                            self.logger.info(f"  任务后积分: {points_after}")
+                            actual_points_gained = max(0, points_after - points_before)
+                            if actual_points_gained != report.points_earned:
+                                self.logger.warning(
+                                    f"  ⚠️ 积分验证: 报告 {report.points_earned}, 实际 {actual_points_gained}"
+                                )
 
                         state_monitor.session_data["tasks_completed"] = report.completed
                         state_monitor.session_data["tasks_failed"] = report.failed

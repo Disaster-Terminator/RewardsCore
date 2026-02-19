@@ -48,15 +48,17 @@ class TaskParser:
                     await page.wait_for_load_state("domcontentloaded")
                     await page.wait_for_timeout(2000)
 
-                self.logger.info("点击'赢取'链接进入earn页面...")
-                earn_link = page.locator('a[href="/earn"]')
+                self.logger.info("Clicking earn link to navigate to earn page...")
+                earn_link = page.locator(
+                    'a[href="/earn"], a[href^="/earn?"], a[href*="rewards.bing.com/earn"]'
+                )
                 if await earn_link.count() > 0:
                     await earn_link.first.click()
                     await page.wait_for_load_state("networkidle", timeout=30000)
                     await page.wait_for_load_state("domcontentloaded")
                     await page.wait_for_timeout(3000)
                 else:
-                    self.logger.warning("未找到'赢取'链接，直接导航到earn页面...")
+                    self.logger.warning("Earn link not found, navigating directly...")
                     await page.goto(self.EARN_URL, wait_until="networkidle", timeout=60000)
                     await page.wait_for_load_state("domcontentloaded")
                     await page.wait_for_timeout(3000)

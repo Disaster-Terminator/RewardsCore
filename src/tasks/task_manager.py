@@ -94,7 +94,7 @@ class TaskManager:
         # Quiz and poll tasks are treated as URL reward tasks (just visit the URL)
         if task_type in ("quiz", "poll"):
             self.logger.debug(f"📝 将{task_type}任务作为URL任务处理: {metadata.title}")
-            metadata = TaskMetadata(
+            task_metadata = TaskMetadata(
                 task_id=metadata.task_id,
                 task_type="urlreward",
                 title=metadata.title,
@@ -105,13 +105,15 @@ class TaskManager:
                 is_button=metadata.is_button,
             )
             task_type = "urlreward"
+        else:
+            task_metadata = metadata
 
         # Check if task type is enabled in config
         task_type_key = task_type.replace("urlreward", "url_reward")  # Handle naming difference
         is_enabled = self.config.get(f"task_system.task_types.{task_type_key}", True)
 
         if not is_enabled:
-            self.logger.debug(f"⏭️  跳过已禁用的任务类型: {task_type} - {metadata.title}")
+            self.logger.debug(f"⏭️  跳过已禁用的任务类型: {task_type} - {task_metadata.title}")
             return None
 
         if task_type not in self.task_registry:
@@ -120,7 +122,7 @@ class TaskManager:
 
         try:
             task_class = self.task_registry[task_type]
-            return task_class(metadata)
+            return task_class(task_metadata)
         except Exception as e:
             self.logger.error(f"创建任务对象失败: {e}")
             return None
