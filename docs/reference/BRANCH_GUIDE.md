@@ -178,7 +178,7 @@ gh pr create --base main --head hotfix/urgent-fix --title "hotfix: 紧急修复�
 │                              ↓                                          │
 │         阶段4: Dev快速验证 (失败立即停止)                                 │
 │                              ↓ 通过                                     │
-│         阶段5: 自动化诊断测试 (Usermode + 诊断报告)                       │
+│         阶段5: 集成诊断测试 (Usermode + 中文报告)                        │
 │                              ↓ 通过 + 报告审核                           │
 └─────────────────────────────────────────────────────────────────────────┘
                               ↓
@@ -198,14 +198,14 @@ gh pr create --base main --head hotfix/urgent-fix --title "hotfix: 紧急修复�
 | **1. 静态检查** | 代码风格 | `ruff check .` | 无错误 | 停止 |
 | **2. 单元测试** | 模块功能 | `pytest tests/unit/ -m "not real"` | 全部通过 | 停止 |
 | **3. 集成测试** | 模块协作 | `pytest tests/integration/` | 全部通过 | 停止 |
-| **4. Dev快速验证** | 基本流程 | `python main.py --dev --headless` | 退出码0 | **立即停止** |
-| **5. 自动化诊断** | 完整验证+诊断 | `python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test integrated` | 无严重问题 | 停止，查看报告 |
-| **6. 有头验收** | 开发者确认 | `python main.py --dev` 或 `--user` | 人工确认 | 不合并 |
+| **4. Dev快速验证** | 基本流程 | `rscore --dev --headless` | 退出码0 | **立即停止** |
+| **5. User诊断验证** | 完整验证+诊断 | `rscore --user --headless` | 无严重问题 | 停止，查看报告 |
+| **6. 有头验收** | 开发者确认 | `rscore --dev` 或 `--user` | 人工确认 | 不合并 |
 
 ### 4.3 阶段4：Dev快速验证（快速失败）
 
 ```bash
-python main.py --dev --headless
+rscore --dev --headless
 ```
 
 **检查项：**
@@ -213,25 +213,25 @@ python main.py --dev --headless
 - [ ] 浏览器无头启动成功
 - [ ] 登录流程完成（无异常退出）
 - [ ] 桌面搜索完成 2 次
-- [ ] 移动搜索完成 2 次
 - [ ] 总耗时 < 5 分钟
 - [ ] 日志无 ERROR 级别
 - [ ] 进程退出码 = 0
 
 **失败处理：** 立即停止，查看日志定位问题
 
-### 4.4 阶段5：自动化诊断测试
+### 4.4 阶段5：集成诊断测试
 
 ```bash
-python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test integrated
+rscore --dev --headless
+rscore --user --headless
 ```
 
 **整合功能：**
 
-- Usermode 模式验证（3+3搜索，拟人行为，防检测）
+- 诊断模式自动启用（--dev/--user 默认启用）
 - 问题自动检测（PageInspector）
 - 根因诊断（DiagnosticEngine）
-- 报告生成（TestReporter）
+- 中文摘要报告（DiagnosisReporter）
 
 **检测的问题类型：**
 
@@ -247,10 +247,8 @@ python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test in
 
 **生成的报告：**
 
-- `logs/test_reports/test_report_{session_id}.json` - JSON详细报告
-- `logs/test_reports/test_report_{session_id}.html` - HTML可视化报告
-- `logs/diagnosis_report.json` - 诊断报告
-- `logs/screenshots/{session_id}/` - 截图目录
+- `logs/diagnosis/{session_id}/summary.txt` - 中文诊断摘要
+- `logs/diagnosis/{session_id}/screenshots/` - 截图目录
 
 **通过条件：**
 
@@ -261,9 +259,9 @@ python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test in
 ### 4.5 阶段6：有头模式开发者验收（必须）
 
 ```bash
-python main.py --dev          # 快速验收
+rscore --dev          # 快速验收
 # 或
-python main.py --user         # 完整行为验收
+rscore --user         # 完整行为验收
 ```
 
 **验收检查项：**
@@ -275,13 +273,6 @@ python main.py --user         # 完整行为验收
 - [ ] 拟人行为可见（鼠标移动、滚动、随机延迟）
 - [ ] 无异常弹窗或错误页面
 - [ ] 程序退出后浏览器正确关闭
-
-**验收签字：**
-
-```
-验收人: ____________    日期: ____________
-备注: _______________________________________________
-```
 
 ### 4.6 完整验收流程图
 
@@ -310,11 +301,11 @@ python main.py --user         # 完整行为验收
 │                        [是]          [否]                              │
 │                          ↓             ↓                               │
 │                   ┌─────────────┐  ┌──────────────────────┐            │
-│                   │ 立即停止    │  │ 阶段5: 自动化诊断     │            │
-│                   │ 查看日志    │  │ --user-mode          │            │
+│                   │ 立即停止    │  │ 阶段5: 集成诊断       │            │
+│                   │ 查看日志    │  │ --dev/--user         │            │
 │                   │ 定位问题    │  │ + 问题检测           │            │
 │                   └─────────────┘  │ + 根因诊断           │            │
-│                                    │ + 报告生成           │            │
+│                                    │ + 中文报告           │            │
 │                                    └──────────────────────┘            │
 │                                              ↓                          │
 │                                    ┌────────────────┐                  │
@@ -351,9 +342,9 @@ python main.py --user         # 完整行为验收
 
 | 参数 | 搜索次数 | 拟人行为 | 防检测 | 调度器 | 日志级别 | 用途 |
 |------|----------|----------|--------|--------|----------|------|
-| 默认 | 30+20 | ✅ | ✅ | ✅ 启用 | INFO | 生产环境 |
-| `--user` | 3+3 | ✅ | ✅ | ❌ 禁用 | INFO | 稳定性测试 |
-| `--dev` | 2+2 | ❌ | ❌ | ❌ 禁用 | DEBUG | 快速调试 |
+| 默认 | 20 | ✅ | ✅ | ✅ 启用 | INFO | 生产环境 |
+| `--user` | 3 | ✅ | ✅ | ❌ 禁用 | DEBUG | 稳定性测试（开发调试用） |
+| `--dev` | 2 | ❌ | ❌ | ❌ 禁用 | DEBUG | 快速调试（开发用） |
 
 #### 测试参数
 
@@ -361,9 +352,7 @@ python main.py --user         # 完整行为验收
 |------|------|
 | `--dry-run` | 模拟运行，不执行实际操作 |
 | `--test-notification` | 测试通知功能 |
-| `--autonomous-test` | 运行自主测试框架 |
-| `--test-type {login,bing_access,search,points,full}` | 自主测试类型 |
-| `--quick-test` | 快速测试模式 |
+| `--diagnose` | 启用诊断模式（--dev/--user 默认启用） |
 
 #### 其他参数
 
@@ -380,16 +369,19 @@ python main.py --user         # 完整行为验收
 
 ```bash
 # 开发模式（快速调试，调度器禁用）
-python main.py --dev
+rscore --dev
 
-# 用户模式（稳定性验证，调度器禁用）
-python main.py --user
+# 用户测试模式（稳定性验证，调度器禁用）
+rscore --user
 
 # 生产环境（完整功能，调度器启用）
-python main.py
+rscore
 
 # 仅测试登录
-python main.py --dev --desktop-only --dry-run
+rscore --dev --desktop-only --dry-run
+
+# 向后兼容（仍支持 python main.py）
+python main.py --dev
 ```
 
 ### 5.3 功能分支验证
@@ -402,7 +394,7 @@ git checkout feature/daily-tasks
 # 修改 config.yaml 中 task_system.enabled: true
 
 # 运行测试
-python main.py --dev
+rscore --dev
 pytest tests/unit/test_task_manager.py
 ```
 
@@ -413,8 +405,8 @@ pytest tests/unit/test_task_manager.py
 ```yaml
 # 核心功能
 search:
-  desktop_count: 30
-  mobile_count: 20
+  desktop_count: 20
+  mobile_count: 0
   wait_interval:
     min: 5
     max: 15
@@ -572,7 +564,7 @@ jobs:
     steps:
       - name: Dev Quick Verify
         run: |
-          python main.py --dev --headless
+          rscore --dev --headless
           exit_code=$?
           if [ $exit_code -ne 0 ]; then
             echo "❌ Dev验证失败，跳过后续测试"
@@ -580,29 +572,32 @@ jobs:
           fi
           echo "✅ Dev验证通过"
 
-  autonomous-diagnosis:
+  user-diagnosis:
     runs-on: ubuntu-latest
     needs: [dev-quick-verify]
     timeout-minutes: 20
     steps:
-      - run: python tests/autonomous/run_autonomous_tests.py --user-mode --headless --test integrated
+      - run: rscore --user --headless
       - name: Upload Reports
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: diagnosis-reports
           path: |
-            logs/test_reports/
-            logs/diagnosis_report.json
-            logs/screenshots/
+            logs/diagnosis/
       - name: Check Critical Issues
         run: |
           python -c "
           import json
-          with open('logs/diagnosis_report.json') as f:
-            report = json.load(f)
-          if report['critical_count'] > 0:
-            print('❌ 发现严重问题，验收失败')
-            exit(1)
+          from pathlib import Path
+          diagnosis_dir = Path('logs/diagnosis')
+          if diagnosis_dir.exists():
+              latest = max(diagnosis_dir.iterdir())
+              summary = latest / 'summary.txt'
+              if summary.exists():
+                  content = summary.read_text()
+                  if '🔴' in content or '严重问题' in content:
+                      print('❌ 发现严重问题，验收失败')
+                      exit(1)
           print('✅ 无严重问题')
           "
 ```
@@ -655,11 +650,11 @@ git fetch --all
 
 ## 十二、当前分支状态
 
-| 分支 | 最新提交 | 状态 |
-|------|----------|------|
-| `main` | `c718a0e` - feat: Bing主题管理功能 - 主动设置模式 | 稳定 |
-| `feature/daily-tasks` | `9661056` - merge: 合并 main 分支 | 开发中 |
-| `feature/frontend-ui` | `8ea7b4c` - style: 运行 ruff format 格式化代码 | 开发中 |
-| `feature/notifications` | `52f692a` - fix: 更新积分选择器 | 开发中 |
+| 分支 | 状态 |
+|------|------|
+| `main` | 稳定 |
+| `feature/daily-tasks` | 开发中 |
+| `feature/frontend-ui` | 开发中 |
+| `feature/notifications` | 开发中 |
 
-*最后更新：2026-02-17*
+*最后更新：2026-02-20*

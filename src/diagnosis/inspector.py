@@ -5,6 +5,7 @@
 
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -52,8 +53,6 @@ class DetectedIssue:
     timestamp: str = field(default_factory=lambda: "")
 
     def __post_init__(self):
-        from datetime import datetime
-
         if not self.timestamp:
             self.timestamp = datetime.now().isoformat()
 
@@ -254,7 +253,6 @@ class PageInspector:
             content_lower = content.lower()
             url = page.url.lower()
 
-            # 只在相关页面检查验证码
             if any(keyword in url for keyword in ["login", "signin", "search", "bing.com"]):
                 captcha_selectors = [
                     "iframe[src*='captcha']",
@@ -286,9 +284,7 @@ class PageInspector:
                         except Exception:
                             pass
 
-            # 关键词检测（排除广告内容）
             if "captcha" in content_lower or "recaptcha" in content_lower:
-                # 检查是否有实际的验证码元素，而不是广告中的文本
                 has_captcha_element = False
                 for selector in ["iframe[src*='captcha']", "[class*='captcha']"]:
                     element = await page.query_selector(selector)
@@ -352,14 +348,11 @@ class PageInspector:
             content_lower = content.lower()
             url = page.url.lower()
 
-            # 只在相关页面检查频率限制
             if any(keyword in url for keyword in ["login", "signin", "search", "bing.com"]):
                 for indicator in self.rate_limit_indicators:
                     if indicator in content_lower:
-                        # 检查是否在可见元素中
                         is_visible = False
                         try:
-                            # 搜索包含该文本的可见元素
                             elements = await page.query_selector_all("body *")
                             for element in elements:
                                 try:
@@ -404,7 +397,6 @@ class PageInspector:
             content = await page.content()
             content.lower()
 
-            # 检查实际的错误元素，而不是简单的关键词计数
             error_indicators = [
                 "error",
                 "错误",
@@ -416,7 +408,6 @@ class PageInspector:
                 "重试",
             ]
 
-            # 搜索可见的错误元素
             visible_error_elements = []
             error_selectors = [
                 ".error",

@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from .page_inspector import DetectedIssue, IssueType
+from .inspector import DetectedIssue, IssueType
 
 logger = logging.getLogger(__name__)
 
@@ -494,3 +494,73 @@ class DiagnosticEngine:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
         logger.info(f"诊断报告已保存: {filepath}")
+
+    def quick_check(self, page, check_type: str) -> "QuickDiagnosis":
+        """
+        快速诊断检查
+
+        Args:
+            page: Playwright 页面对象
+            check_type: 检查类型 (login/search/task/summary)
+
+        Returns:
+            QuickDiagnosis: 简化的诊断结果
+        """
+        from .inspector import PageInspector
+
+        inspector = PageInspector()
+        issues = []
+
+        import asyncio
+
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+
+                async def check():
+                    return await inspector.inspect_page(page)
+
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, check())
+                    issues = future.result()
+            else:
+                issues = asyncio.run(inspector.inspect_page(page))
+        except Exception as e:
+            logger.debug(f"快速检查失败: {e}")
+
+        critical = any(i.severity.value in ["critical", "error"] for i in issues)
+
+        return QuickDiagnosis(
+            check_type=check_type,
+            issues=issues,
+            has_critical=critical,
+            summary=self._generate_quick_summary(issues, check_type),
+        )
+
+    def _generate_quick_summary(self, issues: list, check_type: str) -> str:
+        """生成快速摘要"""
+        if not issues:
+            return f"{check_type} 检查通过"
+
+        critical_count = sum(1 for i in issues if i.severity.value in ["critical", "error"])
+        warning_count = sum(1 for i in issues if i.severity.value == "warning")
+
+        parts = []
+        if critical_count > 0:
+            parts.append(f"{critical_count} 个严重问题")
+        if warning_count > 0:
+            parts.append(f"{warning_count} 个警告")
+
+        return f"{check_type} 发现: {', '.join(parts)}"
+
+
+@dataclass
+class QuickDiagnosis:
+    """快速诊断结果"""
+
+    check_type: str
+    issues: list[DetectedIssue]
+    has_critical: bool
+    summary: str

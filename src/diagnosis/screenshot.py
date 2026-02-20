@@ -1,6 +1,6 @@
 """
 截图管理器
-自动截图、命名、存储和管理测试截图
+自动截图、命名、存储和管理诊断截图
 """
 
 import json
@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 class ScreenshotManager:
     """截图管理器"""
 
-    def __init__(self, base_dir: str = "logs/screenshots"):
+    def __init__(self, base_dir: str = "logs/diagnosis"):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
         self.screenshots: list[dict[str, Any]] = []
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_dir = self.base_dir / self.session_id
+        self.session_dir = self.base_dir / self.session_id / "screenshots"
         self.session_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"截图管理器初始化: {self.session_dir}")

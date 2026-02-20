@@ -126,7 +126,6 @@ class TaskCoordinator:
             auto_login_config = self.config.get("login.auto_login", {})
             auto_login_enabled = auto_login_config.get("enabled", False)
 
-            # 优先从环境变量读取凭据（更安全），然后从配置文件读取
             email = (
                 os.environ.get("MS_REWARDS_EMAIL")
                 or auto_login_config.get("email", "")
@@ -158,8 +157,28 @@ class TaskCoordinator:
                 else:
                     await self._manual_login(page, account_mgr, context)
             else:
+                if getattr(self.args, "headless", False):
+                    self.logger.error(
+                        "Headless 模式下无法进行手动登录。"
+                        "解决方案：1) 先在有头模式下登录保存会话；"
+                        "2) 配置自动登录凭据（login.auto_login）"
+                    )
+                    raise RuntimeError(
+                        "Headless 模式需要会话文件或自动登录配置。"
+                        "请先运行 `rscore`（有头模式）完成登录。"
+                    )
                 await self._manual_login(page, account_mgr, context)
         else:
+            if getattr(self.args, "headless", False):
+                self.logger.error(
+                    "Headless 模式下无法进行手动登录。"
+                    "解决方案：1) 先在有头模式下登录保存会话；"
+                    "2) 配置自动登录凭据（login.auto_login）"
+                )
+                raise RuntimeError(
+                    "Headless 模式需要会话文件或自动登录配置。"
+                    "请先运行 `rscore`（有头模式）完成登录。"
+                )
             await self._manual_login(page, account_mgr, context)
 
     async def _manual_login(self, page: Any, account_mgr: Any, context: Any) -> None:
