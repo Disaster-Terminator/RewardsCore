@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from playwright.async_api import BrowserContext, Page
 
 from account.points_detector import PointsDetector
+from browser.page_utils import temp_page as create_temp_page
 from ui.real_time_status import StatusManager
 
 if TYPE_CHECKING:
@@ -359,13 +360,10 @@ class TaskCoordinator:
 
                         if points_before is None:
                             self.logger.info("  获取任务前积分...")
-                            temp_page_before = await page.context.new_page()
-                            try:
+                            async with create_temp_page(page.context) as temp:
                                 points_before = await points_detector.get_current_points(
-                                    temp_page_before, skip_navigation=False
+                                    temp, skip_navigation=False
                                 )
-                            finally:
-                                await temp_page_before.close()
 
                             if points_before is None:
                                 self.logger.warning("  ⚠️ 无法获取任务前积分，跳过积分验证")
@@ -378,13 +376,10 @@ class TaskCoordinator:
                         self.logger.info("  开始执行任务...")
                         report = await task_manager.execute_tasks(page, tasks)
 
-                        temp_page = await page.context.new_page()
-                        try:
+                        async with create_temp_page(page.context) as temp:
                             points_after = await points_detector.get_current_points(
-                                temp_page, skip_navigation=False
+                                temp, skip_navigation=False
                             )
-                        finally:
-                            await temp_page.close()
 
                         if points_after is None:
                             self.logger.warning("  ⚠️ 积分检测失败，使用报告值")

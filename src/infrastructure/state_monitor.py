@@ -8,6 +8,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from browser.page_utils import temp_page
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,10 +70,7 @@ class StateMonitor:
 
         logger.info("任务前检查积分（使用独立页面，避免影响主搜索页面）...")
 
-        # 使用单独的监控页面，避免 Dashboard 崩溃拖死当前搜索页
-        monitor_page = await page.context.new_page()
-
-        try:
+        async with temp_page(page.context) as monitor_page:
             points = await self.points_detector.get_current_points(monitor_page)
 
             if points is not None:
@@ -81,7 +80,6 @@ class StateMonitor:
                 self.points_history.append(
                     {"time": datetime.now().isoformat(), "points": points, "event": "task_start"}
                 )
-                # 限制历史记录长度，防止内存泄漏
                 if len(self.points_history) > 100:
                     self.points_history = self.points_history[-100:]
                 logger.info(f"✓ 初始积分: {points:,}")
@@ -89,15 +87,6 @@ class StateMonitor:
             else:
                 logger.warning("无法获取初始积分")
                 return None
-
-        except Exception as e:
-            logger.error(f"检查初始积分失败: {e}")
-            return None
-        finally:
-            try:
-                await monitor_page.close()
-            except Exception:
-                pass
 
     async def check_points_after_searches(self, page, search_type: str = "desktop") -> int | None:
         """
@@ -123,16 +112,12 @@ class StateMonitor:
 
         logger.info(f"检查积分 (已完成 {self.search_count} 次搜索，使用独立页面)...")
 
-        # 使用单独监控页面，避免影响当前搜索页面
-        monitor_page = await page.context.new_page()
-
-        try:
+        async with temp_page(page.context) as monitor_page:
             points = await self.points_detector.get_current_points(
                 monitor_page, skip_navigation=True
             )
 
             if points is not None:
-                # 记录积分历史
                 self.points_history.append(
                     {
                         "time": datetime.now().isoformat(),
@@ -141,22 +126,19 @@ class StateMonitor:
                         "search_count": self.search_count,
                     }
                 )
-                # 限制历史记录长度，防止内存泄漏
                 if len(self.points_history) > 100:
                     self.points_history = self.points_history[-100:]
 
-                # 检测积分变化
                 if self.last_points is not None:
                     gain = points - self.last_points
 
                     if gain > 0:
                         logger.info(f"✓ 积分增加: {self.last_points:,} → {points:,} (+{gain})")
-                        self.no_increase_count = 0  # 重置计数
+                        self.no_increase_count = 0
                     else:
                         self.no_increase_count += 1
                         logger.warning(f"⚠ 积分未增加 (连续 {self.no_increase_count} 次)")
 
-                        # 记录告警
                         self.session_data["alerts"].append(
                             {
                                 "time": datetime.now().isoformat(),
@@ -171,15 +153,6 @@ class StateMonitor:
             else:
                 logger.warning("无法获取当前积分")
                 return None
-
-        except Exception as e:
-            logger.error(f"检查积分失败: {e}")
-            return None
-        finally:
-            try:
-                await monitor_page.close()
-            except Exception:
-                pass
 
     def detect_no_increase(self) -> bool:
         """

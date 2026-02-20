@@ -65,24 +65,112 @@ class TaskParser:
         """Initialize parser configuration from config or use defaults"""
         parser_config = self.config.get("task_system.task_parser", {}) if self.config else {}
 
-        self.skip_hrefs = parser_config.get("skip_hrefs", _DEFAULT_SKIP_HREFS)
-        self.skip_text_patterns = parser_config.get(
-            "skip_text_patterns", _DEFAULT_SKIP_TEXT_PATTERNS
+        self.skip_hrefs = self._validate_string_list(
+            parser_config.get("skip_hrefs"), _DEFAULT_SKIP_HREFS, "skip_hrefs"
         )
-        self.completed_text_patterns = parser_config.get(
-            "completed_text_patterns", _DEFAULT_COMPLETED_TEXT_PATTERNS
+        self.skip_text_patterns = self._validate_string_list(
+            parser_config.get("skip_text_patterns"),
+            _DEFAULT_SKIP_TEXT_PATTERNS,
+            "skip_text_patterns",
         )
-        self.points_selector = parser_config.get("points_selector", _DEFAULT_POINTS_SELECTOR)
-        self.completed_circle_class = parser_config.get(
-            "completed_circle_class", _DEFAULT_COMPLETED_CIRCLE_CLASS
+        self.completed_text_patterns = self._validate_string_list(
+            parser_config.get("completed_text_patterns"),
+            _DEFAULT_COMPLETED_TEXT_PATTERNS,
+            "completed_text_patterns",
         )
-        self.incomplete_circle_class = parser_config.get(
-            "incomplete_circle_class", _DEFAULT_INCOMPLETE_CIRCLE_CLASS
+        self.points_selector = self._validate_css_selector(
+            parser_config.get("points_selector"),
+            _DEFAULT_POINTS_SELECTOR,
+            "points_selector",
         )
-        self.login_selectors = parser_config.get("login_selectors", _DEFAULT_LOGIN_SELECTORS)
-        self.earn_link_selector = parser_config.get(
-            "earn_link_selector", _DEFAULT_EARN_LINK_SELECTOR
+        self.completed_circle_class = self._validate_class_name(
+            parser_config.get("completed_circle_class"),
+            _DEFAULT_COMPLETED_CIRCLE_CLASS,
+            "completed_circle_class",
         )
+        self.incomplete_circle_class = self._validate_class_name(
+            parser_config.get("incomplete_circle_class"),
+            _DEFAULT_INCOMPLETE_CIRCLE_CLASS,
+            "incomplete_circle_class",
+        )
+        self.login_selectors = self._validate_string_list(
+            parser_config.get("login_selectors"),
+            _DEFAULT_LOGIN_SELECTORS,
+            "login_selectors",
+        )
+        self.earn_link_selector = self._validate_css_selector(
+            parser_config.get("earn_link_selector"),
+            _DEFAULT_EARN_LINK_SELECTOR,
+            "earn_link_selector",
+        )
+
+    def _validate_string_list(self, value: list | None, default: list[str], name: str) -> list[str]:
+        """Validate and sanitize a list of strings, fallback to default on failure"""
+        if value is None:
+            return default
+
+        if not isinstance(value, list):
+            self.logger.warning(f"{name} should be a list, using default")
+            return default
+
+        result = []
+        for item in value:
+            if isinstance(item, str):
+                sanitized = self._sanitize_js_string(item)
+                if sanitized:
+                    result.append(sanitized)
+
+        if not result:
+            self.logger.warning(f"{name} empty after validation, using default")
+            return default
+
+        return result
+
+    def _validate_css_selector(self, value: str | None, default: str, name: str) -> str:
+        """Validate CSS selector - only allow safe characters, fallback to default"""
+        if value is None:
+            return default
+
+        if not isinstance(value, str):
+            self.logger.warning(f"{name} should be a string, using default")
+            return default
+
+        safe_chars = set(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.[]:>#=~+*(), "
+        )
+        if all(c in safe_chars or c in ['"', "'"] for c in value):
+            return value.strip()
+
+        self.logger.warning(f"Invalid characters in {name}, using default")
+        return default
+
+    def _validate_class_name(self, value: str | None, default: str, name: str) -> str:
+        """Validate CSS class name, fallback to default"""
+        if value is None:
+            return default
+
+        if not isinstance(value, str):
+            self.logger.warning(f"{name} should be a string, using default")
+            return default
+
+        safe_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ")
+        if all(c in safe_chars for c in value):
+            return value.strip()
+
+        self.logger.warning(f"Invalid characters in {name}, using default")
+        return default
+
+    def _sanitize_js_string(self, value: str) -> str:
+        """Sanitize string for safe use in JavaScript"""
+        if not isinstance(value, str):
+            return ""
+
+        dangerous_chars = ["<", ">", '"', "'", "`", "\\", "\n", "\r", "\0"]
+        result = value
+        for char in dangerous_chars:
+            result = result.replace(char, "")
+
+        return result.strip()
 
     async def discover_tasks(self, page: Page) -> list[TaskMetadata]:
         """
