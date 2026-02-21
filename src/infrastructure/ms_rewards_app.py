@@ -76,6 +76,7 @@ class MSRewardsApp:
         self.notificator: Notificator | None = None
         self.health_monitor: HealthMonitor | None = None
         self.task_manager: TaskManager | None = None
+        self.diagnosis_reporter = None  # 初始化为 None，避免 diagnose=False 时 AttributeError
 
         self.browser = None
         self.context = None
