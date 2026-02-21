@@ -47,6 +47,25 @@
 
 ## 🛠️ 系统架构
 
+### 多智能体协作框架
+
+本项目采用 MCP（Model Context Protocol）驱动的多智能体协作架构：
+
+| 智能体 | 职责 | 核心能力 |
+|--------|------|----------|
+| **master-agent** | 主控调度 | 任务路由、Memory 知识管理、PR 交付 |
+| **dev-agent** | 代码开发 | 业务代码编写、局部验证 |
+| **test-agent** | 测试验收 | E2E 验收、Playwright 自动化 |
+| **docs-agent** | 文档维护 | README/CHANGELOG/API 文档同步 |
+
+**工作流程**：
+
+```
+用户请求 → master-agent 规划 → dev-agent 编码 → test-agent 验收 → docs-agent 文档 → PR 交付
+```
+
+### 核心组件
+
 采用模块化设计，核心组件包括：
 
 - **MSRewardsApp**: 主控制器，协调整个系统
@@ -151,8 +170,11 @@ playwright install chromium
 cp config.example.yaml config.yaml
 # 编辑 config.yaml，填写账号信息
 
+# 安装包（启用 rscore 命令）
+pip install -e .
+
 # 直接运行（生产环境，20次搜索）
-python main.py
+rscore
 ```
 
 **运行模式说明**：
@@ -160,8 +182,8 @@ python main.py
 | 模式 | 桌面搜索 | 拟人行为 | 防检测 | 用途 |
 |------|----------|----------|--------|------|
 | 默认 | 20 | ✅ | ✅ | **生产环境（用户使用）** |
-| `--user` | 3 | ✅ | ✅ | 鲁棒性测试 |
-| `--dev` | 2 | ❌ | ❌ | 快速迭代调试 |
+| `--user` | 3 | ✅ | ✅ | 鲁棒性测试（开发调试用） |
+| `--dev` | 2 | ❌ | ❌ | 快速迭代调试（开发用） |
 
 **登录方式**：
 
@@ -173,16 +195,16 @@ python main.py
 
 ```bash
 # 生产环境（完整搜索，自动调度）
-python main.py
+rscore
 
 # 后台运行（服务器部署）
-python main.py --headless
+rscore --headless
 
-# 用户模式（3次搜索，验证稳定性）
-python main.py --user
+# 用户测试模式（3次搜索，验证稳定性）
+rscore --user
 
 # 开发模式（快速调试）
-python main.py --dev
+rscore --dev
 ```
 
 ### 4. 查看执行结果
@@ -202,23 +224,11 @@ streamlit run tools/dashboard.py
 
 ## 🎯 实际使用场景
 
-### 场景1：日常自动化任务
+### 日常自动化任务
 
 - **目标**: 每天自动完成所有任务，获得最大积分
 - **配置**: 启用调度器，设置随机时间执行
 - **流程**: 早上随机时间自动启动 → 完成所有任务 → 发送结果通知
-
-### 场景2：手动调试模式
-
-- **目标**: 查看浏览器执行过程，调试问题
-- **配置**: 默认显示浏览器，或使用 `--dev` 快速调试
-- **流程**: 启动 → 手动登录 → 观察执行过程 → 查看错误
-
-### 场景3：快速测试模式
-
-- **目标**: 快速验证配置是否正确
-- **配置**: `--dev` 开发模式（2次搜索，最小等待）
-- **流程**: 快速完成登录和搜索验证
 
 ## 详细文档
 
@@ -230,6 +240,7 @@ streamlit run tools/dashboard.py
 
 - **[技术参考](docs/reports/技术参考.md)** - 防检测策略、健康监控和技术实现细节
 - **[分支管理指南](docs/reference/BRANCH_GUIDE.md)** - 开发工作流和验收标准
+- **[MCP 工作流](docs/reference/MCP_WORKFLOW.md)** - 多智能体协作与 7 阶段验收流程
 
 ### 配置文件说明
 

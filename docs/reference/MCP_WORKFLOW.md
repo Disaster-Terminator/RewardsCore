@@ -1,0 +1,171 @@
+# MCP 驱动的开发工作流
+
+> 本文档定义了基于 MCP 工具集的现代化开发流程。
+
+## 目录
+
+- [1. 核心理念](#1-核心理念)
+- [2. MCP 工具矩阵](#2-mcp-工具矩阵)
+- [3. 7 阶段验收流程](#3-7-阶段验收流程)
+- [4. AI 审查系统](#4-ai-审查系统)
+- [5. Memory MCP 知识管理](#5-memory-mcp-知识管理)
+- [6. 安全边界](#6-安全边界)
+
+---
+
+## 1. 核心理念
+
+| 传统模式 | MCP 模式 |
+|----------|----------|
+| Agent 只能读取日志 | Agent 可直接操作浏览器 |
+| 验收依赖人工执行 | Playwright MCP 自动化 |
+| 手动创建 PR | GitHub MCP 自动化 |
+
+**原则**：能力优先、渐进增强、安全边界（merge/force-push 需人工确认）
+
+---
+
+## 2. MCP 工具矩阵
+
+| MCP 服务 | 核心能力 | 验收阶段 |
+|----------|----------|----------|
+| **Playwright** | 浏览器自动化 | 阶段 4-5 |
+| **GitHub** | PR 管理 | 阶段 6-7 |
+| **Memory** | 知识持久化 | 全流程 |
+
+### 2.1 Playwright MCP
+
+```python
+playwright_navigate(url, browserType="chromium", headless=True, timeout=300000)
+start_codegen_session(options={"outputPath": "tests/e2e/"})
+```
+
+### 2.2 GitHub MCP
+
+```python
+create_pull_request(owner, repo, title, head, base, body)
+get_pull_request_reviews(owner, repo, pull_number)
+merge_pull_request(owner, repo, pull_number, merge_method="squash")
+```
+
+### 2.3 Memory MCP
+
+```python
+create_entities(entities=[{"name": "xxx", "entityType": "Component", "observations": [...]}])
+search_nodes(query="登录流程")
+```
+
+---
+
+## 3. 7 阶段验收流程
+
+```
+阶段 1-3: CI 自动化（静态检查 → 单元测试 → 集成测试）
+阶段 4-5: MCP 无头验收（Dev无头 → User无头）
+阶段 6-7: PR 管理（创建PR → 等待审查 → 合并确认）
+```
+
+### 3.1 阶段定义
+
+| 阶段 | 内容 | 执行者 | 通过条件 |
+|------|------|--------|----------|
+| 1. 静态检查 | ruff + mypy | CI | 无错误 |
+| 2. 单元测试 | pytest unit | CI | 全部通过 |
+| 3. 集成测试 | pytest integration | CI | 全部通过 |
+| 4. Dev 无头 | python main.py --dev --headless | Agent | 退出码 0 |
+| 5. User 无头 | python main.py --user --headless | Agent | 无严重问题 |
+| 6. 创建 PR | GitHub MCP | Agent | PR 创建成功 |
+| 7. 合并 PR | GitHub MCP | 人工确认 | 人工确认 |
+
+### 3.2 阻塞点
+
+- **阶段 6 后**：等待"在线审查通过"（AI 审查机器人）
+- **合并 PR**：核心/大规模变更需人工确认
+
+### 3.3 有头验收（开发者可选）
+
+非标准流程，开发者手动执行观察 UI：
+
+```bash
+python main.py --dev  # 可视化模式
+```
+
+---
+
+## 4. AI 审查系统
+
+### 4.1 审查机器人
+
+| 机器人 | 触发机制 |
+|--------|----------|
+| Copilot | 可配置：PR创建时/每次commit/手动 |
+| sourcery-ai | PR 创建时自动触发一次 |
+| qodo-code-review | PR 创建时自动触发一次 |
+
+### 4.2 评论格式
+
+**sourcery-ai**：`**issue (bug_risk):** 问题描述`
+
+**Copilot**：````suggestion` 代码建议块
+
+**qodo**：`🐞 Bug` SVG 图标 + Agent Prompt
+
+### 4.3 处理策略
+
+| 标签 | Agent 行为 |
+|------|------------|
+| `bug_risk`, `Bug`, `security` | 必须修复 |
+| `suggestion`, `performance` | 自主决断 |
+| `✅ Addressed` | 跳过（已解决） |
+
+### 4.4 PR 描述模板
+
+```markdown
+## 概述
+[一句话描述]
+
+## 主要变更
+- [变更列表]
+
+## 测试结果
+- ✅ 单元测试：X passed
+```
+
+---
+
+## 5. Memory MCP 知识管理
+
+### 5.1 实体类型
+
+| 类型 | 用途 |
+|------|------|
+| Project | 项目信息 |
+| Component | 模块/组件 |
+| Pattern | 设计模式 |
+| Error | 错误模式 |
+
+### 5.2 使用时机
+
+| 场景 | 操作 |
+|------|------|
+| 功能完成 | 记录模块依赖 |
+| Bug 修复 | 记录错误模式 |
+| 开始任务 | 查询相关上下文 |
+
+---
+
+## 6. 安全边界
+
+| 自主区（Agent 可执行） | 确认区（需人工确认） |
+|------------------------|----------------------|
+| 读取/写入文件 | `git commit --amend`（已 push） |
+| 运行测试 | `git rebase`（已 push） |
+| 浏览器操作 | `git push --force` |
+| `git add/commit/push` | `merge PR` |
+| `git pull --rebase` | 删除远程分支 |
+| `git checkout -b` | 修改保护规则 |
+| `git commit --amend`（未 push） | 暴露 secrets |
+| 创建 PR | |
+
+---
+*详细操作指南见 `.trae/skills/mcp-acceptance/SKILL.md`*
