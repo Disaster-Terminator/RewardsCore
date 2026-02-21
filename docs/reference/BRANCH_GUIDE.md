@@ -82,12 +82,12 @@ gh pr create --base main --head fix/bug-description
 
 > **详细验收流程**：[MCP_WORKFLOW.md](./MCP_WORKFLOW.md)
 
-### 8 阶段验收概览
+### 7 阶段验收概览
 
 ```
 阶段 1-3: CI 自动化（静态检查 → 单元测试 → 集成测试）
-阶段 4-6: MCP 验收（Dev无头 → User无头 → 有头）
-阶段 7-8: PR 管理（创建PR → 合并确认）
+阶段 4-5: MCP 无头验收（Dev无头 → User无头）
+阶段 6-7: PR 管理（创建PR → 合并确认）
 ```
 
 ### 测试类型
@@ -96,7 +96,7 @@ gh pr create --base main --head fix/bug-description
 |------|------|----------|
 | 单元测试 | `tests/unit/` | `pytest tests/unit/ -m "not real"` |
 | 集成测试 | `tests/integration/` | `pytest tests/integration/` |
-| 功能验证 | CLI | `rscore --dev/--user` |
+| 功能验证 | CLI | `python main.py --dev/--user` |
 
 ## 五、命令行参数
 
@@ -119,7 +119,7 @@ git log --oneline --graph --all  # 查看历史
 
 ## 七、注意事项
 
-1. **main 必须稳定**：合并前通过 8 阶段验收
+1. **main 必须稳定**：合并前通过 7 阶段验收
 2. **功能分支独立**：避免交叉依赖
 3. **配置禁用优于代码删除**：保留代码，配置控制
 4. **严禁本地合并**：必须通过 PR
