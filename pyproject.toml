@@ -32,7 +32,8 @@ viz = [
 dev = [
     "ruff>=0.8.0",
     "mypy>=1.14.0",
-    "rewards-core[test,viz]",
+    # 注意：test 和 viz 依赖请通过 pip install -e .[test,viz] 单独安装
+    # 避免循环依赖引用
 ]
 
 [project.scripts]
