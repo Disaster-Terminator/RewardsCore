@@ -39,6 +39,7 @@
 ### GitHub MCP（19 个）
 
 #### 版本交付（写入）
+
 | 工具 | 勾选 |
 |------|------|
 | create_branch | ✅ |
@@ -52,6 +53,7 @@
 | add_issue_comment | ✅ |
 
 #### PR 管理（只读）
+
 | 工具 | 勾选 |
 |------|------|
 | get_pull_request | ✅ |
@@ -62,6 +64,7 @@
 | list_pull_requests | ✅ |
 
 #### 代码与需求（只读）
+
 | 工具 | 勾选 |
 |------|------|
 | get_file_contents | ✅ |
@@ -71,6 +74,7 @@
 | list_commits | ✅ |
 
 #### 不勾选
+
 | 工具 | 勾选 |
 |------|------|
 | search_repositories | ❌ |
