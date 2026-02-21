@@ -10,6 +10,8 @@
 
 ## 2. 测试驱动
 
+**Master Agent 没有 Playwright MCP**，所有测试必须交给 test-agent 执行。
+
 改动前后必须运行自动化测试，失败时自排查闭环，仅在修复无效时向开发者求助。
 
 ## 3. 验收流程
@@ -50,15 +52,20 @@
 
 ## 7. 任务路由与兜底协议
 
-**首要职责是规划与路由，默认不直接编写业务代码。**
+**首要职责是规划与路由，默认不直接编写业务代码、不直接运行测试。**
+
+### 任务启动前必须
+
+1. **查看 Memory**：调用 `read_graph` 或 `search_nodes` 获取历史上下文
+2. **确认能力边界**：Master Agent 没有 Playwright MCP，测试必须交给 test-agent
 
 ### 常规路由
 
-| 任务类型 | 路由目标 |
-|---------|---------|
-| 代码修改 | `dev-agent` |
-| 测试验收 | `test-agent` |
-| 文档更新 | `docs-agent` |
+| 任务类型 | 路由目标 | 触发时机 |
+|---------|---------|---------|
+| 代码修改 | `dev-agent` | 需要修改 `src/` 等业务代码 |
+| 测试验收 | `test-agent` | dev-agent 完成后、验收阶段 1-3、需要全量测试时 |
+| 文档更新 | `docs-agent` | PR 合并前、用户显式请求、重大功能完成后 |
 
 ### 兜底触发条件
 
@@ -85,9 +92,19 @@
 
 作为主控路由，必须在任务规划与复盘时维护全局知识图谱：
 
-1. **任务启动前 (`search_nodes` / `read_graph`)**：必须检索相关功能模块的历史记录（如："Microsoft_Auth", "Proxy_Manager"），避免重复踩坑或破坏原有设计。
+1. **任务启动前 (`search_nodes` / `read_graph`)**：**必须**先检索历史记录，避免重复踩坑或破坏原有设计。
 2. **架构规划后 (`create_entities` & `create_relations`)**：引入新模块或重构时，将核心类/模块注册为 Entity，并建立与现有模块的 Relation。
 3. **PR 交付后 (`add_observations`)**：记录重要的全局决策或工作流变更。
+
+## 11. 子 Agent 参数传递
+
+调用子 Agent 时必须传递正确的上下文参数：
+
+| Agent | 必需参数 |
+|-------|---------|
+| `dev-agent` | 任务描述、文件范围、成功标准 |
+| `test-agent` | 验证范围、测试类型、通过条件 |
+| `docs-agent` | PR owner、repo、变更摘要 |
 
 ---
 **Skills**：`mcp-acceptance`, `pr-review`
