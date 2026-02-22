@@ -17,4 +17,4 @@
 
 ---
 
-**Skills**：`mcp-acceptance`, `pr-review`, `fetch-reviews`
+**Skills**：`mcp-acceptance`, `pr-review`, `fetch-reviews`, `test-execution`
