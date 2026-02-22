@@ -98,7 +98,7 @@ WebFetch(url="https://api.github.com/repos/{owner}/{repo}/issues/{number}/commen
 |--------|-----------|------|
 | Sourcery | `✅ Addressed in {commit}` | 自动更新评论 |
 | Copilot | 无 | 不会更新评论，无法判断 |
-| Qodo | 无 | 不会更新评论，无法判断 |
+| Qodo | ✅  | 自动更新评论 |
 
 **示例**：
 
@@ -107,4 +107,4 @@ body: "**issue (bug_risk):** ...\n\n✅ Addressed in ab1e26c: ..."
 → 状态：已解决（Sourcery 自动检测）
 ```
 
-**注意**：Copilot 和 Qodo 不会自动更新评论，Agent 无法通过 API 判断其评论是否已解决。需人工在 GitHub 网页上点击"Resolve conversation"。
+**注意**：Copilot 不会自动更新评论，Agent 无法通过 API 判断其评论是否已解决。需人工在 GitHub 网页上点击"Resolve conversation"。

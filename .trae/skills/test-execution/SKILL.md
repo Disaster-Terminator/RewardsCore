@@ -84,6 +84,37 @@ python main.py --dev --headless
 | 测试有失败 | `[REQ_DEV]` + `.trae/test_report.md` 路径 |
 | 连续 2 次 MCP 调用失败 | `[BLOCK_NEED_MASTER]` + 阻塞原因 |
 
+## 覆写策略（强制）
+
+**写入 `test_report.md` 必须使用完全覆写（Overwrite）模式，禁止追加写入（Append）。**
+
+每次测试完成时，必须覆写整个文件，只保留最新一次的测试结果。
+
+## 精简取证规范（强制）
+
+**严禁保存完整 HTML**，仅允许提取以下三项：
+
+### 1. Traceback（最后 10 行）
+
+```
+<最后抛出异常的 10 行 Traceback>
+```
+
+### 2. Accessibility Tree（关键节点）
+
+使用 Playwright 的 Accessibility Tree API，仅提取关键节点：
+
+```javascript
+// 仅提取关键节点，忽略文本节点和布局节点
+const snapshot = await page.accessibility.snapshot({ interestingOnly: true });
+```
+
+### 3. Network 请求（最后 3 个）
+
+| URL | 状态码 | 方法 |
+|-----|--------|------|
+| <URL> | <状态码> | <GET/POST/...> |
+
 ## 错误归因与动作
 
 | 错误定性 | 日志特征 | 智能体动作 |
@@ -104,6 +135,7 @@ python main.py --dev --headless
 task_id: <任务ID>
 status: success
 coverage: <XX%>
+created_at: <时间戳>
 ---
 
 ### 测试结果
@@ -124,11 +156,37 @@ coverage: <XX%>
 ---
 task_id: <任务ID>
 status: failed
+created_at: <时间戳>
 ---
 
-### 错误溯源
+### 测试结果
 
-[Error Traceback 或 Pytest 报错输出]
+- [x] `ruff check` 通过
+- [x] `mypy` 通过
+- 单元测试: X/Y 通过
+- 集成测试: X/Y 通过
+- 覆盖率: XX%
+- E2E 验收: 失败
+
+### 精简取证
+
+#### Traceback（最后 10 行）
+
+```
+<最后抛出异常的 10 行 Traceback>
+```
+
+#### Accessibility Tree（关键节点）
+
+```
+<Playwright 提取的 Accessibility Tree，仅限关键节点>
+```
+
+#### Network 请求（最后 3 个）
+
+| URL | 状态码 | 方法 |
+|-----|--------|------|
+| <URL> | <状态码> | <GET/POST/...> |
 
 ### 诊断信息
 
@@ -136,10 +194,6 @@ status: failed
 - **受影响文件**: `<业务文件路径>`
 - **预期行为**: <描述>
 - **实际行为**: <描述>
-
-### 现场取证
-
-[关键节点的 DOM 结构 / 控制台报错 / 截图路径]
 ```
 
 ## Memory MCP 知识库交互

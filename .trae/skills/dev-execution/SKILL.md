@@ -18,18 +18,34 @@ description: 开发执行详细流程。dev-agent 执行代码修改时调用。
 读取 `.trae/current_task.md` 获取任务详情
 ```
 
-### 2. 检索历史知识
+### 2. 检查重试计数（熔断器检查）
+
+**必须先检查 `dev_retry_count` 和 `max_retries`**：
+
+```yaml
+---
+dev_retry_count: <当前重试次数>
+max_retries: <最大重试次数，默认 3>
+---
+```
+
+| 条件 | 动作 |
+|------|------|
+| `dev_retry_count >= max_retries` | **禁止继续**，输出 `[BLOCK_NEED_MASTER]`，设置 `reason_type: retry_exhausted` |
+| `dev_retry_count < max_retries` | 继续执行 |
+
+### 3. 检索历史知识
 
 ```
 使用 Memory MCP search_nodes 检索相关规则
 检索标签：[REWARDS_DOM], [ANTI_BOT]
 ```
 
-### 3. 修改代码
+### 4. 修改代码
 
 修改业务代码（`src/` 等非测试目录）。
 
-### 4. 局部验证（< 30秒）
+### 5. 局部验证（< 30秒）
 
 ```bash
 ruff check .
@@ -38,12 +54,12 @@ mypy src/ --strict
 pytest tests/<相关单文件>.py -v
 ```
 
-### 5. 验证失败处理
+### 6. 验证失败处理
 
 - 调用【阅读】工具查看前一次终端完整日志
 - 修复并重试（最大重试次数：3）
 
-### 6. 输出状态标签
+### 7. 输出状态标签
 
 | 场景 | 输出标签 |
 |------|----------|
@@ -72,9 +88,10 @@ pytest tests/<相关单文件>.py -v
 若第 3 次重试仍失败，停止操作：
 
 1. 生成 `.trae/blocked_reason.md`
-2. 记录 3 种尝试过的修复方案
-3. 附上完整 Traceback
-4. 输出 `[BLOCK_NEED_MASTER]` 标签
+2. 设置 `reason_type: logic_unimplementable` 或 `missing_context`
+3. 记录 3 种尝试过的修复方案
+4. 附上完整 Traceback（最多 10 行）
+5. 输出 `[BLOCK_NEED_MASTER]` 标签
 
 ## 输出格式（强制）
 
@@ -84,6 +101,8 @@ pytest tests/<相关单文件>.py -v
 ---
 task_id: <任务ID>
 status: success | blocked
+dev_retry_count: <当前重试次数>
+max_retries: <最大重试次数>
 ---
 
 ### 变更摘要

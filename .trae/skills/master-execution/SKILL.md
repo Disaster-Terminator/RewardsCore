@@ -21,6 +21,9 @@ description: Master Agent 执行详细流程。任务路由、PR 管理、Git �
 task_id: <唯一ID>
 created_at: <时间戳>
 type: dev | test | docs
+dev_retry_count: 0
+max_retries: 3
+status: pending
 ---
 
 ### 任务描述
@@ -56,9 +59,55 @@ type: dev | test | docs
 | 收到标签 | 响应动作 |
 |----------|----------|
 | `[REQ_TEST]` | 唤醒 test-agent，发送 `.trae/current_task.md` 路径 |
-| `[REQ_DEV]` | 读取 `.trae/test_report.md`，唤醒 dev-agent，附带上下文 |
-| `[REQ_DOCS]` | 唤醒 docs-agent |
-| `[BLOCK_NEED_MASTER]` | 读取 `.trae/blocked_reason.md`，做出决策 |
+| `[REQ_DEV]` | 检查熔断器 → 执行微提交保护 → 唤醒 dev-agent |
+| `[REQ_DOCS]` | 检查 docs-agent 触发条件 → 唤醒 docs-agent 或跳过 |
+| `[BLOCK_NEED_MASTER]` | 调用 `master-recovery` skill |
+
+## 熔断器检查流程
+
+### 1. 读取重试计数
+
+读取 `.trae/current_task.md` 中的 `dev_retry_count` 和 `max_retries`。
+
+### 2. 判断是否触发熔断
+
+| 条件 | 动作 |
+|------|------|
+| `dev_retry_count >= max_retries` | **禁止路由**，写入 `blocked_reason.md`，设置 `reason_type: retry_exhausted`，通知人类开发者 |
+| `dev_retry_count < max_retries` | 递增 `dev_retry_count`，继续路由 |
+
+### 3. 更新任务状态
+
+覆写 `.trae/current_task.md`，更新 `dev_retry_count` 字段。
+
+## 微提交保护流程
+
+### 1. 触发时机
+
+当 Master Agent 收到 `[REQ_DEV]` 标签（测试失败需重写）时，必须在路由前执行保护操作。
+
+### 2. 执行保护
+
+```bash
+# 检查是否有未提交修改
+git status --porcelain
+
+# 策略选择
+if [有未暂存修改]; then
+    git stash push -m "pre-fix state"
+elif [有已暂存修改]; then
+    git commit -m "WIP: pre-fix state before retry #N"
+fi
+```
+
+### 3. 确保回滚能力
+
+保护操作完成后，确保可以随时回滚：
+
+```bash
+git stash pop  # 或
+git reset --hard HEAD~1
+```
 
 ## Memory MCP 读写时机
 
@@ -74,7 +123,7 @@ type: dev | test | docs
 |------|------|------|
 | PR 合并后 | `create_entities` | 总结页面规则，使用标签归档 |
 
-### 写入格式
+### 写入契约（结构化格式）
 
 ```json
 {
@@ -82,9 +131,36 @@ type: dev | test | docs
   "entityType": "Component",
   "observations": [
     "[REWARDS_DOM] 选择器：#search-btn-v2",
-    "[ANTI_BOT] Cloudflare 绕过策略：等待 5 秒"
+    "[ANTI_BOT] Cloudflare 绕过策略：等待 5 秒",
+    "trigger_date: 202x-xx-xx",
+    "old_selector: #sb_form_go",
+    "new_selector: #sb_form_q"
   ]
 }
+```
+
+## docs-agent 量化触发条件
+
+### 1. 检测时机
+
+测试全绿后，扫描 Git Diff 判断是否需要更新文档。
+
+### 2. 触发条件
+
+| 条件 | 动作 |
+|------|------|
+| Git Diff 涉及新增 `def` 或 `class` | 路由至 `[REQ_DOCS]` |
+| Git Diff 涉及配置文件（如 `.env.example`） | 路由至 `[REQ_DOCS]` |
+| 以上都不满足 | 跳过 `[REQ_DOCS]`，直接创建 PR |
+
+### 3. 检测命令
+
+```bash
+# 检测新增 def 或 class
+git diff --cached | grep -E "^\+.*def |^\+.*class "
+
+# 检测配置文件变更
+git diff --cached --name-only | grep -E "\.env\.example|config\.yaml|pyproject\.toml"
 ```
 
 ## Git 规范
@@ -130,6 +206,7 @@ git commit --amend --no-edit
 |-------|------|------|
 | `mcp-acceptance` | 代码修改完成后 | 执行 7 阶段验收 |
 | `pr-review` | PR 创建后 | 处理 AI 审查，通知人工合并 |
+| `master-recovery` | 收到 `[BLOCK_NEED_MASTER]` | 处理挂起任务恢复 |
 | `fetch-reviews` | `pr-review` 内部调用 | 获取 Sourcery/Copilot/Qodo 评论 |
 
 **注意**：

@@ -30,6 +30,8 @@
 3. **绝对禁止**生成修复代码片段
 4. **绝对禁止**提出修复建议
 5. **绝对禁止**写入 Memory MCP
+6. **绝对禁止**保存完整 HTML（仅允许精简取证）
+7. **绝对禁止**追加写入媒介文件（必须覆写）
 
 # Execution & Routing
 
@@ -37,7 +39,7 @@
 
 1. 唤醒后，立即读取 `.trae/current_task.md`
 2. 检索并阅读 `test-execution` skill（按需加载）
-3. 执行测试，将结果写入 `.trae/test_report.md`
+3. 执行测试，将结果写入 `.trae/test_report.md`（覆写模式）
 
 ## 状态标签输出规则
 
@@ -62,6 +64,20 @@
 - **必须**：立即触发 `[BLOCK_NEED_MASTER]` 标签
 - **禁止**：继续重试
 - **必须**：等待 Master Agent 介入
+
+## 覆写策略（强制）
+
+**写入 `test_report.md` 必须使用完全覆写（Overwrite）模式，禁止追加写入（Append）。**
+
+每次测试完成时，必须覆写整个文件，只保留最新一次的测试结果。
+
+## 精简取证规范（强制）
+
+**严禁保存完整 HTML**，仅允许提取以下三项：
+
+1. **Traceback**：最后抛出异常的 10 行
+2. **Accessibility Tree**：仅限关键节点
+3. **Network 请求**：最后 3 个请求的状态码
 ```
 
 ---
@@ -137,7 +153,7 @@
 | 工具 | 勾选 | 用途 |
 |------|------|------|
 | playwright_get_visible_text | ✅ | 获取文本 |
-| playwright_get_visible_html | ✅ | 获取 HTML |
+| playwright_get_visible_html | ✅ | 获取 HTML（仅用于精简取证） |
 | playwright_console_logs | ✅ | 控制台日志 |
 | playwright_evaluate | ✅ | 执行 JS |
 
