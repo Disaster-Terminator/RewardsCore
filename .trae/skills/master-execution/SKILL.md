@@ -139,28 +139,56 @@ git reset --hard HEAD~1
 }
 ```
 
-## docs-agent 量化触发条件
+## docs-agent 确定性触发算法
 
-### 1. 检测时机
+### 触发条件（满足其一即输出 `[REQ_DOCS]`）
 
-测试全绿后，扫描 Git Diff 判断是否需要更新文档。
+#### 1. 接口级变更
 
-### 2. 触发条件
+执行 `git diff HEAD~1`，若新增内容包含正则表达式 `^\+\s*(def|class)\s+`。
 
-| 条件 | 动作 |
-|------|------|
-| Git Diff 涉及新增 `def` 或 `class` | 路由至 `[REQ_DOCS]` |
-| Git Diff 涉及配置文件（如 `.env.example`） | 路由至 `[REQ_DOCS]` |
-| 以上都不满足 | 跳过 `[REQ_DOCS]`，直接创建 PR |
-
-### 3. 检测命令
-
+**检测命令**：
 ```bash
-# 检测新增 def 或 class
-git diff --cached | grep -E "^\+.*def |^\+.*class "
+git diff HEAD~1 | grep -E "^\+.*def |^\+.*class "
+```
 
-# 检测配置文件变更
-git diff --cached --name-only | grep -E "\.env\.example|config\.yaml|pyproject\.toml"
+#### 2. 配置级变更
+
+变更文件列表中包含以下任一文件：
+- `.env.example`
+- `config.yaml`
+- `requirements.txt`
+- `pyproject.toml`
+
+**检测命令**：
+```bash
+git diff HEAD~1 --name-only | grep -E "\.env\.example|config\.yaml|requirements\.txt|pyproject\.toml"
+```
+
+#### 3. 依赖级变更
+
+引入了新的第三方库。
+
+**检测命令**：
+```bash
+git diff HEAD~1 pyproject.toml | grep -E "^\+.*[a-zA-Z0-9_-]+ ="
+```
+
+### 跳过条件
+
+若不满足上述任一条件，跳过 `[REQ_DOCS]`，直接进入 PR 创建阶段。
+
+### 执行流程
+
+```
+测试全绿
+    │
+    ▼
+执行 Git Diff 检测
+    │
+    ├─► 满足触发条件 → 输出 [REQ_DOCS]
+    │
+    └─► 不满足条件 → 跳过，直接创建 PR
 ```
 
 ## Git 规范
@@ -221,3 +249,59 @@ git commit --amend --no-edit
 - **Copilot/Qodo**：无法通过 API 标记解决，需人工在 GitHub 网页点击"Resolve conversation"
 
 **结论**：Agent 无法自主合并 PR，需人工确认。
+
+## Memory MCP 归档流程
+
+### 触发时机
+
+PR 状态变为 `Merged` 后，切回 `main` 分支前。
+
+### 执行步骤
+
+1. 提取 `current_task.md` 的最终状态
+2. 构建结构化 JSON 实体
+3. 调用 `create_entities` 写入 Memory MCP
+
+### 写入契约（JSON Schema）
+
+```json
+{
+  "name": "<规则名称>",
+  "entityType": "Rewards_Target_Node",
+  "observations": [
+    "[DOM_Rule] 选择器：<选择器>",
+    "[Anti_Bot] 绕过策略：<策略描述>",
+    "task_id: <任务ID>",
+    "target_element: <目标元素>",
+    "effective_locator: <有效定位器>",
+    "obsolete_locator: <废弃定位器>",
+    "bypassing_strategy: <绕过策略>",
+    "update_date: <更新日期>"
+  ]
+}
+```
+
+### 示例
+
+```json
+{
+  "name": "Search_Input_Box",
+  "entityType": "Rewards_Target_Node",
+  "observations": [
+    "[DOM_Rule] 选择器：input#sb_form_q",
+    "[Anti_Bot] 绕过策略：等待 3 秒以规避动态 DOM 渲染",
+    "task_id: req-001",
+    "target_element: Search Input Box",
+    "effective_locator: input#sb_form_q",
+    "obsolete_locator: input#sb_form_go",
+    "bypassing_strategy: 等待 3 秒以规避动态 DOM 渲染",
+    "update_date: 202x-xx-xx"
+  ]
+}
+```
+
+### 约束
+
+- 必须在 PR 合并后执行
+- 必须使用结构化格式
+- 必须包含必要的标签（DOM_Rule, Anti_Bot）

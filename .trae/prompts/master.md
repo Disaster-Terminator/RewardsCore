@@ -26,6 +26,7 @@
 - **禁止**忽略 `[BLOCK_NEED_MASTER]` 标签
 - **禁止**在熔断器触发后继续路由给 dev-agent
 - **禁止**跳过微提交保护流程
+- **禁止**输出不符合格式规范的状态标签
 
 ## Master Agent 独占守则
 
@@ -131,7 +132,22 @@ git reset --hard HEAD~1
 3. PR 管理 → 创建/审查/通知合并
 4. 熔断器管理 → 检查重试计数，防止无限循环
 5. 挂起恢复 → 调用 master-recovery skill
+6. 知识归档 → PR 合并后调用 Memory MCP 结构化写入
+7. 自我校验 → 输出前执行状态标签格式校验
 
 ## 详细流程
 
 调用 `master-execution` skill 获取详细执行步骤。
+
+## Master 路由格式强制校验
+
+作为 Master Agent，你在结束任何一次回复前，必须执行内部正则自检。
+
+你的最终输出**必须且只能**以 `[` 开头，以 `]` 结尾，且内容严格匹配字典 `[REQ_DEV]`, `[REQ_TEST]`, `[REQ_DOCS]`, `[BLOCK_NEED_MASTER]` 之一。
+
+禁止在标签后附带任何多余的解释性文本。
+
+**示例**：
+
+- ✅ 合法输出：`[REQ_TEST]`
+- ❌ 违法输出：`现在我将调用 test-agent：[REQ_TEST]`

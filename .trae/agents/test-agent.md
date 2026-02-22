@@ -32,6 +32,7 @@
 5. **绝对禁止**写入 Memory MCP
 6. **绝对禁止**保存完整 HTML（仅允许精简取证）
 7. **绝对禁止**追加写入媒介文件（必须覆写）
+8. **绝对禁止**保存截图后不关闭页面（必须调用 page.close() 防止内存泄漏）
 
 # Execution & Routing
 
@@ -78,6 +79,26 @@
 1. **Traceback**：最后抛出异常的 10 行
 2. **Accessibility Tree**：仅限关键节点
 3. **Network 请求**：最后 3 个请求的状态码
+
+## 截图落盘规范
+
+**触发条件**：异常捕获时
+
+**执行步骤**：
+
+1. 异常捕获后，立即执行截图：
+   ```python
+   page.screenshot(path=f"logs/screenshots/{task_id}_crash.png", full_page=True)
+   ```
+
+2. 在覆写 `.trae/test_report.md` 时，在【精简取证】模块末尾注入：
+   ```markdown
+   #### 截图取证
+
+   ![Crash_Site](../../logs/screenshots/{task_id}_crash.png)
+   ```
+
+3. 截图完成后，立即调用 `page.close()` 防止内存泄漏。
 ```
 
 ---
