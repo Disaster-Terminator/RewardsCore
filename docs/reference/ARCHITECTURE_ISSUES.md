@@ -221,8 +221,24 @@ GET https://api.github.com/repos/{owner}/{repo}/pulls/{number}/comments
 
 ---
 
-## 待讨论问题
+## Skill 机制（已验证）
 
-1. **Skill 的触发方式**：是需要主动调用 Skill 工具，还是 Trae 会根据提示词自动触发？
-2. **Skill 的参数传递**：比如 `fetch-reviews` 需要 owner/repo/pr_number，这些参数怎么传？
-3. **Skill 内部能否调用其他工具**：比如 `fetch-reviews` skill 内部调用 WebFetch？
+| 问题 | 答案 |
+|------|------|
+| 触发方式 | 通过 `Skill` 工具主动调用，传入 skill name（如 `mcp-acceptance`） |
+| 参数传递 | Skill 本身不接收参数，它是"指令文档"，指导 agent 如何执行 |
+| 内部调用工具 | Skill 内容告诉 agent 使用哪些工具（RunCommand、GitHub MCP、WebFetch 等） |
+
+**本质**：Skill 是**按需加载的指令文档**，不调用时不占用上下文，调用后展开详细指令。
+
+**示例调用**：
+
+```
+Skill(name="mcp-acceptance")
+```
+
+**设计建议**：
+
+- Skill 内可以写"使用 WebFetch 调用 GitHub API"
+- Skill 内可以写"使用 Memory MCP 读取仓库信息"
+- 参数通过上下文传递（如当前 PR 号、owner/repo 从 Memory 或提示词获取）

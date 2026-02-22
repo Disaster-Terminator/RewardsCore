@@ -1,9 +1,11 @@
 # RewardsCore 依赖说明
 #
-# 依赖定义已迁移到 pyproject.toml
-# 请使用以下命令安装:
+# 1. 创建并激活 conda 环境（推荐）
+#    conda create -n rewards-core python=3.10
+#    conda activate rewards-core
 #
-#   pip install -e .          # 仅核心依赖（用户模式）
-#   pip install -e ".[test]"  # 核心依赖 + 测试工具
-#   pip install -e ".[viz]"   # 核心依赖 + 可视化工具
-#   pip install -e ".[dev]"   # 完整开发环境（核心 + 测试 + 可视化 + 代码质量工具）
+# 2. 安装依赖
+#    pip install -e .          # 仅核心依赖（用户模式）
+#    pip install -e ".[test]"  # 核心依赖 + 测试工具
+#    pip install -e ".[viz]"   # 核心依赖 + 可视化工具
+#    pip install -e ".[dev]"   # 完整开发环境
