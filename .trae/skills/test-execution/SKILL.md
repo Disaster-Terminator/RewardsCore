@@ -201,32 +201,55 @@ created_at: <时间戳>
 1. **执行前 (`search_nodes`)**：检索目标页面的历史状态（如查询 "Login_Page_DOM" 或 "Cloudflare_Bypass"），获取最新的选择器或等待策略。
 2. **禁止写入 Memory MCP**：如果发现反爬策略更新等需要记录的信息，返回给 Master Agent 处理。
 
-## 截图落盘规范
+## 截图落盘规范（物理执行序列）
 
 ### 触发时机
 
 异常捕获后，立即执行截图。
 
-### 执行路径
+### 执行序列（禁止跳过）
 
-1. 异常捕获后，立即执行截图：
-   ```python
-   page.screenshot(path=f"logs/screenshots/{task_id}_crash.png", full_page=True)
-   ```
+当捕获测试异常时，必须按以下顺序执行操作：
 
-2. 保存路径：`logs/screenshots/{task_id}_crash.png`
+#### 1. 环境准备
 
-3. 在覆写 `.trae/test_report.md` 时，必须在【精简取证】模块末尾注入：
-   ```markdown
-   #### 截图取证
-   
-   ![Crash_Site](../../logs/screenshots/{task_id}_crash.png)
-   ```
+首先在终端执行目录创建命令：
 
-4. 截图完成后，立即调用 `page.close()` 防止内存泄漏。
+```bash
+mkdir -p logs/screenshots
+```
+
+**注意**：此步骤不可跳过，Playwright 不会自动创建目录。
+
+#### 2. 截取快照
+
+通过 Playwright MCP 执行截图：
+
+```python
+page.screenshot(path=f"logs/screenshots/{task_id}_crash.png", full_page=True)
+```
+
+#### 3. 进程释放
+
+立刻执行页面关闭，防止内存泄漏：
+
+```python
+page.close()
+```
+
+#### 4. 报告覆写
+
+将图片路径注入 `.trae/test_report.md` 的【精简取证】模块末尾：
+
+```markdown
+#### 截图取证
+
+![Crash_Site](../../logs/screenshots/{task_id}_crash.png)
+```
 
 ### 约束
 
 - 截图必须使用 `full_page=True` 参数
 - 截图文件命名格式：`{task_id}_crash.png`
 - 截图后必须关闭页面，防止无头浏览器进程残留
+- 目录创建命令必须在截图前执行

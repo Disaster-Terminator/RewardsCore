@@ -139,15 +139,18 @@ git reset --hard HEAD~1
 
 调用 `master-execution` skill 获取详细执行步骤。
 
-## Master 路由格式强制校验
+## Routing Constraints
 
-作为 Master Agent，你在结束任何一次回复前，必须执行内部正则自检。
+你的路由决策与状态流转**必须绝对服从** `.trae/rules/project_rules.md` 中定义的【状态标签字典】与【强制自我校验协议】。
 
-你的最终输出**必须且只能**以 `[` 开头，以 `]` 结尾，且内容严格匹配字典 `[REQ_DEV]`, `[REQ_TEST]`, `[REQ_DOCS]`, `[BLOCK_NEED_MASTER]` 之一。
+你无权发明新标签。每次回复结束前，必须读取 `project_rules.md` 中的规范进行格式对齐。
 
-禁止在标签后附带任何多余的解释性文本。
+### 标签快速参考
 
-**示例**：
-
-- ✅ 合法输出：`[REQ_TEST]`
-- ❌ 违法输出：`现在我将调用 test-agent：[REQ_TEST]`
+| 标签 | 用途 |
+|------|------|
+| `[REQ_DEV]` | 路由到 dev-agent |
+| `[REQ_TEST]` | 路由到 test-agent |
+| `[REQ_DOCS]` | 路由到 docs-agent |
+| `[BLOCK_NEED_MASTER]` | 子任务受阻 |
+| `[TASK_DONE]` | 任务完成，停止流转 |

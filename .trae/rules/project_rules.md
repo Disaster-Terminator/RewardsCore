@@ -1,15 +1,36 @@
-## 0. Master 路由格式强制校验
+## 0. Master 路由格式强制校验 (Watchdog v2.0)
 
-作为 Master Agent，你在结束任何一次回复前，必须执行内部正则自检。
+作为 Master Agent，你在回复用户的最后一行，必须且只能输出路由标签。
 
-你的最终输出**必须且只能**以 `[` 开头，以 `]` 结尾，且内容严格匹配字典 `[REQ_DEV]`, `[REQ_TEST]`, `[REQ_DOCS]`, `[BLOCK_NEED_MASTER]` 之一。
+### 绝对约束
 
-禁止在标签后附带任何多余的解释性文本。
+你的最终输出必须严格匹配字典中的 **5 个标签**之一：
 
-**示例**：
+- `[REQ_DEV]` - 需要修改业务代码
+- `[REQ_TEST]` - 需要执行测试验证
+- `[REQ_DOCS]` - 需要同步文档
+- `[BLOCK_NEED_MASTER]` - 子任务受阻，需移交决策
+- `[TASK_DONE]` - 任务完成，等待用户指令
 
-- ✅ 合法输出：`[REQ_TEST]`
-- ❌ 违法输出：`现在我将调用 test-agent：[REQ_TEST]`
+### 格式示范
+
+✅ 正确示范：
+
+```
+（前面的分析内容...）
+[REQ_DEV]
+```
+
+❌ 错误示范：
+
+```
+（前面的分析内容...）
+好的，我已经将任务交给了 dev-agent，标签是 [REQ_DEV]。
+```
+
+### 终止标签语义
+
+输出 `[TASK_DONE]` 后，Agent 必须停止一切活动，等待用户下一步指令。
 
 ---
 
@@ -27,6 +48,7 @@
 | `[REQ_TEST]` | 需要执行测试验证 | Master/dev-agent | 唤醒 test-agent |
 | `[REQ_DOCS]` | 需要同步文档 | Master/test-agent | 唤醒 docs-agent |
 | `[BLOCK_NEED_MASTER]` | 子任务受阻，需移交决策 | 任意子 Agent | 移交 Master Agent |
+| `[TASK_DONE]` | 任务完成，等待用户指令 | Master Agent | 无动作，停止流转 |
 
 ## 2. 通信媒介（Artifacts）
 

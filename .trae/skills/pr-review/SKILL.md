@@ -96,3 +96,48 @@ description: PR 审查与自动化交付流程。创建 PR 后触发，处理 AI
 - [ ] 所有 `bug`/`security` 问题已修复
 - [ ] CI 检查通过
 - [ ] 已处理的评论已人工标记解决
+
+## 审查闭环与知识归档流程
+
+### 触发条件
+
+当检测到所有 AI 审查（Sourcery/Qodo）的问题均已标记为 `✅ Addressed` 或被判定为可忽略时，在通知人类进行合并之前，必须执行以下同步操作。
+
+### 执行步骤
+
+#### 1. 提取经验
+
+从 `.trae/current_task.md` 和 `.trae/test_report.md` 中提取本次解决的核心问题：
+- DOM 选择器变更
+- 反爬策略调整
+- 接口变更
+- 其他关键修复
+
+#### 2. 强制写入
+
+调用 Memory MCP `create_entities`，以 JSON 格式写入：
+
+```json
+{
+  "name": "<规则名称>",
+  "entityType": "Rewards_Target_Node",
+  "observations": [
+    "[DOM_Rule] 选择器：<选择器>",
+    "[Anti_Bot] 绕过策略：<策略描述>",
+    "task_id: <任务ID>",
+    "update_date: <更新日期>"
+  ]
+}
+```
+
+#### 3. 结束任务
+
+写入确认成功后：
+1. 输出终端信息提醒用户"已就绪，请手动合并 PR"
+2. 输出 `[TASK_DONE]` 标签终止流转
+
+### 约束
+
+- 必须在通知人工合并之前执行
+- 必须确认 Memory MCP 写入成功
+- 必须输出 `[TASK_DONE]` 终止流转
