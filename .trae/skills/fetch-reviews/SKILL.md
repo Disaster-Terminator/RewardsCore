@@ -1,110 +1,104 @@
 ---
 name: fetch-reviews
-description: 获取所有审查机器人评论。Qodo 使用 WebFetch，Sourcery/Copilot 使用 GitHub MCP。
+description: 获取PR的AI审查评论。分析Sourcery/Copilot/Qodo评论类型并报告给用户。
 ---
 
-# 获取审查意见
+# AI 审查获取流程
 
 ## 触发条件
 
-- PR 创建后需要查看审查意见
-- 需要检查审查状态
+- 用户创建 PR 后
+- 用户请求获取审查评论
 
-## 仓库信息
+## GitHub MCP 调用方式
 
-| 属性 | 值 |
-|------|-----|
-| owner | `Disaster-Terminator` |
-| repo | `RewardsCore` |
-
-## 获取策略
-
-### Sourcery 和 Copilot
-
-使用 GitHub MCP：
+### 获取评论
 
 ```
 get_pull_request_comments(owner, repo, pull_number)
 get_pull_request_reviews(owner, repo, pull_number)
 ```
 
-### Qodo
+### 获取 PR 状态
 
-**获取方法**（两种评论都需要）：
-
-```bash
-# 1. Review comments（行级评论）
-WebFetch(url="https://api.github.com/repos/{owner}/{repo}/pulls/{number}/comments")
-
-# 2. Issue comments（完整审查报告）
-WebFetch(url="https://api.github.com/repos/{owner}/{repo}/issues/{number}/comments")
+```
+get_pull_request_status(owner, repo, pull_number)
 ```
 
-**过滤条件**：`user.login == "qodo-code-review[bot]"`
+## 评论类型判断逻辑
 
-**解析方法**：
+### Sourcery 评论
 
-- 提取 `<details><summary><strong>Agent Prompt</strong></summary>` 中的内容
-- 问题类型标记：`<s>` 标签表示已解决
+**特征**：评论 body 含 `**issue (bug_risk):**` 或 `**issue (security):**`
 
-**重要**：Qodo 的完整审查报告通常在 Issue comments 中，必须同时获取两种评论。
+| 标签 | 含义 | 处理方式 |
+|------|------|----------|
+| `bug_risk` | 潜在 Bug | 必须修复 |
+| `security` | 安全问题 | 必须修复 |
+| `suggestion` | 代码建议 | 自主决断 |
+| `performance` | 性能建议 | 自主决断 |
 
-**失败处理**：如果两种方法都无法获取完整评论：
+**解决状态**：检查 body 是否含 `✅ Addressed`
 
-1. 记录已获取的部分评论
-2. 在 Memory MCP 中标记"Qodo 评论可能不完整"
-3. 通知人工确认时说明情况
+### Copilot 评论
 
-## 解析策略
+**特征**：评论含 ````suggestion` 代码建议块
 
-### Sourcery
+| 类型 | 处理方式 |
+|------|----------|
+| 代码建议块 | 自主决断 |
+| 安全警告 | 必须修复 |
 
-1. 过滤 `user.login == "sourcery-ai[bot]"`
-2. 提取 `<details><summary>Prompt for AI Agents</summary>` 中的 `~~~markdown` 块
-3. 解析 Individual Comments 部分
+**注意**：Copilot 评论无法通过 API 标记解决，需人工处理。
 
-### Copilot
+### Qodo 评论
 
-1. 过滤 `user.login == "copilot-pull-request-reviewer[bot]"`
-2. 直接读取 body（纯 Markdown）
+**特征**：评论含 `🐞 Bug` SVG 图标或 Agent Prompt
 
-### Qodo
+| 类型 | 处理方式 |
+|------|----------|
+| `Bug` | 必须修复 |
+| `suggestion` | 自主决断 |
 
-1. 过滤 `user.login == "qodo-code-review[bot]"`
-2. 解析 `body` 中的 HTML：
-   - 提取 `<details><summary><strong>Agent Prompt</strong></summary>` 中的内容
-   - 提取 `Fix Focus Areas` 列表
-3. 问题类型：
-   - 🐞 Bug：必须修复
-   - 📘 Rule violation：必须修复
-   - ⛨ Security：必须修复
-   - 🏯 Reliability：必须修复
+**注意**：Qodo 评论无法通过 API 标记解决，需人工处理。
 
 ## 输出格式
 
-### 审查意见汇总
+### 评论摘要
 
-| 来源 | 类型 | 问题 | 文件 | 状态 |
+```markdown
+## AI 审查评论摘要
+
+### 必须修复
+
+| 来源 | 类型 | 文件 | 行号 | 描述 |
 |------|------|------|------|------|
-| Sourcery | bug_risk | ... | ... | 待修复 |
-| Copilot | suggestion | ... | ... | 自主决断 |
-| Qodo | Bug | ... | ... | 待修复 |
+| Sourcery | bug_risk | xxx.py | 42 | ... |
+| Copilot | security | yyy.py | 15 | ... |
 
-### 解决状态检测
+### 建议性评论
 
-通过检查评论 `body` 判断是否已解决：
+| 来源 | 类型 | 文件 | 描述 |
+|------|------|------|------|
+| Sourcery | suggestion | xxx.py | ... |
+| Qodo | performance | yyy.py | ... |
 
-| 机器人 | 已解决标志 | 说明 |
-|--------|-----------|------|
-| Sourcery | `✅ Addressed in {commit}` | 自动更新评论 |
-| Copilot | 无 | 不会更新评论，无法判断 |
-| Qodo | ✅  | 自动更新评论 |
+### 已解决
 
-**示例**：
-
-```
-body: "**issue (bug_risk):** ...\n\n✅ Addressed in ab1e26c: ..."
-→ 状态：已解决（Sourcery 自动检测）
+| 来源 | 文件 | 状态 |
+|------|------|------|
+| Sourcery | xxx.py | ✅ Addressed |
 ```
 
-**注意**：Copilot 不会自动更新评论，Agent 无法通过 API 判断其评论是否已解决。需人工在 GitHub 网页上点击"Resolve conversation"。
+## 处理建议
+
+| 评论类型 | Agent 行为 |
+|----------|------------|
+| `bug_risk`, `Bug`, `security` | 报告给用户，等待修复指令 |
+| `suggestion`, `performance` | 报告给用户，自主决断是否采纳 |
+
+## 合并提醒
+
+- Sourcery 评论可自动检测 `✅ Addressed`
+- Copilot/Qodo 评论需人工在 GitHub 网页标记解决
+- **Agent 不自动合并 PR**，需通知用户确认
