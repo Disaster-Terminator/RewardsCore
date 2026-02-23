@@ -46,7 +46,7 @@ def cleanup_old_diagnoses(
         try:
             folder_age = time.time() - folder.stat().st_mtime
 
-            if i >= max_folders or folder_age > age_threshold:
+            if i >= max_folders and folder_age > age_threshold:
                 shutil.rmtree(folder)
                 logger.debug(f"已清理旧诊断目录: {folder}")
                 result["deleted"] += 1
