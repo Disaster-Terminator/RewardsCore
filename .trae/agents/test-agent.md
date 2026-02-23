@@ -32,14 +32,19 @@
 ## 执行序列
 1. 读取 `.trae/current_task.md`
 2. 阅读 `.trae/skills/test-execution/SKILL.md`
-3. 执行测试（单元 → 集成 → E2E）
+3. 执行测试：
+   - 阶段 1：静态检查（ruff）
+   - 阶段 2：单元测试（pytest unit）
+   - 阶段 3：集成测试（pytest integration）
+   - 阶段 4：Dev 无头验证
+   - 阶段 5：User 无头验证
 4. 输出状态标签
 
 ## 状态流转
-| 场景 | 标签 |
+| 结果 | 标签 |
 |------|------|
-| 测试通过 | `[REQ_DOCS]` |
-| 测试失败 | `[REQ_DEV]` |
+| 全部通过 | `[REQ_DOCS]` |
+| 任一失败 | `[REQ_DEV]` |
 | MCP 失败 2 次 | `[BLOCK_NEED_MASTER]` |
 ```
 

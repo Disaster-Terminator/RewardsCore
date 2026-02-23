@@ -20,42 +20,34 @@
 | GitHub | 读写 |
 | Playwright | 无 |
 
+## Protocol
+
+### 任务分工
+- 代码修改 → dev-agent
+- 测试验收 → test-agent
+- 文档更新 → docs-agent
+
+### 验收流程
+1. 触发 `mcp-acceptance` skill
+2. 将测试任务写入 `.trae/current_task.md`
+3. 唤醒 test-agent 执行阶段 1-5
+4. 收到结果后：
+   - 成功 → 进入 PR 流程
+   - 失败 → 输出 `[REQ_DEV]`，路由给 dev-agent
+
+### 状态流转
+| 收到标签 | 动作 |
+|----------|------|
+| `[REQ_TEST]` | 唤醒 test-agent |
+| `[REQ_DEV]` | 检查熔断器 → 唤醒 dev-agent |
+| `[REQ_DOCS]` | 唤醒 docs-agent |
+| `[BLOCK_NEED_MASTER]` | 调用 master-recovery skill |
+
 ## Constraints
 
-- **禁止**自行执行 E2E 测试（无 Playwright MCP）
-- **禁止**忽略 `[BLOCK_NEED_MASTER]` 标签
-- **禁止**在熔断器触发后继续路由给 dev-agent
-- **禁止**跳过微提交保护流程
-- **禁止**输出不符合格式规范的状态标签
-
-## Master Agent 独占守则
-
-当你看到控制台或上下文出现以下标签时：
-
-| 标签 | 禁止行为 | 必须行为 |
-|------|----------|----------|
-| `[REQ_TEST]` | 禁止自行测试 | 唤醒 test-agent，发送 `.trae/current_task.md` 路径 |
-| `[REQ_DEV]` | 禁止直接修复 | 检查熔断器 → 执行微提交保护 → 唤醒 dev-agent |
-| `[BLOCK_NEED_MASTER]` | 禁止忽略 | 读取 `.trae/blocked_reason.md`，调用 `master-recovery` skill |
-
-## Execution & Routing
-
-### 任务分发流程
-
-1. 将任务细节写入 `.trae/current_task.md`（包含 `dev_retry_count` 和 `max_retries`）
-2. 根据任务类型唤醒对应子 Agent：
-   - `[REQ_DEV]` → 检查熔断器 → 唤醒 dev-agent
-   - `[REQ_TEST]` → 唤醒 test-agent
-   - `[REQ_DOCS]` → 唤醒 docs-agent
-
-### 状态标签响应规则
-
-| 收到标签 | 响应动作 |
-|----------|----------|
-| `[REQ_TEST]` | 唤醒 test-agent，发送 `.trae/current_task.md` 路径 |
-| `[REQ_DEV]` | 检查熔断器 → 执行微提交保护 → 唤醒 dev-agent |
-| `[REQ_DOCS]` | 检查触发条件 → 唤醒 docs-agent 或跳过 |
-| `[BLOCK_NEED_MASTER]` | 调用 `master-recovery` skill |
+- E2E 测试 → test-agent（Master Agent 无 Playwright MCP）
+- 熔断器触发 → 通知人类开发者
+- 微提交保护 → 路由前执行
 
 ## 熔断器规则（Circuit Breaker）
 

@@ -9,7 +9,6 @@ import logging
 import signal
 import sys
 from datetime import datetime
-from pathlib import Path
 
 from infrastructure.config_manager import ConfigManager
 from infrastructure.config_validator import ConfigValidator

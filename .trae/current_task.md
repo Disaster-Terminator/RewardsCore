@@ -1,42 +1,24 @@
 ---
-task_id: mcp-acceptance-20260223
-created_at: 2026-02-23T00:00:00Z
-type: test
-dev_retry_count: 0
-max_retries: 3
+task_id: mcp-acceptance-test
 status: in_progress
+created_at: 2026-02-23
 ---
 
-### 任务描述
+# 验收任务
 
-执行 MCP 驱动的 7 阶段验收流程，完整测试多智能体框架。
+执行 MCP 驱动的 7 阶段验收流程，重点关注：
 
-### 验收阶段
+1. **rscore 入口点问题** - 验证 `src/cli.py` 修复是否生效
+2. **二维错误诊断矩阵** - 验证降级策略是否正确执行
+3. **MCP 使用时机** - 观察 Playwright MCP 的调用时机
 
-**阶段 1-3: CI 自动化**
-- [ ] 阶段 1：静态检查 (`ruff check . && ruff format --check .`)
-- [ ] 阶段 2：单元测试 (`pytest tests/unit/ -m "not real" -v`)
-- [ ] 阶段 3：集成测试 (`pytest tests/integration/ -v`)
+## 执行范围
 
-**阶段 4-5: MCP 无头验收**
-- [ ] 阶段 4：Dev 无头验证 (`rscore --dev --headless` 或降级到 `python main.py --dev --headless`)
-- [ ] 阶段 5：User 无头验证 (`rscore --user --headless` 或降级到 `python main.py --user --headless`)
+- 阶段 1-3: CI 自动化
+- 阶段 4: Dev 无头验证
+- 阶段 5: User 无头验证（如有会话文件）
 
-### 上下文信息
+## 验收标准
 
-- 项目：RewardsCore-Diagnosis
-- 测试框架：pytest
-- 静态检查：ruff
-- 无头验收：Playwright MCP
-- 环境配置：environment.yml / pyproject.toml
-
-### 降级执行策略
-
-如果 `rscore` 命令失败，必须降级到 `python main.py` 执行，禁止跳过。
-
-### 状态
-
-- [x] 待执行
-- [x] 执行中
-- [ ] 已完成
-- [ ] 已阻塞
+- rscore 成功运行，或降级到 python main.py 成功
+- 二维错误诊断矩阵正确归因
