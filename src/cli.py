@@ -11,8 +11,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 from infrastructure.config_manager import ConfigManager
 from infrastructure.config_validator import ConfigValidator
 from infrastructure.logger import setup_logging

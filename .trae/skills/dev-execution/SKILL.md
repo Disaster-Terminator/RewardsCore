@@ -5,6 +5,35 @@ description: 开发执行详细流程。dev-agent 执行代码修改时调用。
 
 # 开发执行详细流程
 
+## 前置检查（强制拦截）
+
+执行任何操作前，必须确认：
+
+- [ ] 文件移动/重命名 → 使用 `Move-Item` 命令
+- [ ] 批量删除 → 使用 `Remove-Item` 命令
+- [ ] 环境依赖 → 禁止自行安装，发现缺失时触发阻断协议
+
+### 环境异常阻断协议
+
+若发现代码运行缺少第三方依赖库：
+
+1. **绝对禁止**自行执行 `pip install` 或 `conda install`
+2. 立刻终止当前任务
+3. 输出 `[BLOCK_NEED_MASTER]` 标签
+4. 在 `.trae/blocked_reason.md` 中说明：
+   - `reason_type: missing_context`
+   - 缺失依赖名称
+   - 建议用户执行的安装命令
+
+### 权限隔离约束
+
+- 使用 Playwright MCP → 禁止（无此工具）
+- 写入 Memory MCP → 禁止（只读权限）
+- 写入 GitHub MCP → 禁止（只读权限）
+- 猜测 DOM 结构/选择器 → 禁止，触发 `[BLOCK_NEED_MASTER]`
+
+---
+
 ## 触发条件
 
 - 收到 `[REQ_DEV]` 标签

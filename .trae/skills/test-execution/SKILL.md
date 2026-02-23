@@ -5,6 +5,27 @@ description: 测试执行详细流程。test-agent 执行测试时调用。
 
 # 测试执行详细流程
 
+## 前置检查（强制拦截）
+
+执行任何操作前，必须确认：
+
+- [ ] Playwright 进程安全 → 每次运行后必须调用 `page.close()`
+- [ ] 测试目录隔离 → 绝不修改 `src/` 目录下的业务代码
+- [ ] 环境依赖 → 禁止自行安装，发现缺失时报告给用户
+
+### 权限隔离约束
+
+- 修改 `src/` 业务代码 → 禁止
+- 猜测 DOM 结构 → 禁止，找不到元素时立即停止
+- 生成修复代码片段 → 禁止
+- 提出修复建议 → 禁止
+- 写入 Memory MCP → 禁止（只读权限）
+- 保存完整 HTML → 禁止（仅允许精简取证）
+- 追加写入媒介文件 → 禁止（必须覆写）
+- 截图后不关闭页面 → 禁止（必须调用 `page.close()`）
+
+---
+
 ## 触发条件
 
 - 收到 `[REQ_TEST]` 标签
@@ -40,7 +61,7 @@ pytest tests/unit -v --cov=src
 pytest tests/integration -v
 ```
 
-### 4. E2E 验收（降级执行）
+### 4. E2E 验收（二维错误诊断矩阵）
 
 ```bash
 # 步骤 1：尝试 rscore
@@ -50,17 +71,28 @@ rscore --dev --headless
 python main.py --dev --headless
 ```
 
-**降级逻辑**：
+**二维错误诊断矩阵（强制执行）**
 
-| rscore 结果 | python main.py 结果 | 结论 |
-|-------------|---------------------|------|
-| ✅ 通过 | - | 正常 |
-| ❌ 失败 | ✅ 通过 | rscore 入口问题 |
-| ❌ 失败 | ❌ 失败 | 业务逻辑问题 |
-| ❌ 不可用 | ✅ 通过 | rscore 未安装 |
-| ❌ 不可用 | ❌ 失败 | 业务逻辑问题 |
+当执行 E2E 验收时，必须使用以下矩阵进行精准归因：
 
-**注意**：必须执行降级测试，不能因为 rscore 失败就跳过。
+| rscore 结果 | python main.py 结果 | 诊断结论 | 状态标签 |
+|-------------|---------------------|----------|----------|
+| ✅ 成功（Exit 0） | - | 验证通过 | `[REQ_DOCS]` |
+| ❌ `ModuleNotFoundError: No module named 'cli'` | 任意 | 环境问题：rscore 入口点配置错误 | `[REQ_DEV]` 修复包结构 |
+| ❌ `command not found: rscore` | ✅ 成功 | 配置问题：rscore 未安装 | `[REQ_DEV]` 修复 pyproject.toml |
+| ❌ 任意异常 | ✅ 成功 | 配置问题：rscore 包装器失效 | `[REQ_DEV]` 修复 CLI 入口 |
+| 任意 | ❌ `ModuleNotFoundError` | 环境问题：核心依赖缺失 | `[BLOCK_NEED_MASTER]` 要求人类介入 |
+| ❌ 业务逻辑堆栈（Timeout/Assertion） | ❌ 业务逻辑堆栈 | 业务问题：逻辑实现缺陷 | `[REQ_DEV]` + Playwright 现场取证 |
+| ❌ 不可用 | ❌ 不可用 | 环境问题：Python 环境异常 | `[BLOCK_NEED_MASTER]` 要求人类介入 |
+
+**诊断执行序列（禁止跳过）**
+
+1. 执行 `rscore --dev --headless`，记录退出码和错误信息
+2. 若 rscore 失败，执行 `python main.py --dev --headless`，记录退出码和错误信息
+3. 对照二维矩阵，确定诊断结论
+4. 将诊断过程写入 `.trae/test_report.md`（覆写模式）
+
+**注意**：必须执行完整的二维诊断流程，不能因为 rscore 失败就跳过 python main.py 测试。
 
 ### 5. 现场取证模式（Crime Scene Investigation）
 
