@@ -188,7 +188,47 @@ python main.py --dev  # 降级方案
 
 ---
 
-## 5. 安全边界
+## 5. 子Agent调用
+
+Solo Coder 可以通过调用子Agent实现并行开发。子Agent是可选的并行工具，不是必须的协作流程。
+
+### 5.1 子Agent列表
+
+| Agent | 职责 | 定义文件 |
+|-------|------|----------|
+| `dev-agent` | 代码修改与局部验证 | `.trae/agents/dev-agent.md` |
+| `test-agent` | 测试执行与E2E验收 | `.trae/agents/test-agent.md` |
+| `docs-agent` | 文档更新 | `.trae/agents/docs-agent.md` |
+
+### 5.2 调用方式
+
+| Agent | 何时调用 |
+|-------|----------|
+| `dev-agent` | 需要独立的代码修改会话时 |
+| `test-agent` | 需要独立的测试验证会话时 |
+| `docs-agent` | 需要独立的文档更新会话时 |
+
+### 5.3 并行开发示例
+
+```
+Solo Coder
+    │
+    ├─► dev-agent: 修改模块A
+    │
+    ├─► dev-agent: 修改模块B（并行）
+    │
+    └─► test-agent: 运行测试（并行）
+```
+
+### 5.4 子Agent特点
+
+- **无状态路由**：不使用状态标签，由用户/Solo Coder直接调用
+- **独立运行**：不依赖通信媒介文件
+- **MCP配置**：与归档版本相同，用户无需重新配置
+
+---
+
+## 6. 安全边界
 
 | 自主区 | 用户确认区 |
 |--------|------------|
