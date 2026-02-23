@@ -137,27 +137,30 @@ class TaskCoordinator:
 
         self.logger.warning("  未登录，需要登录")
 
+        auto_login_config = self.config.get("login.auto_login", {})
+        auto_login_enabled = auto_login_config.get("enabled", False)
+
+        email = (
+            os.environ.get("MS_REWARDS_EMAIL")
+            or auto_login_config.get("email", "")
+            or self.config.get("account.email", "")
+        )
+        password = (
+            os.environ.get("MS_REWARDS_PASSWORD")
+            or auto_login_config.get("password", "")
+            or self.config.get("account.password", "")
+        )
+
+        need_manual_login = False
+
         if account_mgr.use_state_machine:
-            auto_login_config = self.config.get("login.auto_login", {})
-            auto_login_enabled = auto_login_config.get("enabled", False)
-
-            email = (
-                os.environ.get("MS_REWARDS_EMAIL")
-                or auto_login_config.get("email", "")
-                or self.config.get("account.email", "")
-            )
-            password = (
-                os.environ.get("MS_REWARDS_PASSWORD")
-                or auto_login_config.get("password", "")
-                or self.config.get("account.password", "")
-            )
-            totp_secret = (
-                os.environ.get("MS_REWARDS_TOTP_SECRET")
-                or auto_login_config.get("totp_secret", "")
-                or self.config.get("account.totp_secret", "")
-            )
-
             if auto_login_enabled and email and password:
+                totp_secret = (
+                    os.environ.get("MS_REWARDS_TOTP_SECRET")
+                    or auto_login_config.get("totp_secret", "")
+                    or self.config.get("account.totp_secret", "")
+                )
+
                 self.logger.info("  尝试自动登录...")
                 StatusManager.update_operation("自动登录")
 
@@ -170,12 +173,13 @@ class TaskCoordinator:
                     await account_mgr.save_session(context)
                     self.logger.info("  ✓ 会话已保存")
                 else:
-                    self._check_headless_requirements()
-                    await self._manual_login(page, account_mgr, context)
+                    need_manual_login = True
             else:
-                self._check_headless_requirements()
-                await self._manual_login(page, account_mgr, context)
+                need_manual_login = True
         else:
+            need_manual_login = True
+
+        if need_manual_login:
             self._check_headless_requirements()
             await self._manual_login(page, account_mgr, context)
 
