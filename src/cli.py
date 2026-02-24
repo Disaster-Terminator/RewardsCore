@@ -17,6 +17,10 @@ from infrastructure.ms_rewards_app import MSRewardsApp
 
 logger = None
 
+# 全局状态用于优雅关闭
+_current_app: MSRewardsApp | None = None
+_shutdown_requested = False
+
 
 def parse_arguments():
     """解析命令行参数"""
@@ -109,16 +113,28 @@ async def test_notification_func(config):
 
 
 def signal_handler(signum, frame):
-    """信号处理器"""
-    global logger
+    """信号处理器 - 触发优雅关闭"""
+    global logger, _shutdown_requested
+
+    if _shutdown_requested:
+        # 第二次信号，强制退出
+        if logger:
+            logger.warning("收到第二次中断信号，强制退出")
+        sys.exit(130)
+
+    _shutdown_requested = True
+
     if logger:
-        logger.info("\n收到中断信号，正在清理...")
-    sys.exit(0)
+        logger.info("\n收到中断信号，正在优雅关闭...")
+
+    # 触发 KeyboardInterrupt 让 asyncio.run 正常退出
+    # 这会让正在运行的协程收到异常并执行 finally 块
+    raise KeyboardInterrupt("用户中断")
 
 
 async def async_main():
     """异步主函数"""
-    global logger
+    global logger, _current_app
 
     args = parse_arguments()
 
@@ -159,7 +175,6 @@ async def async_main():
 
     except Exception:
         logger.exception("配置加载失败")
-        print("配置文件加载失败，请检查配置文件格式是否正确。详细信息请查看日志。")
         return 1
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -173,33 +188,47 @@ async def async_main():
 
     scheduler_enabled = config.get("scheduler.enabled", True)
 
-    if scheduler_enabled:
-        logger.info("启动调度模式...")
-        from infrastructure.scheduler import TaskScheduler
+    try:
+        if scheduler_enabled:
+            logger.info("启动调度模式...")
+            from infrastructure.scheduler import TaskScheduler
 
-        scheduler = TaskScheduler(config)
+            scheduler = TaskScheduler(config)
 
-        async def scheduled_task():
-            app = MSRewardsApp(config, args, diagnose=diagnose_enabled)
-            await app.run()
+            async def scheduled_task():
+                global _current_app
+                _current_app = MSRewardsApp(config, args, diagnose=diagnose_enabled)
+                return await _current_app.run()
 
-        await scheduler.run_scheduled_task(scheduled_task, run_once_first=True)
-    else:
-        app = MSRewardsApp(config, args, diagnose=diagnose_enabled)
+            await scheduler.run_scheduled_task(scheduled_task, run_once_first=True)
+        else:
+            _current_app = MSRewardsApp(config, args, diagnose=diagnose_enabled)
 
-        logger.info("=" * 70)
-        logger.info("RewardsCore - 开始执行")
-        logger.info("=" * 70)
-        logger.info(f"执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        logger.info(f"浏览器: {args.browser}")
-        logger.info(f"无头模式: {config.get('browser.headless', True)}")
-        logger.info("=" * 70)
+            logger.info("=" * 70)
+            logger.info("RewardsCore - 开始执行")
+            logger.info("=" * 70)
+            logger.info(f"执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"浏览器: {args.browser}")
+            logger.info(f"无头模式: {config.get('browser.headless', True)}")
+            logger.info("=" * 70)
 
-        from ui.real_time_status import StatusManager
+            from ui.real_time_status import StatusManager
 
-        StatusManager.start(config)
+            StatusManager.start(config)
 
-        await app.run()
+            return await _current_app.run()
+
+    except KeyboardInterrupt:
+        logger.info("\n用户中断，正在清理资源...")
+        # 确保清理资源
+        if _current_app:
+            try:
+                await _current_app._cleanup()
+            except Exception as e:
+                logger.debug(f"清理过程中发生错误: {e}")
+        return 130
+    finally:
+        _current_app = None
 
 
 def main():

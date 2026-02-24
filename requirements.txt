@@ -6,6 +6,5 @@
 #
 # 2. 安装依赖
 #    pip install -e .          # 仅核心依赖（用户模式）
-#    pip install -e ".[test]"  # 核心依赖 + 测试工具
-#    pip install -e ".[viz]"   # 核心依赖 + 可视化工具
-#    pip install -e ".[dev]"   # 完整开发环境
+#    pip install -e ".[dev]"   # 完整开发环境（含测试工具）
+#    pip install -e ".[viz]"   # 核心依赖 + 可视化工具（已过时）

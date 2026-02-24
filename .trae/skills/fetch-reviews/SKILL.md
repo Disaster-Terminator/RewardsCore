@@ -1,183 +1,145 @@
 ---
 name: fetch-reviews
-description: 获取PR的AI审查评论。解析Sourcery/Copilot/Qodo评论并汇总未解决问题。
+description: 获取PR的AI审查评论。使用 CLI 工具获取结构化 JSON 数据，解析并汇总待处理问题。
 ---
 
 # AI 审查获取流程
 
-## 触发条件
+## 核心概念
 
-- 用户请求获取审查评论
-- 用户请求查看PR状态
-- 推送前检查
+### 操作对象 vs 参考对象
 
-## 获取流程
+| 类型 | 模型 | 用途 | 操作 |
+|------|------|------|------|
+| **Thread** | `ReviewThreadState` | 主要操作对象 | 可解决、可回复 |
+| **Overview** | `ReviewOverview` | 只读参考 | 仅阅读，不可解决 |
+| **IssueCommentOverview** | `IssueCommentOverview` | 只读参考 | 仅阅读，不可解决 |
 
-### 步骤 1：GitHub MCP 获取评论
+**重要**：Agent 主要操作 Thread 数据。Overview 用于了解 PR 整体评价和高层建议。
 
-```
-get_pull_request_reviews(owner, repo, pull_number)
-get_pull_request_comments(owner, repo, pull_number)
-get_pull_request_status(owner, repo, pull_number)
-```
+## 执行命令
 
-**Sourcery 数据提取**：
-
-- 从 `reviews.body` 提取 "Prompt for AI Agents" 中的问题列表
-- 从 `comments.body` 提取解决状态（`✅ Addressed`）
-
-**注意**：GitHub API 对 Qodo 评论会截断。
-
-### 步骤 2：Playwright MCP 获取 Qodo 完整评论
-
-**必须使用 Playwright**，因为 GitHub API 会截断 Qodo 评论。
-
-```javascript
-// 1. 无头模式导航
-playwright_navigate(url="https://github.com/{owner}/{repo}/pull/{number}", headless=true)
-
-// 2. 点击 "View more" 展开所有问题
-playwright_click(selector='summary:has-text("View more")')
-
-// 3. 提取 Code Review by Qodo 评论
-playwright_evaluate(script=`
-(function() {
-  let allMarkdown = document.querySelectorAll('.markdown-body');
-  let fullContent = '';
-  allMarkdown.forEach(el => {
-    let text = el.innerText;
-    if (text.includes('Code Review by Qodo') && text.includes('Bugs')) {
-      fullContent = text;
-    }
-  });
-  return fullContent;
-})()
-`)
-
-// 4. 提取 PR Reviewer Guide 评论
-playwright_evaluate(script=`
-(function() {
-  let allMarkdown = document.querySelectorAll('.markdown-body');
-  let guideContent = '';
-  allMarkdown.forEach(el => {
-    let text = el.innerText;
-    if (text.includes('PR Reviewer Guide') && text.includes('Estimated effort')) {
-      guideContent = text;
-    }
-  });
-  return guideContent;
-})()
-`)
-
-// 5. 关闭浏览器
-playwright_close()
+```bash
+python tools/manage_reviews.py fetch --owner {owner} --repo {repo} --pr {pr_number}
 ```
 
-### 步骤 3：解析评论类型
+## Thread 数据结构
 
-详见 `ai-reviewer-guide` skill。
+### 关键字段
 
-**快速参考**：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | Thread ID（用于解决操作） |
+| `source` | string | 评论来源：`Sourcery` / `Qodo` / `Copilot` |
+| `local_status` | string | 本地状态：`pending` / `resolved` / `ignored` |
+| `is_resolved` | boolean | GitHub 上的解决状态 |
+| `file_path` | string | 文件路径 |
+| `line_number` | number | 行号 |
+| `primary_comment_body` | string | 评论内容 |
+| `enriched_context` | object | 结构化元数据（可选） |
 
-| 来源 | 已解决标志 |
-|------|-----------|
-| Sourcery | `✅ Addressed in {commit}` |
-| Qodo (Code Review) | `☑ ☑ ☑ ☑ ☑`（5个勾） |
-| Qodo (PR Reviewer Guide) | 不包含具体问题，只是审查指南 |
-| Copilot | 无 |
+### enriched_context 字段
 
----
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `issue_type` | string | 问题类型（如 "Bug", "Security", "suggestion"） |
+| `issue_to_address` | string | 问题描述（来自 Sourcery Prompt） |
+| `code_context` | string | 代码上下文（来自 Sourcery Prompt） |
+
+### 处理逻辑
+
+```
+只处理 local_status == "pending" 且 is_resolved == False 的线程
+```
+
+## 业务裁决规则
+
+### 必须修复（红色）
+
+| 来源 | issue_type |
+|------|------------|
+| Sourcery | `bug_risk`, `security` |
+| Qodo | `Bug`, `Security`, `Rule violation`, `Reliability` |
+| Copilot | 安全警告 |
+
+**行为**：报告给用户，等待修复指令
+
+### 自主决断（黄色）
+
+| 来源 | issue_type |
+|------|------------|
+| Sourcery | `suggestion`, `performance` |
+| Qodo | `Correctness` |
+| Copilot | `suggestion` 代码块 |
+
+**行为**：报告给用户，自主决断是否采纳
+
+## CLI 命令
+
+### 获取评论
+
+```bash
+python tools/manage_reviews.py fetch --owner {owner} --repo {repo} --pr {pr_number}
+```
+
+### 列出线程（表格格式）
+
+```bash
+# 默认表格输出
+python tools/manage_reviews.py list --status pending
+
+# JSON 输出
+python tools/manage_reviews.py list --status pending --format json
+```
+
+### 查看总览意见
+
+```bash
+python tools/manage_reviews.py overviews
+```
+
+### 查看统计
+
+```bash
+python tools/manage_reviews.py stats
+```
 
 ## 输出格式
 
-### 审查评论处理表（必须输出）
-
-```markdown
-## 审查评论处理表
-
-### 审查指南（Qodo PR Reviewer Guide）
-
-| 项目 | 内容 |
-|------|------|
-| 审查工作量 | X/5 |
-| 测试覆盖 | ✅/❌ |
-| 安全问题 | 有/无 |
-| 关注重点 | ... |
-
-### 必须修复
-
-| ID | 来源 | 类型 | 文件 | 行号 | 描述 | 状态 |
-|----|------|------|------|------|------|------|
-| #1 | Sourcery | bug_risk | xxx.py | 42 | ... | 待处理 |
-| #2 | Qodo | Security | yyy.py | 15 | ... | 待处理 |
-
-### 建议性评论
-
-| ID | 来源 | 类型 | 文件 | 描述 | 状态 |
-|----|------|------|------|------|------|
-| #3 | Sourcery | suggestion | xxx.py | ... | 待判断 |
-| #4 | Copilot | suggestion | yyy.py | ... | 待判断 |
-
-### 已解决
-
-| ID | 来源 | 文件 | 状态 |
-|----|------|------|------|
-| #5 | Sourcery | xxx.py | ✅ Addressed |
-| #6 | Qodo | yyy.py | ☑ |
-```
-
----
-
-## 状态定义
-
-| 状态 | 含义 | 可推送？ |
-|------|------|----------|
-| 待处理 | 必须修复项，未处理 | ❌ 禁止推送 |
-| 待判断 | 建议性，需决定是否采纳 | ⚠️ 需确认 |
-| 已忽略 | 建议性，决定不采纳 | ✅ 可推送 |
-| 已解决 | 已修复或已确认解决 | ✅ 可推送 |
-
----
-
-## 推送前检查
-
-**调用时机**：准备推送代码前
-
-**检查逻辑**：
+### 表格输出示例
 
 ```
-1. 统计各状态数量
-2. 如果有"待处理"状态 → 停止推送，报告用户
-3. 如果有"待判断"状态 → 提示用户确认
-4. 如果全部是"已解决"或"已忽略" → 允许推送
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       待处理评论 (5)                                      │
+├──────────────┬──────────┬──────────┬────────────┬──────────────────────┤
+│ ID           │ Source   │ Status   │ Enriched   │ Location             │
+├──────────────┼──────────┼──────────┼────────────┼──────────────────────┤
+│ PRRT_kwDO... │ Qodo     │ pending  │ ✅ Bug     │ requirements.txt:1   │  ← 红色（必须修复）
+│ PRRT_kwDO... │ Sourcery │ pending  │ ✅ Sec     │ cli.py:42           │  ← 红色（必须修复）
+│ PRRT_kwDO... │ Copilot  │ pending  │            │ utils.py:15         │
+│ PRRT_kwDO... │ Qodo     │ pending  │ ✅ Cor     │ config.py:10        │  ← 黄色（建议）
+└──────────────┴──────────┴──────────┴────────────┴──────────────────────┘
 ```
 
-**输出**：
+### 颜色说明
 
-```
-✅ 推送检查通过
-- 必须修复：0 待处理
-- 建议性：2 已忽略，0 待判断
-- 已解决：3
+- **红色行**：必须修复的问题（Bug、Security 等）
+- **黄色行**：建议性问题（Correctness、suggestion 等）
+- **✅**：已注入 enriched_context
 
-或
+## 降级策略
 
-❌ 推送检查失败
-- 必须修复：2 待处理
-- 请先处理上述问题
-```
+如果 CLI 工具失败，参考 `docs/reference/archive/v1-ai-reviewer-guide.md` 使用 Playwright 手动获取评论。
 
----
+该文档包含三种机器人的审查评论格式和规律：
+- Sourcery: `sourcery-ai bot`
+- Copilot: `Copilot AI`
+- Qodo: `qodo-code-review bot`
 
-## 处理建议
+## 严禁事项
 
-| 评论类型 | Agent 行为 |
-|----------|------------|
-| `bug_risk`, `Bug`, `Security`, `Rule violation`, `Reliability` | 报告给用户，等待修复指令 |
-| `suggestion`, `performance`, `Correctness` | 报告给用户，自主决断是否采纳 |
-| PR Reviewer Guide | 直接报告给用户 |
-
-## 合并提醒
-
-- **Agent 不自动合并 PR**，需通知用户确认
-- 详细命令参考见 `ai-reviewer-guide` skill
+- **严禁一次性解决所有评论**：每个评论必须单独处理
+- **严禁无依据标记解决**：必须先确认问题已解决
+- **严禁批量操作**：必须逐个评论处理
+- **严禁跳过说明评论**：rejected/false_positive 必须回复
+- **Agent 不自动合并 PR**：需通知用户确认

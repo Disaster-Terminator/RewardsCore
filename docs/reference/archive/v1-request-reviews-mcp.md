@@ -1,9 +1,7 @@
----
-name: request-reviews
-description: 请求PR的AI审查。发送Sourcery/Qodo审查命令并轮询等待响应。
----
+# v1 请求AI审查流程 (MCP 版本)
 
-# 请求AI审查流程
+> **归档说明**：此文档为 v1 版本，使用 GitHub MCP。已归档。
+> 正常情况下请使用 v2 CLI 工具。如果 CLI 失败，可参考此文档作为降级方案。
 
 ## 前置条件检查
 

@@ -51,8 +51,18 @@ pytest tests/integration/ -n auto -v --tb=short --timeout=120
 
 ```
 1. 调用 fetch-reviews skill 获取评论状态
-2. 检查是否有"待处理"状态的必须修复项
-3. 检查是否有"待判断"状态的建议性评论
+2. 对于状态为"已修复待标记"的评论，调用 resolve-review-comment skill
+3. 检查是否有"待处理"状态的必须修复项
+4. 检查是否有"待判断"状态的建议性评论
+```
+
+**自动标记解决逻辑**：
+
+```
+对于每个已修复但未标记解决的评论：
+1. 调用 resolve-review-comment skill
+2. 记录解决依据
+3. 输出解决结果统计
 ```
 
 | 结果 | 动作 |
@@ -71,9 +81,20 @@ pytest tests/integration/ -n auto -v --tb=short --timeout=120
 
 或
 
+
 ❌ 审查评论检查失败
 - 必须修复：X 待处理
 - 请先处理上述问题
+```
+
+**解决结果统计输出格式**：
+
+```
+### 评论解决结果
+| ID | 来源 | 解决依据 | 回复 | 状态 |
+|----|------|----------|------|------|
+| #1 | Sourcery | code_fixed | - | ✅ |
+| #2 | Copilot | rejected | 已说明 | ✅ |
 ```
 
 **注意**：如果没有活跃PR，跳过此阶段。

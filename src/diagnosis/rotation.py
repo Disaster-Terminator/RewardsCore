@@ -14,6 +14,26 @@ MAX_DIAGNOSIS_FOLDERS = 10
 MAX_AGE_DAYS = 7
 
 
+def _get_dir_size(dir_path: Path) -> int:
+    """
+    计算目录的总大小（字节）
+
+    Args:
+        dir_path: 目录路径
+
+    Returns:
+        目录总大小（字节）
+    """
+    total_size = 0
+    try:
+        for item in dir_path.rglob("*"):
+            if item.is_file():
+                total_size += item.stat().st_size
+    except Exception:
+        pass
+    return total_size
+
+
 def cleanup_old_diagnoses(
     logs_dir: Path,
     max_folders: int = MAX_DIAGNOSIS_FOLDERS,
@@ -28,15 +48,15 @@ def cleanup_old_diagnoses(
         max_age_days: 最大保留天数
 
     Returns:
-        清理结果统计
+        清理结果统计，包含 deleted, skipped, errors, total_size_freed 字段
     """
     diagnosis_dir = logs_dir / "diagnosis"
     if not diagnosis_dir.exists():
-        return {"deleted": 0, "skipped": 0}
+        return {"deleted": 0, "skipped": 0, "total_size_freed": 0}
 
     folders = sorted(diagnosis_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)
 
-    result = {"deleted": 0, "skipped": 0, "errors": 0}
+    result = {"deleted": 0, "skipped": 0, "errors": 0, "total_size_freed": 0}
     age_threshold = max_age_days * 24 * 60 * 60
 
     for i, folder in enumerate(folders):
@@ -47,9 +67,12 @@ def cleanup_old_diagnoses(
             folder_age = time.time() - folder.stat().st_mtime
 
             if i >= max_folders and folder_age > age_threshold:
+                # 计算目录大小后再删除
+                folder_size = _get_dir_size(folder)
                 shutil.rmtree(folder)
                 logger.debug(f"已清理旧诊断目录: {folder}")
                 result["deleted"] += 1
+                result["total_size_freed"] += folder_size
             else:
                 result["skipped"] += 1
         except Exception as e:

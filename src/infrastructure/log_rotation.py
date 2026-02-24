@@ -161,7 +161,9 @@ class LogRotation:
         if diagnosis_dir.exists():
             from diagnosis.rotation import cleanup_old_diagnoses
 
-            diagnosis_result = cleanup_old_diagnoses(self.logs_dir, max_folders=10, max_age_days=self.max_age_days)
+            diagnosis_result = cleanup_old_diagnoses(
+                self.logs_dir, max_folders=10, max_age_days=self.max_age_days
+            )
             total_result["diagnosis"] = diagnosis_result
 
         # 3. 清理 screenshots

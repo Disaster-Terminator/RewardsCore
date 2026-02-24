@@ -1,6 +1,6 @@
 # MS Rewards Automator 文档中心
 
-> 最后更新: 2026-02-20
+> 最后更新: 2026-02-24
 
 欢迎查阅 MS Rewards Automator 项目文档。本文档中心提供完整的使用指南和技术参考资料。
 
@@ -20,6 +20,8 @@
 | [分支管理指南](reference/BRANCH_GUIDE.md) | 开发工作流、分支策略和验收标准 |
 | [调度器文档](reference/SCHEDULER.md) | 调度器功能、配置和执行模式 |
 | [配置参考](reference/CONFIG.md) | 完整配置项说明和示例 |
+| [评论处理系统说明](reference/评论处理系统说明.md) | AI 审查评论处理系统架构和使用 |
+| [审查评论处理工作流指南](reference/审查评论处理工作流指南.md) | 审查评论处理快速入门 |
 | [技术参考](reports/技术参考.md) | 反检测策略、健康监控和性能优化 |
 | [任务系统](task_system.md) | 任务系统页面结构和开发文档 |
 

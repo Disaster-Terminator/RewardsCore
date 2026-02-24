@@ -2,11 +2,21 @@
 
 ## 归档时间
 
-2026-02-23
+2026-02-23（整理于 2026-02-24）
 
 ## 归档原因
 
 多Agent框架过于复杂，需要隔离归档并重构为单Agent工作流，使分支能够合并。
+
+## 整理记录
+
+2026-02-24 整理：
+- 删除 7 个冗余/过时文档
+- 合并 2 组问题分析文档
+- 整合架构问题到主报告
+- 清空 artifacts 内容，保留格式模板
+
+---
 
 ## 归档内容清单
 
@@ -41,9 +51,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `current_task.md` | 任务上下文通信媒介 |
-| `test_report.md` | 测试结果通信媒介 |
-| `blocked_reason.md` | 阻塞原因通信媒介 |
+| `current_task.md` | 任务上下文模板（已清空具体内容） |
+| `test_report.md` | 测试报告模板（已清空具体内容） |
+| `blocked_reason.md` | 阻塞原因模板（已清空具体内容） |
 
 ### docs/
 
@@ -51,18 +61,24 @@
 |------|------|
 | `MCP_WORKFLOW.md` | MCP驱动开发工作流 |
 | `BRANCH_GUIDE.md` | 分支管理指南 |
-| `ARCHITECTURE_ISSUES.md` | 架构问题记录 |
+
+### documents/
+
+| 文件 | 说明 |
+|------|------|
+| `多智能体协作框架全面分析报告_v2.md` | 最完整的框架分析报告（含架构问题） |
+| `多agent框架隔离计划.md` | 隔离决策文档 |
+| `plan.md` | 分析计划 |
+| `问题分析合集.md` | 合并后的问题分析 |
+| `工程化闭环补丁实现反思.md` | 设计反思 |
+| `规则分层优化计划.md` | 规则设计经验 |
+| `agent-prompt-optimization.md` | 提示词优化经验 |
+| `master-agent-constraint-enhancement.md` | 约束增强经验 |
 
 ### specs/
 
 | 目录 | 说明 |
 |------|------|
-| `enhance-multi-agent-framework/` | 增强多Agent框架spec |
-| `framework-hardening-final/` | 框架加固spec |
-| `multi-agent-safety-patch/` | 安全补丁spec |
-| `rules-layer-optimization/` | 规则层优化spec |
-| `skill-loading-enforcement/` | Skill加载强制spec |
-| `state-machine-terminal/` | 状态机终端spec |
 | `isolate-multi-agent-framework/` | 隔离多Agent框架spec |
 
 ---
@@ -105,30 +121,6 @@ Agent间通信应使用JSON格式，配合JSON Schema验证：
 }
 ```
 
-```json
-// schema/task.schema.json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["task_id", "type", "status"],
-  "properties": {
-    "task_id": {"type": "string"},
-    "type": {"enum": ["dev", "test", "docs"]},
-    "status": {"enum": ["pending", "in_progress", "completed", "blocked"]},
-    "dev_retry_count": {"type": "integer", "minimum": 0},
-    "max_retries": {"type": "integer", "default": 3},
-    "description": {"type": "string"},
-    "context": {
-      "type": "object",
-      "properties": {
-        "files": {"type": "array", "items": {"type": "string"}},
-        "related_rules": {"type": "array", "items": {"type": "string"}}
-      }
-    }
-  }
-}
-```
-
 **优势**：
 1. 结构验证：字段类型、必填项自动检查
 2. 枚举约束：状态值限定在预定义范围
@@ -151,6 +143,5 @@ Agent间通信应使用JSON格式，配合JSON Schema验证：
 当前采用单Agent工作流，详见：
 
 - 项目规则：`.trae/rules/project_rules.md`
-- 工作流文档：`docs/reference/WORKFLOW.md`
 - E2E验收：`.trae/skills/e2e-acceptance/SKILL.md`
 - AI审查：`.trae/skills/fetch-reviews/SKILL.md`
