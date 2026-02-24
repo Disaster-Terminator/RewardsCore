@@ -4,7 +4,6 @@
 """
 
 import logging
-import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -302,22 +301,36 @@ class ConfigValidator:
             if service_config.get("enabled", False):
                 enabled_services.append(service)
 
-                # 验证必需字段
                 if service == "telegram":
-                    if not service_config.get("bot_token"):
-                        self.errors.append("Telegram通知已启用但缺少bot_token")
-                    if not service_config.get("chat_id"):
-                        self.errors.append("Telegram通知已启用但缺少chat_id")
+                    bot_token = self.config_manager.get_with_env(
+                        "notification.telegram.bot_token", "TELEGRAM_BOT_TOKEN"
+                    )
+                    chat_id = self.config_manager.get_with_env(
+                        "notification.telegram.chat_id", "TELEGRAM_CHAT_ID"
+                    )
+                    if not bot_token:
+                        self.errors.append("Telegram通知已启用但缺少bot_token，请配置环境变量TELEGRAM_BOT_TOKEN或config.yaml")
+                    if not chat_id:
+                        self.errors.append("Telegram通知已启用但缺少chat_id，请配置环境变量TELEGRAM_CHAT_ID或config.yaml")
 
                 elif service == "serverchan":
-                    if not service_config.get("key"):
-                        self.errors.append("Server酱通知已启用但缺少key")
+                    key = self.config_manager.get_with_env(
+                        "notification.serverchan.key", "SERVERCHAN_KEY"
+                    )
+                    if not key:
+                        self.errors.append("Server酱通知已启用但缺少key，请配置环境变量SERVERCHAN_KEY或config.yaml")
 
                 elif service == "whatsapp":
-                    if not service_config.get("phone"):
-                        self.errors.append("WhatsApp通知已启用但缺少phone")
-                    if not service_config.get("apikey"):
-                        self.errors.append("WhatsApp通知已启用但缺少apikey")
+                    phone = self.config_manager.get_with_env(
+                        "notification.whatsapp.phone", "WHATSAPP_PHONE"
+                    )
+                    apikey = self.config_manager.get_with_env(
+                        "notification.whatsapp.apikey", "WHATSAPP_APIKEY"
+                    )
+                    if not phone:
+                        self.errors.append("WhatsApp通知已启用但缺少phone，请配置环境变量WHATSAPP_PHONE或config.yaml")
+                    if not apikey:
+                        self.errors.append("WhatsApp通知已启用但缺少apikey，请配置环境变量WHATSAPP_APIKEY或config.yaml")
 
         if not enabled_services:
             self.warnings.append("通知功能已启用但没有配置任何通知服务")

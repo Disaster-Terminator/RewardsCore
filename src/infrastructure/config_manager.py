@@ -443,6 +443,20 @@ class ConfigManager:
 
         return value
 
+    def get_with_env(self, key: str, env_var: str, default: Any = None) -> Any:
+        """
+        获取配置项，优先从环境变量读取
+
+        Args:
+            key: 配置键，支持点号分隔的嵌套键
+            env_var: 环境变量名
+            default: 默认值
+
+        Returns:
+            配置值（环境变量优先）
+        """
+        return os.environ.get(env_var) or self.get(key, default)
+
     def validate_config(self, auto_fix: bool = False) -> bool:
         """
         验证配置文件的完整性和有效性（增强版）
