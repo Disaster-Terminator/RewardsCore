@@ -28,19 +28,6 @@ class IndividualCommentSchema(BaseModel):
     issue_to_address: str = Field(default="", description="问题描述")
 
 
-class PRReviewerGuideSchema(BaseModel):
-    """Qodo PR Reviewer Guide 结构（用于序列化）"""
-
-    commit_hash: str = Field(default="", description="审查截止的 commit hash")
-    estimated_effort: str = Field(default="", description="审查工作量估算")
-    has_tests: bool = Field(default=False, description="PR 是否包含测试")
-    security_concerns: str | None = Field(None, description="安全问题摘要")
-    focus_areas: list[str] = Field(default_factory=list, description="重点审查区域")
-    issues: list[list[str]] = Field(
-        default_factory=list, description="问题列表，每个元素为 [类型, 描述]"
-    )
-
-
 class ReviewThreadState(BaseModel):
     """
     审查线程模型 (对应 GitHub ReviewThread)
@@ -111,10 +98,8 @@ class IssueCommentOverview(BaseModel):
     """
     Issue Comment 级别的总览意见模型
 
-    Qodo 的 PR Reviewer Guide 存储在 Issue Comments 中，而非 Reviews。
-    包含改进意见摘要。
-
     注意：这是只读参考文档，不需要状态追踪。
+    Qodo v2 的所有问题都通过 Review Thread 获取，Issue Comment 仅作为参考。
     """
 
     id: str = Field(..., description="Issue Comment ID")
@@ -123,15 +108,6 @@ class IssueCommentOverview(BaseModel):
     url: str = Field(default="", description="Comment URL")
     created_at: str | None = Field(None, description="创建时间")
     user_login: str = Field(default="", description="评论者用户名")
-
-    is_pr_reviewer_guide: bool = Field(False, description="是否为 PR Reviewer Guide")
-    pr_reviewer_guide: PRReviewerGuideSchema | None = Field(
-        None, description="解析后的 PR Reviewer Guide 内容"
-    )
-
-    is_code_change_summary: bool = Field(
-        False, description="是否为代码变化摘要（非改进意见）：Qodo Review Summary"
-    )
 
     last_updated: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 

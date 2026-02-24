@@ -122,35 +122,6 @@ class TestQodoTypeParsing:
         assert "Security" in result
 
 
-class TestIssueCommentFiltering:
-    """测试 Issue Comment 过滤"""
-
-    def test_is_qodo_pr_reviewer_guide(self):
-        """测试 PR Reviewer Guide 识别"""
-        body = "PR Reviewer Guide\n\nSome content here"
-        assert ReviewParser.is_qodo_pr_reviewer_guide(body) is True
-
-    def test_is_qodo_pr_reviewer_guide_false(self):
-        """测试非 PR Reviewer Guide"""
-        body = "Review Summary by Qodo"
-        assert ReviewParser.is_qodo_pr_reviewer_guide(body) is False
-
-    def test_is_qodo_review_summary(self):
-        """测试 Review Summary 识别"""
-        body = "Review Summary by Qodo\n\nSome content"
-        assert ReviewParser.is_qodo_review_summary(body) is True
-
-    def test_is_qodo_review_summary_false(self):
-        """测试非 Review Summary"""
-        body = "PR Reviewer Guide"
-        assert ReviewParser.is_qodo_review_summary(body) is False
-
-    def test_is_qodo_pr_reviewer_guide_empty(self):
-        """测试空内容"""
-        assert ReviewParser.is_qodo_pr_reviewer_guide("") is False
-        assert ReviewParser.is_qodo_pr_reviewer_guide(None) is False
-
-
 class TestEnrichedContext:
     """测试 EnrichedContext 模型"""
 

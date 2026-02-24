@@ -22,18 +22,6 @@ class PromptForAI:
     individual_comments: list[IndividualComment]
 
 
-@dataclass
-class PRReviewerGuide:
-    """解析后的 Qodo PR Reviewer Guide 结构"""
-
-    commit_hash: str
-    estimated_effort: str
-    has_tests: bool
-    security_concerns: str | None
-    focus_areas: list[str]
-    issues: list[tuple[str, str]]
-
-
 class ReviewParser:
     """
     AI 审查评论解析器
@@ -290,121 +278,6 @@ class ReviewParser:
             file_path = location.strip()
             return file_path, 0
 
-    REGEX_PR_REVIEWER_GUIDE = re.compile(r"PR Reviewer Guide 🔍", re.IGNORECASE)
-
-    REGEX_COMMIT_HASH = re.compile(r"Review updated until commit ([a-f0-9]+)", re.IGNORECASE)
-
-    REGEX_ESTIMATED_EFFORT = re.compile(r"⏱️ Estimated effort to review:\s*(.+)", re.IGNORECASE)
-
-    REGEX_HAS_TESTS = re.compile(r"🧪 PR contains tests", re.IGNORECASE)
-
-    REGEX_SECURITY = re.compile(r"🔒\s*(.+?security.+)", re.IGNORECASE)
-
-    REGEX_FOCUS_AREAS = re.compile(
-        r"⚡ Recommended focus areas for review\s*\n([\s\S]*?)(?=\n\n|\n[🐞📘⛨⚯]|\Z)", re.IGNORECASE
-    )
-
-    REGEX_ISSUE_SECTION = re.compile(r"([🐞📘⛨⚯]\s*\w+[^✓]*)", re.MULTILINE)
-
-    @classmethod
-    def parse_pr_reviewer_guide(cls, body: str) -> PRReviewerGuide | None:
-        """
-        解析 Qodo PR Reviewer Guide
-
-        这是 Qodo 提供的审查指南，包含：
-        - 审查工作量估算
-        - 安全问题摘要
-        - 重点审查区域
-        - 改进意见摘要
-
-        Args:
-            body: Issue Comment 的完整内容
-
-        Returns:
-            PRReviewerGuide 对象，如果不是 PR Reviewer Guide 返回 None
-        """
-        if not body or not cls.REGEX_PR_REVIEWER_GUIDE.search(body):
-            return None
-
-        commit_hash = ""
-        commit_match = cls.REGEX_COMMIT_HASH.search(body)
-        if commit_match:
-            commit_hash = commit_match.group(1)
-
-        estimated_effort = ""
-        effort_match = cls.REGEX_ESTIMATED_EFFORT.search(body)
-        if effort_match:
-            estimated_effort = effort_match.group(1).strip()
-
-        has_tests = bool(cls.REGEX_HAS_TESTS.search(body))
-
-        security_concerns = None
-        security_match = cls.REGEX_SECURITY.search(body)
-        if security_match:
-            security_concerns = security_match.group(1).strip()
-
-        focus_areas = []
-        focus_match = cls.REGEX_FOCUS_AREAS.search(body)
-        if focus_match:
-            focus_section = focus_match.group(1)
-            focus_areas = [
-                line.strip().lstrip("- ").strip()
-                for line in focus_section.split("\n")
-                if line.strip().startswith("-")
-            ]
-
-        issues = []
-        issue_matches = cls.REGEX_ISSUE_SECTION.findall(body)
-        for issue_block in issue_matches:
-            lines = issue_block.strip().split("\n")
-            if lines:
-                issue_type = lines[0].strip()
-                issue_desc = "\n".join(lines[1:]).strip() if len(lines) > 1 else ""
-                issues.append((issue_type, issue_desc))
-
-        return PRReviewerGuide(
-            commit_hash=commit_hash,
-            estimated_effort=estimated_effort,
-            has_tests=has_tests,
-            security_concerns=security_concerns,
-            focus_areas=focus_areas,
-            issues=issues,
-        )
-
-    @classmethod
-    def is_qodo_review_summary(cls, body: str) -> bool:
-        """
-        判断是否为 Qodo Review Summary（代码变化摘要）
-
-        注意：这是代码变化摘要，不是改进意见！
-
-        Args:
-            body: 评论内容
-
-        Returns:
-            True 如果是 Review Summary
-        """
-        if not body:
-            return False
-        return "Review Summary by Qodo" in body
-
-    @classmethod
-    def is_qodo_pr_reviewer_guide(cls, body: str) -> bool:
-        """
-        判断是否为 Qodo PR Reviewer Guide（改进意见摘要）
-
-        这是 Qodo 提供的审查指南，包含改进意见摘要。
-
-        Args:
-            body: 评论内容
-
-        Returns:
-            True 如果是 PR Reviewer Guide
-        """
-        if not body:
-            return False
-        return "PR Reviewer Guide" in body
-
     @classmethod
     def is_sourcery_reviewer_guide(cls, body: str) -> bool:
         """
@@ -421,6 +294,33 @@ class ReviewParser:
         if not body:
             return False
         return "Reviewer's Guide" in body and "high level feedback" not in body.lower()
+
+    REGEX_QODO_COMMIT_HASH = re.compile(
+        r"(?:Review updated until commit|Persistent review updated to latest commit)\s+([a-f0-9]+)",
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def parse_qodo_commit_hash(cls, body: str) -> str | None:
+        """
+        解析 Qodo v2 Code Review 中的 commit hash
+
+        Qodo v2 格式：
+        - "Review updated until commit 9a074bc"
+        - "Persistent review updated to latest commit 9a074bc"
+
+        Args:
+            body: Issue Comment 内容
+
+        Returns:
+            commit hash 字符串，如果不存在返回 None
+        """
+        if not body:
+            return None
+        match = cls.REGEX_QODO_COMMIT_HASH.search(body)
+        if match:
+            return match.group(1)
+        return None
 
     REGEX_QODO_EMOJI_TYPES = re.compile(
         r"<code>\s*(?:🐞\s*)?Bug\s*</code>|"

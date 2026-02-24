@@ -275,12 +275,11 @@ def cmd_overviews(args: argparse.Namespace) -> None:
             table2 = Table(title="[bold blue]Issue Comment 级别总览意见[/bold blue]")
             table2.add_column("ID", style="dim", width=12)
             table2.add_column("Source", width=10)
-            table2.add_column("Type", width=20)
+            table2.add_column("User", width=20)
 
             for o in issue_comment_overviews:
                 short_id = str(o.id)[:8] + "..." if len(str(o.id)) > 8 else str(o.id)
-                type_display = "PR Reviewer Guide" if o.is_pr_reviewer_guide else "Review Summary"
-                table2.add_row(short_id, o.source, type_display)
+                table2.add_row(short_id, o.source, o.user_login or "-")
 
             console.print(table2)
     else:
@@ -301,8 +300,7 @@ def cmd_overviews(args: argparse.Namespace) -> None:
                 {
                     "id": o.id,
                     "source": o.source,
-                    "is_pr_reviewer_guide": o.is_pr_reviewer_guide,
-                    "is_code_change_summary": o.is_code_change_summary,
+                    "user_login": o.user_login,
                 }
                 for o in issue_comment_overviews
             ],

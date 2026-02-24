@@ -120,7 +120,7 @@ class ReviewResolver:
                 author_login = raw.get("user", {}).get("login", "")
                 body = raw.get("body", "")
 
-                if ReviewParser.is_qodo_pr_reviewer_guide(body):
+                if "qodo" in author_login.lower() or "codium" in author_login.lower():
                     issue_comment_overviews.append(
                         IssueCommentOverview(
                             id=str(raw.get("id", "")),
@@ -129,21 +129,6 @@ class ReviewResolver:
                             url=raw.get("html_url", ""),
                             created_at=raw.get("created_at"),
                             user_login=author_login,
-                            is_pr_reviewer_guide=True,
-                            is_code_change_summary=False,
-                        )
-                    )
-                elif ReviewParser.is_qodo_review_summary(body):
-                    issue_comment_overviews.append(
-                        IssueCommentOverview(
-                            id=str(raw.get("id", "")),
-                            body=body,
-                            source="Qodo",
-                            url=raw.get("html_url", ""),
-                            created_at=raw.get("created_at"),
-                            user_login=author_login,
-                            is_pr_reviewer_guide=False,
-                            is_code_change_summary=True,
                         )
                     )
 

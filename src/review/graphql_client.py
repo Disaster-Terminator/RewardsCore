@@ -202,7 +202,7 @@ class GraphQLClient:
         """
         获取 PR 的 Issue Comments（REST API）
 
-        Qodo 的 PR Reviewer Guide 存储在 Issue Comments 中，而非 Review Threads。
+        Qodo 的 Code Review 信息存储在 Issue Comments 中。
         Issue Comments 是 PR 页面上的普通评论。
 
         Args:
