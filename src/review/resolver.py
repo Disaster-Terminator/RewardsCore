@@ -182,6 +182,10 @@ class ReviewResolver:
         - 只保留能匹配到活跃 Thread 的摘要
         - 找不到匹配 Thread 时丢弃摘要
 
+        支持行号范围匹配：
+        - 精确匹配：`pyproject.toml:35` 匹配 line=35
+        - 范围匹配：`src/file.py:10-20` 匹配 line 在 10-20 范围内的 Thread
+
         Args:
             threads: Thread 列表
             prompt_comments: Prompt Individual Comments 列表
@@ -201,13 +205,23 @@ class ReviewResolver:
 
         for comment in prompt_comments:
             file_path = comment.get("file_path", "")
-            line_number = comment.get("line_number", 0)
+            line_info = comment.get("line_number", 0)
 
-            if not file_path or line_number == 0:
+            if not file_path or line_info == 0:
                 continue
 
-            key = (file_path, line_number)
-            matching_thread = thread_index.get(key)
+            matching_thread = None
+
+            if isinstance(line_info, tuple):
+                line_start, line_end = line_info
+                for line in range(line_start, line_end + 1):
+                    key = (file_path, line)
+                    if key in thread_index:
+                        matching_thread = thread_index[key]
+                        break
+            else:
+                key = (file_path, line_info)
+                matching_thread = thread_index.get(key)
 
             if matching_thread and not matching_thread.enriched_context:
                 matching_thread.enriched_context = EnrichedContext(
@@ -215,7 +229,7 @@ class ReviewResolver:
                     issue_to_address=comment.get("issue_to_address"),
                     code_context=comment.get("code_context"),
                 )
-                logger.debug(f"映射 Prompt 到 Thread: {file_path}:{line_number}")
+                logger.debug(f"映射 Prompt 到 Thread: {file_path}:{line_info}")
 
         return threads
 

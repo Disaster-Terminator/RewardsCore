@@ -257,7 +257,7 @@ class ReviewParser:
         )
 
     @classmethod
-    def _parse_location(cls, location: str) -> tuple[str, int]:
+    def _parse_location(cls, location: str) -> tuple[str, int | tuple[int, int]]:
         """
         解析位置字符串，提取文件路径和行号
 
@@ -265,20 +265,30 @@ class ReviewParser:
             location: 位置字符串，如 "pyproject.toml:35" 或 "src/file.py:10-20"
 
         Returns:
-            (file_path, line_number)
+            (file_path, line_number) 或 (file_path, (line_start, line_end))
         """
         if ":" in location:
             parts = location.split(":")
             file_path = parts[0].strip()
-            try:
-                line_number = int(parts[1].split("-")[0].strip())
-            except (ValueError, IndexError):
-                line_number = 0
+            line_part = parts[1].strip()
+
+            if "-" in line_part:
+                try:
+                    range_parts = line_part.split("-")
+                    line_start = int(range_parts[0].strip())
+                    line_end = int(range_parts[1].strip())
+                    return file_path, (line_start, line_end)
+                except (ValueError, IndexError):
+                    return file_path, 0
+            else:
+                try:
+                    line_number = int(line_part)
+                except ValueError:
+                    line_number = 0
+                return file_path, line_number
         else:
             file_path = location.strip()
-            line_number = 0
-
-        return file_path, line_number
+            return file_path, 0
 
     REGEX_PR_REVIEWER_GUIDE = re.compile(r"PR Reviewer Guide 🔍", re.IGNORECASE)
 
