@@ -45,6 +45,13 @@ viz = [
 [project.scripts]
 rscore = "cli:main"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["cli"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

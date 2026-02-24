@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """比较数据库和 GitHub API 的数据"""
 
-import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.review.graphql_client import GraphQLClient
+from review.comment_manager import ReviewManager
+from review.graphql_client import GraphQLClient
+from review.models import ReviewThreadState
 
 
 def load_env_file() -> None:
@@ -26,19 +28,13 @@ def load_env_file() -> None:
                         os.environ[key] = value
 
 
-def load_db_data() -> list:
-    """从数据库文件加载数据"""
-    db_path = Path(__file__).parent.parent / ".trae" / "data" / "review_threads.json"
-    if not db_path.exists():
-        print(f"错误: 数据库文件不存在: {db_path}")
-        sys.exit(1)
-
-    data_db = json.loads(db_path.read_text(encoding="utf-8"))
-    threads_db_dict = data_db.get("threads", {})
-    return [threads_db_dict[k] for k in threads_db_dict if k.isdigit()]
+def load_db_data() -> list[ReviewThreadState]:
+    """从数据库加载数据（使用 ReviewManager 确保并发安全）"""
+    manager = ReviewManager()
+    return manager.get_all_threads()
 
 
-def fetch_api_data() -> list:
+def fetch_api_data() -> list[dict[str, Any]]:
     """从 GitHub API 获取数据"""
     load_env_file()
     token = os.environ.get("GITHUB_TOKEN")
@@ -64,7 +60,7 @@ def main():
         if "sourcery" in author.lower():
             sourcery_api.append(t)
 
-    sourcery_db = [t for t in threads_db if t.get("source") == "Sourcery"]
+    sourcery_db = [t for t in threads_db if t.source == "Sourcery"]
 
     print(f"GitHub API Sourcery Thread 数: {len(sourcery_api)}")
     print(f"数据库 Sourcery Thread 数: {len(sourcery_db)}")
@@ -82,10 +78,10 @@ def main():
 
     print("数据库 Sourcery Thread 状态:")
     for t in sourcery_db:
-        path = t.get("file_path", "N/A")
-        line = t.get("line_number", "None")
-        is_resolved = t.get("is_resolved", False)
-        local_status = t.get("local_status", "N/A")
+        path = t.file_path or "N/A"
+        line = t.line_number or "None"
+        is_resolved = t.is_resolved
+        local_status = t.local_status
         status = "✅ 已解决" if is_resolved else "⏳ 待处理"
         print(f"  {path}:{line} - {status} (local: {local_status})")
 
@@ -103,8 +99,8 @@ def main():
 
     db_index = {}
     for t in sourcery_db:
-        path = t.get("file_path", "")
-        line = t.get("line_number")
+        path = t.file_path or ""
+        line = t.line_number
         if line == 0:
             line = None
         key = (path, line)
@@ -115,7 +111,7 @@ def main():
         if key in db_index:
             db_t = db_index[key]
             api_resolved = api_t.get("isResolved", False)
-            db_resolved = db_t.get("is_resolved", False)
+            db_resolved = db_t.is_resolved
             if api_resolved != db_resolved:
                 print(f"  {key[0]}:{key[1]} - API: {api_resolved}, DB: {db_resolved}")
 
@@ -136,7 +132,7 @@ def main():
     print()
 
     api_pending = sum(1 for t in sourcery_api if not t.get("isResolved"))
-    db_pending = sum(1 for t in sourcery_db if not t.get("is_resolved"))
+    db_pending = sum(1 for t in sourcery_db if not t.is_resolved)
 
     print(f"GitHub API 待处理 Sourcery Thread: {api_pending}")
     print(f"数据库待处理 Sourcery Thread: {db_pending}")

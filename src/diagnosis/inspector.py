@@ -162,7 +162,7 @@ class PageInspector:
                     issue_type=IssueType.UNKNOWN,
                     severity=IssueSeverity.ERROR,
                     title="页面检查失败",
-                    description=str(e),
+                    description="页面检查过程中发生错误，请查看日志了解详情",
                 )
             ]
 

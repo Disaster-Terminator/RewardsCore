@@ -9,7 +9,7 @@ class IndividualComment:
 
     location: str
     file_path: str
-    line_number: int
+    line_number: int | tuple[int, int]
     code_context: str
     issue_to_address: str
 
@@ -332,6 +332,26 @@ class ReviewParser:
         re.IGNORECASE,
     )
 
+    REGEX_QODO_AGENT_PROMPT = re.compile(
+        r"<details>\s*<summary>\s*<strong>\s*Agent Prompt\s*</strong>\s*</summary>\s*```([\s\S]*?)```\s*(?:<code>[\s\S]*?</code>)?\s*</details>",
+        re.IGNORECASE,
+    )
+
+    REGEX_QODO_ISSUE_DESCRIPTION = re.compile(
+        r"## Issue description\s*\n([\s\S]*?)(?=\n## |\Z)",
+        re.IGNORECASE,
+    )
+
+    REGEX_QODO_ISSUE_CONTEXT = re.compile(
+        r"## Issue Context\s*\n([\s\S]*?)(?=\n## |\Z)",
+        re.IGNORECASE,
+    )
+
+    REGEX_QODO_FIX_FOCUS = re.compile(
+        r"## Fix Focus Areas\s*\n([\s\S]*?)(?=\n## |\n<code>|\Z)",
+        re.IGNORECASE,
+    )
+
     QODO_TYPE_MAP = {
         "bug": "Bug",
         "rule violation": "Rule violation",
@@ -386,3 +406,118 @@ class ReviewParser:
             return "suggestion"
 
         return ", ".join(types)
+
+    @classmethod
+    def parse_qodo_agent_prompt(cls, body: str) -> dict[str, str | None]:
+        """
+        解析 Qodo Agent Prompt 结构化内容
+
+        Qodo 格式：
+        <details>
+        <summary><strong>Agent Prompt</strong></summary>
+
+        ```
+        ## Issue description
+        ...
+
+        ## Issue Context
+        ...
+
+        ## Fix Focus Areas
+        - file.py[10-20]
+        ```
+        </details>
+
+        Args:
+            body: 评论正文
+
+        Returns:
+            {
+                "issue_description": str | None,
+                "issue_context": str | None,
+                "fix_focus_areas": str | None,
+            }
+        """
+        if not body or "Agent Prompt" not in body:
+            return {
+                "issue_description": None,
+                "issue_context": None,
+                "fix_focus_areas": None,
+            }
+
+        match = cls.REGEX_QODO_AGENT_PROMPT.search(body)
+        if not match:
+            return {
+                "issue_description": None,
+                "issue_context": None,
+                "fix_focus_areas": None,
+            }
+
+        prompt_content = match.group(1)
+
+        issue_desc_match = cls.REGEX_QODO_ISSUE_DESCRIPTION.search(prompt_content)
+        issue_context_match = cls.REGEX_QODO_ISSUE_CONTEXT.search(prompt_content)
+        fix_focus_match = cls.REGEX_QODO_FIX_FOCUS.search(prompt_content)
+
+        return {
+            "issue_description": issue_desc_match.group(1).strip() if issue_desc_match else None,
+            "issue_context": issue_context_match.group(1).strip() if issue_context_match else None,
+            "fix_focus_areas": fix_focus_match.group(1).strip() if fix_focus_match else None,
+        }
+
+    REGEX_SOURCERY_THREAD = re.compile(
+        r"\*\*(issue|suggestion|nitpick)(?:\s*\((\w+)\))?:\*\*\s*(.+)",
+        re.MULTILINE,
+    )
+
+    SOURCERY_TYPE_MAP = {
+        "bug_risk": "bug_risk",
+        "security": "security",
+        "performance": "performance",
+        "testing": "testing",
+        "typo": "typo",
+    }
+
+    @classmethod
+    def parse_sourcery_thread_body(cls, body: str) -> dict[str, str | None]:
+        """
+        解析 Sourcery Thread 评论正文
+
+        格式示例：
+        - **issue (bug_risk):** 描述内容
+        - **suggestion:** 描述内容
+        - **nitpick (typo):** 描述内容
+
+        Args:
+            body: 评论正文
+
+        Returns:
+            {
+                "issue_type": str | None,
+                "issue_to_address": str | None,
+            }
+        """
+        if not body:
+            return {"issue_type": None, "issue_to_address": None}
+
+        match = cls.REGEX_SOURCERY_THREAD.search(body)
+        if not match:
+            return {"issue_type": None, "issue_to_address": None}
+
+        category = match.group(1).lower()
+        subtype = match.group(2).lower() if match.group(2) else None
+        description = match.group(3).strip()
+
+        if subtype and subtype in cls.SOURCERY_TYPE_MAP:
+            issue_type = cls.SOURCERY_TYPE_MAP[subtype]
+        elif category == "issue":
+            issue_type = "bug_risk"
+        elif category == "nitpick":
+            issue_type = "suggestion"
+        else:
+            issue_type = category
+
+        return {
+            "issue_type": issue_type,
+            "issue_to_address": description,
+        }

@@ -12,16 +12,63 @@ description: 获取PR的AI审查评论。使用 CLI 工具获取结构化 JSON �
 | 类型 | 模型 | 用途 | 操作 |
 |------|------|------|------|
 | **Thread** | `ReviewThreadState` | 主要操作对象 | 可解决、可回复 |
-| **Overview** | `ReviewOverview` | 只读参考 | 仅阅读，不可解决 |
+| **Overview** | `ReviewOverview` | 总览意见（Sourcery/Qodo） | 需通过 CLI acknowledge |
 | **IssueCommentOverview** | `IssueCommentOverview` | 只读参考 | 仅阅读，不可解决 |
 
-**重要**：Agent 主要操作 Thread 数据。Overview 用于了解 PR 整体评价和高层建议。
+**重要**：
+
+- Thread 是行级评论，主要操作对象
+- Overview 是总览意见，Sourcery/Qodo 会给出高层建议
+- **Overview 必须通过 CLI `acknowledge` 命令处理，不能忽略**
 
 ## 执行命令
 
 ```bash
 python tools/manage_reviews.py fetch --owner {owner} --repo {repo} --pr {pr_number}
 ```
+
+## 完整工作流程
+
+### 步骤 1：获取评论数据
+
+```bash
+python tools/manage_reviews.py fetch --owner {owner} --repo {repo} --pr {pr_number}
+```
+
+### 步骤 2：查看总览意见（Overview）
+
+```bash
+# 查看所有总览意见
+python tools/manage_reviews.py overviews
+
+# 仅查看待处理的
+python tools/manage_reviews.py overviews --status pending
+```
+
+**重要**：
+
+- 总览意见给出 PR 整体评价
+- `prompt_for_ai.individual_comments` 包含行级建议（如果有）
+- 必须使用 `acknowledge` 命令标记处理状态
+
+### 步骤 3：处理总览意见
+
+```bash
+# 确认单个总览意见
+python tools/manage_reviews.py acknowledge --id {overview_id}
+
+# 确认所有总览意见
+python tools/manage_reviews.py acknowledge --all
+```
+
+### 步骤 4：处理行级评论（Thread）
+
+```bash
+# 列出待处理的行级评论
+python tools/manage_reviews.py list --status pending
+```
+
+然后逐个处理 Thread，使用 `resolve-review-comment` Skill。
 
 ## Thread 数据结构
 
@@ -98,6 +145,38 @@ python tools/manage_reviews.py list --status pending --format json
 python tools/manage_reviews.py overviews
 ```
 
+### 处理总览意见（acknowledge）
+
+**重要**：Overview 是 Sourcery/Qodo 给出的总览意见，必须通过 CLI 处理。
+
+```bash
+# 查看待处理的总览意见
+python tools/manage_reviews.py overviews --status pending
+
+# 确认单个总览意见
+python tools/manage_reviews.py acknowledge --id {overview_id}
+
+# 确认所有总览意见
+python tools/manage_reviews.py acknowledge --all
+```
+
+**Overview 数据结构**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | Overview ID |
+| `source` | string | 来源：`Sourcery` / `Qodo` |
+| `summary` | string | 总览内容 |
+| `prompt_for_ai` | object | AI 处理提示（可选） |
+| `local_status` | string | 本地状态：`pending` / `acknowledged` / `ignored` |
+
+**处理流程**：
+
+1. 使用 `overviews` 命令查看总览意见
+2. 阅读总览内容，理解 PR 整体评价
+3. 使用 `acknowledge` 命令标记处理状态
+4. 如果 `prompt_for_ai` 存在，其中包含 `individual_comments`，这些是行级建议
+
 ### 查看统计
 
 ```bash
@@ -132,6 +211,7 @@ python tools/manage_reviews.py stats
 如果 CLI 工具失败，参考 `docs/reference/archive/v1-ai-reviewer-guide.md` 使用 Playwright 手动获取评论。
 
 该文档包含三种机器人的审查评论格式和规律：
+
 - Sourcery: `sourcery-ai bot`
 - Copilot: `Copilot AI`
 - Qodo: `qodo-code-review bot`

@@ -207,3 +207,125 @@ class TestReviewMetadata:
         assert metadata.repo == "test-repo"
         assert metadata.version == "2.2"
         assert metadata.etag_comments is None
+
+
+class TestSourceryThreadParsing:
+    """测试 Sourcery Thread 正文解析"""
+
+    def test_parse_issue_with_bug_risk(self):
+        """测试 issue (bug_risk) 格式"""
+        body = "**issue (bug_risk):** Using the package's own name with extras in dev dependencies"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "bug_risk"
+        assert "Using the package's own name" in result["issue_to_address"]
+
+    def test_parse_issue_without_subtype(self):
+        """测试 issue 无子类型"""
+        body = "**issue:** 文档中对终端工具是否可用的描述前后矛盾"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "bug_risk"
+        assert "文档中对终端工具" in result["issue_to_address"]
+
+    def test_parse_suggestion(self):
+        """测试 suggestion 格式"""
+        body = "**suggestion:** 配置加载异常时同时使用 print 和 sys.exit"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "suggestion"
+        assert "配置加载异常时" in result["issue_to_address"]
+
+    def test_parse_nitpick_with_typo(self):
+        """测试 nitpick (typo) 格式"""
+        body = "**nitpick (typo):** fixtures 注释中的中文用词建议从固件改为测试夹具"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "typo"
+        assert "fixtures 注释中的中文" in result["issue_to_address"]
+
+    def test_parse_nitpick_without_subtype(self):
+        """测试 nitpick 无子类型"""
+        body = "**nitpick:** The total_result type annotation doesn't match"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "suggestion"
+
+    def test_parse_suggestion_with_testing(self):
+        """测试 suggestion (testing) 格式"""
+        body = "**suggestion (testing):** Session-scoped account fixtures may introduce coupling"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] == "testing"
+
+    def test_parse_empty_body(self):
+        """测试空内容"""
+        assert ReviewParser.parse_sourcery_thread_body("") == {
+            "issue_type": None,
+            "issue_to_address": None,
+        }
+        assert ReviewParser.parse_sourcery_thread_body(None) == {
+            "issue_type": None,
+            "issue_to_address": None,
+        }
+
+    def test_parse_no_match(self):
+        """测试无匹配格式"""
+        body = "This is just a regular comment without Sourcery format"
+        result = ReviewParser.parse_sourcery_thread_body(body)
+        assert result["issue_type"] is None
+        assert result["issue_to_address"] is None
+
+
+class TestQodoAgentPromptParsing:
+    """测试 Qodo Agent Prompt 解析"""
+
+    def test_parse_full_prompt(self):
+        """测试完整 Agent Prompt 解析"""
+        body = """<img src="https://www.qodo.ai/wp-content/uploads/2025/12/v2-action-required.svg" height="20" alt="Action required">
+
+1. Resolver returns raw exceptions <code>📘 Rule violation</code> <code>⛨ Security</code>
+
+<pre>
+ReviewResolver directly returns exception text in the user-facing message field.
+</pre>
+
+<details>
+<summary><strong>Agent Prompt</strong></summary>
+
+```
+## Issue description
+ReviewResolver returns raw exception strings in the user-facing message field.
+
+## Issue Context
+Compliance requires user-facing errors to be generic.
+
+## Fix Focus Areas
+- src/review/resolver.py[171-173]
+- src/review/resolver.py[297-310]
+```
+
+<code>ⓘ Copy this prompt and use it to remediate the issue</code>
+</details>"""
+        result = ReviewParser.parse_qodo_agent_prompt(body)
+        assert result["issue_description"] is not None
+        assert "raw exception strings" in result["issue_description"]
+        assert result["issue_context"] is not None
+        assert "Compliance requires" in result["issue_context"]
+        assert result["fix_focus_areas"] is not None
+        assert "src/review/resolver.py" in result["fix_focus_areas"]
+
+    def test_parse_no_agent_prompt(self):
+        """测试无 Agent Prompt"""
+        body = "This is a regular comment without Agent Prompt"
+        result = ReviewParser.parse_qodo_agent_prompt(body)
+        assert result["issue_description"] is None
+        assert result["issue_context"] is None
+        assert result["fix_focus_areas"] is None
+
+    def test_parse_empty_body(self):
+        """测试空内容"""
+        assert ReviewParser.parse_qodo_agent_prompt("") == {
+            "issue_description": None,
+            "issue_context": None,
+            "fix_focus_areas": None,
+        }
+        assert ReviewParser.parse_qodo_agent_prompt(None) == {
+            "issue_description": None,
+            "issue_context": None,
+            "fix_focus_areas": None,
+        }

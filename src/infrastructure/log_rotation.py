@@ -139,6 +139,7 @@ class LogRotation:
             "logs": {},
             "screenshots": {},
             "diagnosis": {},
+            "diagnostics": {},
         }
 
         # 1. 清理主日志文件（保留最近的）
@@ -166,6 +167,13 @@ class LogRotation:
             )
             total_result["diagnosis"] = diagnosis_result
 
+        # 2.5 清理诊断目录（logs/diagnostics）- 运行时诊断文件
+        diagnostics_dir = self.logs_dir / "diagnostics"
+        if diagnostics_dir.exists():
+            total_result["diagnostics"] = self.cleanup_directory(
+                diagnostics_dir, patterns=["*.png", "*.html", "*.md"], dry_run=dry_run
+            )
+
         # 3. 清理 screenshots
         if self.screenshots_dir.exists():
             total_result["screenshots"] = self.cleanup_directory(
@@ -189,12 +197,15 @@ class LogRotation:
         # 输出汇总
         total_deleted = (
             total_result["diagnosis"].get("deleted", 0)
+            + total_result["diagnostics"].get("deleted", 0)
             + total_result["screenshots"].get("deleted", 0)
             + total_result["logs"].get("deleted", 0)
         )
-        total_size = total_result["diagnosis"].get("total_size_freed", 0) + total_result[
-            "screenshots"
-        ].get("total_size_freed", 0)
+        total_size = (
+            total_result["diagnosis"].get("total_size_freed", 0)
+            + total_result["diagnostics"].get("total_size_freed", 0)
+            + total_result["screenshots"].get("total_size_freed", 0)
+        )
 
         logger.info(
             f"清理完成: 删除 {total_deleted} 个文件，释放 {total_size / 1024 / 1024:.2f} MB"

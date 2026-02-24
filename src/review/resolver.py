@@ -4,6 +4,7 @@ from .comment_manager import ReviewManager
 from .graphql_client import GraphQLClient
 from .models import (
     EnrichedContext,
+    IndividualCommentSchema,
     IssueCommentOverview,
     ReviewMetadata,
     ReviewOverview,
@@ -84,6 +85,7 @@ class ReviewResolver:
 
                     prompt_for_ai = ReviewParser.parse_prompt_for_ai(body)
                     prompt_overall_comments = []
+                    prompt_individual_comment_schemas = []
 
                     if prompt_for_ai:
                         prompt_overall_comments = prompt_for_ai.overall_comments
@@ -96,6 +98,16 @@ class ReviewResolver:
                                     "code_context": c.code_context,
                                 }
                             )
+                            line_num = c.line_number if isinstance(c.line_number, int) else 0
+                            prompt_individual_comment_schemas.append(
+                                IndividualCommentSchema(
+                                    location=c.location,
+                                    file_path=c.file_path,
+                                    line_number=line_num,
+                                    code_context=c.code_context,
+                                    issue_to_address=c.issue_to_address,
+                                )
+                            )
 
                     overview = ReviewOverview(
                         id=raw["id"],
@@ -107,7 +119,7 @@ class ReviewResolver:
                         high_level_feedback=high_level_feedback,
                         has_prompt_for_ai=has_prompt_for_ai,
                         prompt_overall_comments=prompt_overall_comments,
-                        prompt_individual_comments=[],
+                        prompt_individual_comments=prompt_individual_comment_schemas,
                     )
                     overviews.append(overview)
 
@@ -136,6 +148,8 @@ class ReviewResolver:
 
             threads = self._inject_qodo_types(threads)
 
+            threads = self._inject_sourcery_types(threads)
+
             metadata = ReviewMetadata(pr_number=pr_number, owner=self.owner, repo=self.repo)
 
             self.manager.save_threads(threads, metadata)
@@ -155,7 +169,7 @@ class ReviewResolver:
 
         except Exception as e:
             logger.error(f"获取评论失败: {e}")
-            return {"success": False, "message": f"获取评论失败: {e}"}
+            return {"success": False, "message": "获取评论失败，请查看日志了解详情"}
 
     def _map_prompt_to_threads(
         self, threads: list[ReviewThreadState], prompt_comments: list[dict]
@@ -230,7 +244,32 @@ class ReviewResolver:
 
     def _inject_qodo_types(self, threads: list[ReviewThreadState]) -> list[ReviewThreadState]:
         """
-        为 Qodo Thread 注入 Emoji 类型信息
+        为 Qodo Thread 注入类型信息和 Agent Prompt 内容
+
+        Args:
+            threads: Thread 列表
+
+        Returns:
+            注入了类型信息和 Agent Prompt 内容的 Thread 列表
+        """
+        for thread in threads:
+            if thread.source == "Qodo" and not thread.enriched_context:
+                issue_type = ReviewParser.parse_qodo_issue_types(thread.primary_comment_body)
+
+                agent_prompt = ReviewParser.parse_qodo_agent_prompt(thread.primary_comment_body)
+
+                thread.enriched_context = EnrichedContext(
+                    issue_type=issue_type,
+                    issue_to_address=agent_prompt.get("issue_description"),
+                    code_context=agent_prompt.get("fix_focus_areas"),
+                )
+                logger.debug(f"注入 Qodo 类型到 Thread: {issue_type}")
+
+        return threads
+
+    def _inject_sourcery_types(self, threads: list[ReviewThreadState]) -> list[ReviewThreadState]:
+        """
+        为 Sourcery Thread 注入类型信息（从 primary_comment_body 解析）
 
         Args:
             threads: Thread 列表
@@ -239,12 +278,14 @@ class ReviewResolver:
             注入了类型信息的 Thread 列表
         """
         for thread in threads:
-            if thread.source == "Qodo" and not thread.enriched_context:
-                issue_type = ReviewParser.parse_qodo_issue_types(thread.primary_comment_body)
-
-                if issue_type != "suggestion":
-                    thread.enriched_context = EnrichedContext(issue_type=issue_type)
-                    logger.debug(f"注入 Qodo 类型到 Thread: {issue_type}")
+            if thread.source == "Sourcery" and not thread.enriched_context:
+                parsed = ReviewParser.parse_sourcery_thread_body(thread.primary_comment_body)
+                if parsed.get("issue_type"):
+                    thread.enriched_context = EnrichedContext(
+                        issue_type=parsed["issue_type"],
+                        issue_to_address=parsed.get("issue_to_address"),
+                    )
+                    logger.debug(f"注入 Sourcery 类型到 Thread: {parsed['issue_type']}")
 
         return threads
 
@@ -283,7 +324,8 @@ class ReviewResolver:
             try:
                 self.graphql_client.reply_to_thread(thread_id, reply_text)
             except Exception as e:
-                return {"success": False, "message": f"回复失败: {e}"}
+                logger.error(f"回复失败: {e}")
+                return {"success": False, "message": "回复失败，请查看日志了解详情"}
 
         try:
             is_resolved_remote = self.graphql_client.resolve_thread(thread_id)
@@ -292,7 +334,8 @@ class ReviewResolver:
                 return {"success": False, "message": "GitHub API 返回解决失败"}
 
         except Exception as e:
-            return {"success": False, "message": f"API 解决失败: {e}"}
+            logger.error(f"API 解决失败: {e}")
+            return {"success": False, "message": "API 解决失败，请查看日志了解详情"}
 
         self.manager.mark_resolved_locally(thread_id, resolution_type)
 
