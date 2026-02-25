@@ -40,9 +40,9 @@ login:
   # 自动登录（可选，不推荐）
   auto_login:
     enabled: false # 是否启用自动登录
-    email: "" # Microsoft 账号
-    password: "" # 密码
-    totp_secret: "" # 2FA 密钥（从验证器应用获取）
+    email: "" # Microsoft 账号(或设置环境变量 MS_REWARDS_EMAIL)
+    password: "" # 密码(或设置环境变量 MS_REWARDS_PASSWORD)
+    totp_secret: "" # 2FA 密钥(或设置环境变量 MS_REWARDS_TOTP_SECRET)
 
 # 查询引擎（在线搜索词来源）
 query_engine:
@@ -103,15 +103,15 @@ notification:
   enabled: false
   telegram:
     enabled: false
-    bot_token: ""
-    chat_id: ""
+    bot_token: "" # 或设置环境变量 TELEGRAM_BOT_TOKEN
+    chat_id: "" # 或设置环境变量 TELEGRAM_CHAT_ID
   serverchan:
     enabled: false
-    key: ""
+    key: "" # 或设置环境变量 SERVERCHAN_KEY
   whatsapp:
     enabled: false
-    phone: ""
-    apikey: ""
+    phone: "" # 或设置环境变量 WHATSAPP_PHONE
+    apikey: "" # 或设置环境变量 WHATSAPP_APIKEY
 
 # 调度器（默认启用）
 scheduler:

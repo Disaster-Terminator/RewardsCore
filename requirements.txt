@@ -1,34 +1,10 @@
-# MS Rewards Automator - Python 依赖
-# 使用 pip install -r requirements.txt 安装
-
-# 核心依赖
-playwright>=1.49.0
-playwright-stealth>=1.0.6
-pyyaml>=6.0.1
-aiohttp>=3.11.0
-beautifulsoup4>=4.12.3
-lxml>=5.3.0
-psutil>=6.1.0
-pyotp>=2.9.0
-backports.zoneinfo;python_version<"3.9"  # Python 3.8 时区支持
-
-# 测试依赖
-hypothesis>=6.125.0
-pytest>=8.0.0
-pytest-asyncio>=0.24.0
-pytest-playwright>=0.5.0
-pytest-benchmark>=5.0.0
-pytest-cov>=6.0.0
-pytest-timeout>=2.3.0
-faker>=35.0.0
-
-# 可视化和数据分析
-streamlit>=1.41.0
-plotly>=5.24.0
-pandas>=2.2.0
-
-# 代码质量工具（可选）
-# black>=25.0.0
-# isort>=5.13.2
-# pylint>=3.3.0
-# mypy>=1.14.0
+# RewardsCore 依赖说明
+#
+# 1. 创建并激活 conda 环境（推荐）
+#    conda create -n rewards-core python=3.10
+#    conda activate rewards-core
+#
+# 2. 安装依赖
+#    pip install -e .          # 仅核心依赖（用户模式）
+#    pip install -e ".[dev]"   # 完整开发环境（含测试工具）
+#    pip install -e ".[viz]"   # 核心依赖 + 可视化工具（已过时）

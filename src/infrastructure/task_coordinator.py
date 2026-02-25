@@ -116,34 +116,55 @@ class TaskCoordinator:
 
         StatusManager.update_progress(3, 8)
 
+    def _check_headless_requirements(self) -> None:
+        """检查 headless 模式下的登录要求
+
+        Headless 模式无法进行手动登录，需要提前准备会话文件或配置自动登录。
+        """
+        args_headless = getattr(self.args, "headless", False)
+        config_headless = self.config.get("browser.headless", False)
+        is_headless = args_headless or config_headless
+
+        if is_headless:
+            self.logger.error(
+                "Headless 模式下无法进行手动登录。"
+                "解决方案：1) 先在有头模式下登录保存会话；"
+                "2) 配置自动登录凭据（login.auto_login）"
+            )
+            raise RuntimeError(
+                "Headless 模式需要会话文件或自动登录配置。请先运行 `rscore`（有头模式）完成登录。"
+            )
+
     async def _do_login(self, page: Any, account_mgr: Any, context: Any) -> None:
         """执行登录流程"""
         import os
 
         self.logger.warning("  未登录，需要登录")
 
+        auto_login_config = self.config.get("login.auto_login", {})
+        auto_login_enabled = auto_login_config.get("enabled", False)
+
+        email = (
+            os.environ.get("MS_REWARDS_EMAIL")
+            or auto_login_config.get("email", "")
+            or self.config.get("account.email", "")
+        )
+        password = (
+            os.environ.get("MS_REWARDS_PASSWORD")
+            or auto_login_config.get("password", "")
+            or self.config.get("account.password", "")
+        )
+
+        need_manual_login = False
+
         if account_mgr.use_state_machine:
-            auto_login_config = self.config.get("login.auto_login", {})
-            auto_login_enabled = auto_login_config.get("enabled", False)
-
-            # 优先从环境变量读取凭据（更安全），然后从配置文件读取
-            email = (
-                os.environ.get("MS_REWARDS_EMAIL")
-                or auto_login_config.get("email", "")
-                or self.config.get("account.email", "")
-            )
-            password = (
-                os.environ.get("MS_REWARDS_PASSWORD")
-                or auto_login_config.get("password", "")
-                or self.config.get("account.password", "")
-            )
-            totp_secret = (
-                os.environ.get("MS_REWARDS_TOTP_SECRET")
-                or auto_login_config.get("totp_secret", "")
-                or self.config.get("account.totp_secret", "")
-            )
-
             if auto_login_enabled and email and password:
+                totp_secret = (
+                    os.environ.get("MS_REWARDS_TOTP_SECRET")
+                    or auto_login_config.get("totp_secret", "")
+                    or self.config.get("account.totp_secret", "")
+                )
+
                 self.logger.info("  尝试自动登录...")
                 StatusManager.update_operation("自动登录")
 
@@ -156,10 +177,14 @@ class TaskCoordinator:
                     await account_mgr.save_session(context)
                     self.logger.info("  ✓ 会话已保存")
                 else:
-                    await self._manual_login(page, account_mgr, context)
+                    need_manual_login = True
             else:
-                await self._manual_login(page, account_mgr, context)
+                need_manual_login = True
         else:
+            need_manual_login = True
+
+        if need_manual_login:
+            self._check_headless_requirements()
             await self._manual_login(page, account_mgr, context)
 
     async def _manual_login(self, page: Any, account_mgr: Any, context: Any) -> None:
@@ -409,7 +434,7 @@ class TaskCoordinator:
 
             except ImportError as e:
                 self.logger.warning(f"  ⚠ 任务系统模块导入失败: {e}")
-                self.logger.warning("  请确保已安装所有依赖: pip install -r requirements.txt")
+                self.logger.warning('  请确保已安装所有依赖: pip install -e ".[dev]"')
             except Exception as e:
                 self.logger.error(f"  ✗ 任务执行失败: {e}")
                 import traceback
