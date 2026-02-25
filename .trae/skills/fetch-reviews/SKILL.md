@@ -298,7 +298,7 @@ limit: 20
 
 ## 降级策略
 
-如果 CLI 工具失败，参考 `docs/reference/archive/v1-ai-reviewer-guide.md` 使用 Playwright 手动获取评论。
+如果 CLI 工具失败，参考 `docs/reference/archive/ai-reviewer-guide.md` 使用 Playwright 手动获取评论。
 
 ---
 

@@ -69,14 +69,14 @@ def main():
 
     try:
         threads_api = fetch_api_data(args.owner, args.repo, args.pr)
-    except Exception as e:
-        print(f"错误: 无法从 GitHub API 获取数据 - {e}")
+    except Exception:
+        print("错误: 无法从 GitHub API 获取数据，请检查日志获取详细信息")
         sys.exit(1)
 
     try:
         threads_db = load_db_data()
-    except Exception as e:
-        print(f"错误: 无法从数据库加载数据 - {e}")
+    except Exception:
+        print("错误: 无法从数据库加载数据，请检查日志获取详细信息")
         sys.exit(1)
 
     print("=== GitHub API vs 数据库数据对比 ===")

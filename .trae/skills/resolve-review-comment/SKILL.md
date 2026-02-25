@@ -175,4 +175,4 @@ python tools/manage_reviews.py acknowledge --id "IC_kwDO..."
 
 ## 降级策略
 
-如果 CLI 工具失败，参考 `docs/reference/archive/v1-ai-reviewer-guide.md`。
+如果 CLI 工具失败，参考 `docs/reference/archive/ai-reviewer-guide.md`。

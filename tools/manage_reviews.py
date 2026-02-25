@@ -164,7 +164,8 @@ def print_threads_table(threads: list[ReviewThreadState], title: str = "审查�
 
 def cmd_fetch(args: argparse.Namespace) -> None:
     """执行 fetch 子命令"""
-    resolver = ReviewResolver(token=get_token(), owner=args.owner, repo=args.repo)
+    db_path = get_db_path()
+    resolver = ReviewResolver(token=get_token(), owner=args.owner, repo=args.repo, db_path=db_path)
 
     result = resolver.fetch_threads(args.pr)
     print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -417,8 +418,8 @@ def main() -> None:
     except KeyboardInterrupt:
         print(json.dumps({"success": False, "message": "操作已取消"}))
         sys.exit(130)
-    except Exception as e:
-        print(json.dumps({"success": False, "message": f"错误: {str(e)}"}))
+    except Exception:
+        print(json.dumps({"success": False, "message": "操作失败，请检查日志获取详细信息"}))
         sys.exit(1)
 
 

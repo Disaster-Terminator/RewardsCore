@@ -31,7 +31,8 @@ class DiagnosisReporter:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        now = datetime.now()
+        self.session_id = now.strftime("%Y%m%d_%H%M%S") + f"_{now.microsecond:06d}"
         self.session_dir = self.output_dir / self.session_id
         self.session_dir.mkdir(parents=True, exist_ok=True)
 

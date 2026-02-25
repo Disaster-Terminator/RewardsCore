@@ -5,6 +5,7 @@ Provides predefined test accounts and hypothesis strategies for generating
 random accounts for property-based testing.
 """
 
+import copy
 from dataclasses import dataclass
 
 import pytest
@@ -80,22 +81,22 @@ mock_account_strategy = st.builds(
 @pytest.fixture(scope="session")
 def mock_account_standard():
     """Provide a standard mock account."""
-    return TEST_ACCOUNTS["standard"]
+    return copy.deepcopy(TEST_ACCOUNTS["standard"])
 
 
 @pytest.fixture(scope="session")
 def mock_account_2fa():
     """Provide a 2FA-enabled mock account."""
-    return TEST_ACCOUNTS["2fa"]
+    return copy.deepcopy(TEST_ACCOUNTS["2fa"])
 
 
 @pytest.fixture(scope="session")
 def mock_account_passwordless():
     """Provide a passwordless mock account."""
-    return TEST_ACCOUNTS["passwordless"]
+    return copy.deepcopy(TEST_ACCOUNTS["passwordless"])
 
 
 @pytest.fixture(scope="session", params=["standard", "2fa", "passwordless"])
 def mock_account_all_types(request):
     """Parametrized fixture that provides all account types."""
-    return TEST_ACCOUNTS[request.param]
+    return copy.deepcopy(TEST_ACCOUNTS[request.param])

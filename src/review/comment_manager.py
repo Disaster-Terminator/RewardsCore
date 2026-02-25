@@ -59,6 +59,11 @@ class ReviewManager:
                         update_data["local_status"] = "resolved"
                         update_data["resolution_type"] = "manual_on_github"
                         logger.info(f"Thread {thread.id} 已在 GitHub 上手动解决，同步本地状态")
+                    elif not thread.is_resolved and existing.get("local_status") == "resolved":
+                        update_data["local_status"] = "pending"
+                        update_data["resolution_type"] = None
+                        update_data["resolution_reason"] = None
+                        logger.info(f"Thread {thread.id} 已在 GitHub 上重新打开，重置本地状态")
 
                     thread_table.update(update_data, self.thread_q.id == thread.id)
                 else:
@@ -82,6 +87,7 @@ class ReviewManager:
 
                 if existing:
                     update_data = overview.model_dump()
+                    # 保留已确认状态：避免重复 fetch 覆盖用户已确认的总览意见
                     if existing.get("local_status") == "acknowledged":
                         update_data["local_status"] = "acknowledged"
                     overview_table.update(update_data, self.overview_q.id == overview.id)

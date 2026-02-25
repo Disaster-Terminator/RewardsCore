@@ -191,7 +191,7 @@ python tools/manage_reviews.py acknowledge --all
 
 如果 CLI 工具失败：
 1. 报告用户 CLI 工具异常
-2. 提供手动操作指南（参考 docs/reference/archive/v1-ai-reviewer-guide.md）
+2. 提供手动操作指南（参考 docs/reference/archive/ai-reviewer-guide.md）
 
 ---
 

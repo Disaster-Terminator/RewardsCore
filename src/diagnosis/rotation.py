@@ -29,8 +29,8 @@ def _get_dir_size(dir_path: Path) -> int:
         for item in dir_path.rglob("*"):
             if item.is_file():
                 total_size += item.stat().st_size
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"计算目录大小时出错 {dir_path}: {e}")
     return total_size
 
 

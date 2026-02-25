@@ -9,7 +9,7 @@ class IndividualComment:
 
     location: str
     file_path: str
-    line_number: int | tuple[int, int]
+    line_number: int | tuple[int, int] | None
     code_context: str
     issue_to_address: str
 
