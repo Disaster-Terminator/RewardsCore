@@ -245,7 +245,7 @@ class ReviewParser:
         )
 
     @classmethod
-    def _parse_location(cls, location: str) -> tuple[str, int | tuple[int, int]]:
+    def _parse_location(cls, location: str) -> tuple[str, int | tuple[int, int] | None]:
         """
         解析位置字符串，提取文件路径和行号
 
@@ -253,7 +253,7 @@ class ReviewParser:
             location: 位置字符串，如 "pyproject.toml:35" 或 "src/file.py:10-20"
 
         Returns:
-            (file_path, line_number) 或 (file_path, (line_start, line_end))
+            (file_path, line_number) 或 (file_path, (line_start, line_end)) 或 (file_path, None)
         """
         if ":" in location:
             parts = location.split(":")
@@ -267,16 +267,16 @@ class ReviewParser:
                     line_end = int(range_parts[1].strip())
                     return file_path, (line_start, line_end)
                 except (ValueError, IndexError):
-                    return file_path, 0
+                    return file_path, None
             else:
                 try:
                     line_number = int(line_part)
                 except ValueError:
-                    line_number = 0
+                    line_number = None
                 return file_path, line_number
         else:
             file_path = location.strip()
-            return file_path, 0
+            return file_path, None
 
     @classmethod
     def is_sourcery_reviewer_guide(cls, body: str) -> bool:

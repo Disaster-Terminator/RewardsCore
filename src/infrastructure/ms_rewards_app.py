@@ -76,7 +76,8 @@ class MSRewardsApp:
         self.notificator: Notificator | None = None
         self.health_monitor: HealthMonitor | None = None
         self.task_manager: TaskManager | None = None
-        self.diagnosis_reporter = None  # 初始化为 None，避免 diagnose=False 时 AttributeError
+        self.diagnosis_reporter = None
+        self._page_inspector = None
 
         self.browser = None
         self.context = None
@@ -96,10 +97,12 @@ class MSRewardsApp:
             try:
                 from pathlib import Path
 
+                from diagnosis.inspector import PageInspector
                 from diagnosis.reporter import DiagnosisReporter
                 from diagnosis.rotation import cleanup_old_diagnoses
 
                 self.diagnosis_reporter = DiagnosisReporter(output_dir="logs/diagnosis")
+                self._page_inspector = PageInspector()
                 self.logger.info("诊断模式已启用")
                 cleanup_old_diagnoses(Path("logs"))
             except ImportError as e:
@@ -444,10 +447,7 @@ class MSRewardsApp:
             return
 
         try:
-            from diagnosis.inspector import PageInspector
-
-            inspector = PageInspector()
-            issues = await inspector.inspect_page(self.page)
+            issues = await self._page_inspector.inspect_page(self.page)
 
             success = not any(i.severity.value in ["critical", "error"] for i in issues)
 

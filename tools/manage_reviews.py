@@ -15,14 +15,15 @@ AI 审查评论管理工具 CLI
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _common import get_github_token, setup_project_path
 
-from src.review import ReviewManager, ReviewResolver
-from src.review.models import ReviewThreadState
+setup_project_path()
+
+from src.review import ReviewManager, ReviewResolver  # noqa: E402
+from src.review.models import ReviewThreadState  # noqa: E402
 
 try:
     from rich.console import Console
@@ -47,26 +48,9 @@ TYPE_ABBREVIATIONS = {
 }
 
 
-def load_env_file() -> None:
-    """从 .env 文件加载环境变量"""
-    env_path = Path(__file__).parent.parent / ".env"
-    if env_path.exists():
-        with open(env_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key and value and key not in os.environ:
-                        os.environ[key] = value
-
-
 def get_token() -> str:
     """从环境变量获取 GitHub Token"""
-    load_env_file()
-
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_github_token()
     if not token:
         print(
             json.dumps(

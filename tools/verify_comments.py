@@ -4,29 +4,15 @@
 import argparse
 import os
 import sys
-from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from _common import get_github_token, setup_project_path
 
-from review.comment_manager import ReviewManager
-from review.graphql_client import GraphQLClient
-from review.models import ReviewThreadState
+setup_project_path()
 
-
-def load_env_file() -> None:
-    """从 .env 文件加载环境变量"""
-    env_path = Path(__file__).parent.parent / ".env"
-    if env_path.exists():
-        with open(env_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key and value and key not in os.environ:
-                        os.environ[key] = value
+from review.comment_manager import ReviewManager  # noqa: E402
+from review.graphql_client import GraphQLClient  # noqa: E402
+from review.models import ReviewThreadState  # noqa: E402
 
 
 def load_db_data() -> list[ReviewThreadState]:
@@ -37,8 +23,7 @@ def load_db_data() -> list[ReviewThreadState]:
 
 def fetch_api_data(owner: str, repo: str, pr_number: int) -> list[dict[str, Any]]:
     """从 GitHub API 获取数据"""
-    load_env_file()
-    token = os.environ.get("GITHUB_TOKEN")
+    token = get_github_token()
     if not token:
         print("错误: 缺少 GITHUB_TOKEN 环境变量")
         sys.exit(1)

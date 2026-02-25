@@ -1,250 +1,298 @@
 ---
 name: fetch-reviews
 description: |
-  获取PR的AI审查评论（内部 Skill）。
-  触发：用户说"获取评论"、"查看评论"时。
-  注意：此 Skill 可单独调用，也可由 review-workflow 内部调用。
+  拉取并处理 PR 审查评论（核心 Skill）。
+  触发：用户说"获取审查"、"查看评论"时。
+  注意：此 Skill 可单独调用，也可由 request-reviews 内部调用。
 ---
 
-# AI 审查获取流程
+# 拉取并处理评论
 
-## ⚠️ 执行模式说明
+## ⚠️ 执行声明
 
-### 非 Plan 模式（默认）
+**拉取评论是只读操作，不需要用户确认，无论是否在 Plan 模式！**
 
-直接执行 CLI 命令并输出结果，不创建计划文档。
-
-### Plan 模式（用户输入 `/plan 获取评论`）
-
-1. 执行 CLI 命令获取评论
-2. 阅读并分析所有评论内容
-3. 将评论和分析写进计划文档
-4. 等待用户确认后执行后续操作
+| 模式 | 行为 |
+|------|------|
+| 非 Plan 模式 | 阶段 1 → 2 → 3 → 4 → 输出报告 |
+| Plan 模式 | 阶段 1 → 2 → 3 → 写入计划文档 |
 
 ---
 
-## 执行流程（强制顺序）
+## CLI 命令速查
 
-### 阶段 1：获取评论数据
+### 拉取和查看
 
-**执行前检查**：
-- [ ] PR 编号已确认
+```bash
+# 拉取评论到本地
+python tools/manage_reviews.py fetch --owner Disaster-Terminator --repo RewardsCore --pr {pr_number}
 
-**获取 PR 编号**：
+# 查看本地评论（fetch 后执行）
+python tools/manage_reviews.py list --status pending --format json
 
-优先级顺序：
-1. 从 git branch 推断（如 `pr-123` → PR #123）
-2. 使用 GitHub CLI 查询：`gh pr view --json number`
-3. 请求用户提供 PR 编号
+# 查看总览意见
+python tools/manage_reviews.py overviews --format json
+```
 
-**执行**：
+### 解决行级评论
+
+```bash
+# 修复代码后
+python tools/manage_reviews.py resolve --owner Disaster-Terminator --repo RewardsCore --thread-id {thread_id} --type code_fixed
+
+# 采纳建议
+python tools/manage_reviews.py resolve --owner Disaster-Terminator --repo RewardsCore --thread-id {thread_id} --type adopted
+
+# 拒绝建议
+python tools/manage_reviews.py resolve --owner Disaster-Terminator --repo RewardsCore --thread-id {thread_id} --type rejected --reply "拒绝理由"
+
+# 误报
+python tools/manage_reviews.py resolve --owner Disaster-Terminator --repo RewardsCore --thread-id {thread_id} --type false_positive --reply "误报说明"
+
+# 已过时
+python tools/manage_reviews.py resolve --owner Disaster-Terminator --repo RewardsCore --thread-id {thread_id} --type outdated
+```
+
+### 确认总览意见
+
+```bash
+# 确认单条
+python tools/manage_reviews.py acknowledge --id {overview_id}
+
+# 确认全部
+python tools/manage_reviews.py acknowledge --all
+```
+
+---
+
+## 执行流程
+
+### 阶段 1：拉取评论
+
+**工具**：RunCommand
+
+**命令**：
 
 ```bash
 python tools/manage_reviews.py fetch --owner Disaster-Terminator --repo RewardsCore --pr {pr_number}
 ```
 
-**执行后检查**：
-- [ ] 评论数据已获取
+**输出**：评论已保存到本地
 
-输出 "✅ 阶段 1 完成"
-
-### 阶段 2：阅读并分析总览意见
-
-**⚠️ 必须阅读总览意见的内容，不能只看数量！**
-
-**执行前检查**：
-- [ ] 阶段 1 已完成
-
-**执行**：
-
-```bash
-# 获取总览意见（JSON 格式，包含完整内容）
-python tools/manage_reviews.py overviews --status pending --format json
-```
-
-**分析要求**：
-
-1. 阅读每个总览意见的 `summary` 或 `high_level_feedback`
-2. 识别总览意见中提到的关键问题
-3. 如果有 `prompt_for_ai`，提取其中的 `individual_comments`
-4. 将分析结果写入计划文档（Plan 模式）或输出给用户（非 Plan 模式）
-
-**标记已读**：
-
-阅读并分析后，使用 CLI 标记总览意见已读：
-
-```bash
-python tools/manage_reviews.py acknowledge --id {overview_id}
-```
-
-或标记所有总览意见已读：
-
-```bash
-python tools/manage_reviews.py acknowledge --all
-```
-
-**执行后检查**：
-- [ ] 总览意见内容已阅读
-- [ ] 总览意见已分析
-- [ ] 总览意见已标记已读（acknowledge）
-
-输出 "✅ 阶段 2 完成"
-
-### 阶段 3：阅读并分析行级评论
-
-**⚠️ 必须阅读每个评论的内容，不能只看数量！**
-
-**执行前检查**：
-- [ ] 阶段 2 已完成
-
-**执行**：
-
-```bash
-# 获取行级评论（JSON 格式，包含完整内容）
-python tools/manage_reviews.py list --status pending --format json
-```
-
-**分析要求**：
-
-1. 阅读每个评论的 `primary_comment_body`
-2. 如果有 `enriched_context`，提取 `issue_type` 和 `issue_to_address`
-3. 按分类整理评论：
-   - 🔴 必须修复：Bug/Security 等
-   - 🟡 自主决断：suggestion 等
-4. 对每个评论给出处理建议
-5. 将分析结果写入计划文档（Plan 模式）或输出给用户（非 Plan 模式）
-
-**执行后检查**：
-- [ ] 每个评论内容已阅读
-- [ ] 每个评论已分类
-- [ ] 每个评论有处理建议
-
-输出 "✅ 阶段 3 完成"
+**下一步**：阶段 2
 
 ---
 
-## 完整性检查（强制）
+### 阶段 2：查看评论
 
-在报告完成前，必须确认：
-- [ ] 阶段 1：获取评论数据 - 已执行
-- [ ] 阶段 2：阅读并分析总览意见 - 已执行（内容已阅读、已分析、已标记已读）
-- [ ] 阶段 3：阅读并分析行级评论 - 已执行（每个评论已阅读、已分类、有处理建议）
+**工具**：RunCommand
 
-**如有未执行项，流程未完成！**
+**命令**：
+
+```bash
+python tools/manage_reviews.py list --status pending --format json
+python tools/manage_reviews.py overviews --format json
+```
+
+**输出**：JSON 格式的评论列表
+
+**关键字段**：
+
+| 字段 | 含义 | 用途 |
+|------|------|------|
+| `thread_id` | 线程 ID | resolve 命令参数 |
+| `source` | 来源 | Sourcery/Qodo/Copilot |
+| `file_path` | 文件路径 | Read 命令参数 |
+| `line_number` | 行号 | 定位代码 |
+| `primary_comment_body` | 评论内容 | 分析问题 |
+| `issue_type` | 问题类型 | 裁决优先级 |
+
+**下一步**：对每个评论执行阶段 3
+
+---
+
+### 阶段 3：分析评论
+
+**输入**：单条评论数据（从阶段 2 的 JSON 中提取）
+
+**步骤**：
+
+#### 3.1 提取信息
+
+从评论数据中提取：
+
+- `file_path` → 文件路径
+- `line_number` → 行号
+- `primary_comment_body` → 评论内容
+- `issue_type` → 问题类型
+
+#### 3.2 读取代码
+
+**工具**：Read
+
+**参数**：
+
+```
+file_path: {file_path}
+offset: max(1, line_number - 10)
+limit: 20
+```
+
+**目的**：获取评论指向的代码上下文
+
+#### 3.3 对比分析
+
+回答以下问题：
+
+1. 评论说的问题是什么？
+2. 当前代码是什么样的？
+3. 问题是否存在？
+
+**输出表格**：
+
+| 字段 | 值 |
+|------|-----|
+| thread_id | {从数据提取} |
+| 位置 | {file_path}:{line_number} |
+| 评论内容 | {primary_comment_body} |
+| 当前代码 | ```代码片段``` |
+| 问题是否存在 | 是/否/部分 |
+| 建议处理 | code_fixed/adopted/rejected/false_positive/outdated |
+
+**下一步**：
+
+- Plan 模式 → 写入计划文档
+- 非 Plan 模式 → 阶段 4
+
+---
+
+### 阶段 4：执行处理
+
+**根据阶段 3 的分析结果**：
+
+| 分析结果 | 处理方式 | CLI 命令 |
+|----------|----------|----------|
+| 问题存在 | 修复代码 → 验证 → resolve | `--type code_fixed` |
+| 采纳建议 | 修改代码 → 验证 → resolve | `--type adopted` |
+| 拒绝建议 | 说明理由 → resolve | `--type rejected --reply "理由"` |
+| 误报 | 说明原因 → resolve | `--type false_positive --reply "原因"` |
+| 已过时 | resolve | `--type outdated` |
+
+**工具**：
+
+- 修复代码：SearchReplace
+- CLI 标记：RunCommand
+
+---
+
+## 完整性检查
+
+### Plan 模式
+
+- [ ] 阶段 1：拉取评论 - 已执行
+- [ ] 阶段 2：查看评论 - 已执行
+- [ ] 阶段 3：分析评论 - 已执行（每个评论已读取代码、对比分析）
+- [ ] 写入计划文档 - 已执行
+
+### 非 Plan 模式
+
+- [ ] 阶段 1：拉取评论 - 已执行
+- [ ] 阶段 2：查看评论 - 已执行
+- [ ] 阶段 3：分析评论 - 已执行
+- [ ] 阶段 4：执行处理 - 已执行（代码已修复、CLI 已标记）
+- [ ] 输出报告 - 已执行
 
 ---
 
 ## 输出格式
 
-### Plan 模式输出格式
+### Plan 模式
 
-计划文档应包含以下内容：
+写入 `.trae/plans/fetch-reviews-plan.md`：
 
 ```markdown
-# PR 审查评论分析报告
+# PR 审查评论处理计划
 
-## 一、总览意见（X 条）
+## 评论列表
 
-### 总览意见 1
-- **来源**：Sourcery/Qodo
-- **内容**：{summary 或 high_level_feedback}
-- **关键问题**：{Agent 分析}
-- **处理建议**：{Agent 建议}
+| ID | 来源 | 位置 | 问题 | 建议处理 |
+|----|------|------|------|----------|
+| xxx | Sourcery | file:123 | 问题描述 | code_fixed |
 
-## 二、行级评论（Y 条）
+## 详细分析
 
-### 🔴 必须修复（X 条）
+### 评论 1
+- **位置**：file:line
+- **评论内容**：{primary_comment_body}
+- **当前代码**：
+  ```
 
-| ID | 来源 | 类型 | 位置 | 问题 | 处理建议 |
-|----|------|------|------|------|----------|
-| ... | ... | ... | file:line | ... | ... |
+  {代码片段}
 
-### 🟡 自主决断（Y 条）
-
-| ID | 来源 | 类型 | 位置 | 问题 | 处理建议 |
-|----|------|------|------|------|----------|
-| ... | ... | ... | file:line | ... | ... |
-
-## 三、后续操作建议
-
-1. {建议 1}
-2. {建议 2}
+  ```
+- **问题是否存在**：是/否/部分
+- **建议处理**：{处理方式}
+- **理由**：{分析理由}
 
 ---
-请确认是否执行上述处理建议。
+请确认后执行处理。
 ```
 
-### 非 Plan 模式输出格式
+### 非 Plan 模式
 
-#### 成功
+```markdown
+# PR 审查评论处理报告
 
-```
-✅ 评论获取完成
+## 处理结果
 
-### 总览意见（X 条）
-| ID | 来源 | 状态 | 摘要 |
-|----|------|------|------|
-| ... | Sourcery/Qodo | pending | ... |
+| ID | 来源 | 位置 | 问题 | 处理方式 | CLI 命令 |
+|----|------|------|------|----------|----------|
+| xxx | Sourcery | file:123 | 问题描述 | code_fixed | resolve ... |
 
-### 行级评论（Y 条）
-| 分类 | 数量 | 说明 |
-|------|------|------|
-| 🔴 必须修复 | X 条 | Bug/Security 等 |
-| 🟡 自主决断 | Y 条 | suggestion 等 |
+## 详细说明
 
-### 详细列表
-（CLI 表格输出）
-```
-
-#### 无评论
-
-```
-✅ 评论获取完成
-- 总览意见：0 条
-- 行级评论：0 条
-- PR 无待处理评论
-```
+### 评论 1
+- **问题**：{描述}
+- **代码**：{代码片段}
+- **分析**：{Agent 分析}
+- **处理**：{修复代码或说明}
+- **验证**：{结果}
 
 ---
+请确认处理结果。
+```
 
-## 核心概念
+### 无评论
 
-### 操作对象 vs 参考对象
+```markdown
+✅ GitHub 无新评论
 
-| 类型 | 模型 | 用途 | 操作 |
-|------|------|------|------|
-| **Thread** | `ReviewThreadState` | 主要操作对象 | 可解决、可回复 |
-| **Overview** | `ReviewOverview` | 总览意见（Sourcery/Qodo） | 需通过 CLI acknowledge |
-| **IssueCommentOverview** | `IssueCommentOverview` | 只读参考 | 仅阅读，不可解决 |
-
-**重要**：
-- Thread 是行级评论，主要操作对象
-- Overview 是总览意见，Sourcery/Qodo 会给出高层建议
-- **Overview 必须通过 CLI `acknowledge` 命令处理，不能忽略**
+是否要申请新的 AI 审查？
+- 输入"是"或"申请新审查"触发 request-reviews
+- 输入"否"结束
+```
 
 ---
 
 ## 业务裁决规则
 
-### 必须修复（红色）
+### 必须修复
 
 | 来源 | issue_type |
 |------|------------|
 | Sourcery | `bug_risk`, `security` |
 | Qodo | `Bug`, `Security`, `Rule violation`, `Reliability` |
-| Copilot | 安全警告 |
 
-**行为**：报告给用户，等待修复指令
+**行为**：修复代码
 
-### 自主决断（黄色）
+### 自主决断
 
 | 来源 | issue_type |
 |------|------------|
 | Sourcery | `suggestion`, `performance` |
 | Qodo | `Correctness` |
-| Copilot | `suggestion` 代码块 |
 
-**行为**：报告给用户，自主决断是否采纳
+**行为**：分析利弊，给出建议
 
 ---
 
@@ -252,19 +300,10 @@ python tools/manage_reviews.py list --status pending --format json
 
 如果 CLI 工具失败，参考 `docs/reference/archive/v1-ai-reviewer-guide.md` 使用 Playwright 手动获取评论。
 
-该文档包含三种机器人的审查评论格式和规律：
-- Sourcery: `sourcery-ai bot`
-- Copilot: `Copilot AI`
-- Qodo: `qodo-code-review bot`
-
 ---
 
 ## 严禁事项
 
-- **严禁只看数量不看内容**：必须阅读每个评论的内容
-- **严禁跳过总览意见标记**：必须用 CLI acknowledge 标记已读
-- **严禁一次性解决所有评论**：每个评论必须单独处理
-- **严禁无依据标记解决**：必须先确认问题已解决
-- **严禁批量操作**：必须逐个评论处理
-- **严禁跳过说明评论**：rejected/false_positive 必须回复
-- **Agent 不自动合并 PR**：需通知用户确认
+- **严禁不读取代码就分析**：必须用 Read 工具读取文件
+- **严禁跳过代码对比**：必须对比评论内容和当前代码
+- **严禁跳过 CLI 标记**：必须标记评论状态

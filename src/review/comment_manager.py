@@ -81,7 +81,10 @@ class ReviewManager:
                 existing = overview_table.get(self.overview_q.id == overview.id)
 
                 if existing:
-                    overview_table.update(overview.model_dump(), self.overview_q.id == overview.id)
+                    update_data = overview.model_dump()
+                    if existing.get("local_status") == "acknowledged":
+                        update_data["local_status"] = "acknowledged"
+                    overview_table.update(update_data, self.overview_q.id == overview.id)
                 else:
                     overview_table.insert(overview.model_dump())
 

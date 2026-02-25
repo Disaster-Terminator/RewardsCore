@@ -10,7 +10,7 @@
 | "验收"、"测试"、"开发完成" | acceptance-workflow |
 | "获取评论"、"查看评论" | fetch-reviews |
 | "解决某个评论" | resolve-review-comment |
-| "申请新审查"、"重新审查" | request-reviews |
+| "申请新评论"、"重新审查" | request-reviews |
 
 **强制调用检查**：当用户请求包含上述关键词时，Agent **必须**首先调用对应 Skill。
 
@@ -37,6 +37,7 @@
 2. **验收通过后必须解决评论**：验收通过后，**必须**调用 CLI 解决评论
 3. **不可直接运行 pytest**：验收**必须**调用 `acceptance-workflow`，不可直接运行 pytest
 4. **验收前检查评论状态**：如果有"必须修复"的评论未处理，**建议**先处理评论
+5. **申请新审查前先处理评论**：`request-reviews` 内部调用 `fetch-reviews` 处理待处理评论
 
 ---
 
