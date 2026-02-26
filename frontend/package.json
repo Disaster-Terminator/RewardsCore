@@ -1,5 +1,5 @@
 {
-  "name": "ms-rewards-automator-frontend",
+  "name": "rewardscore-frontend",
   "version": "1.0.0",
   "description": "MS Rewards Automator 前端界面",
   "type": "module",
@@ -31,7 +31,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
-    "recharts": "^2.12.7",
+    "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.1",
     "zustand": "^4.5.4"

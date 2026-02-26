@@ -20,7 +20,7 @@ const getApiBase = async (): Promise<string> => {
 
   // If in Tauri Dev, use hardcoded dev port
   if (isTauriDev) {
-    return 'http://localhost:8000/api'
+    return 'http://127.0.0.1:8000/api'
   }
   
   if (isTauriProduction) {
@@ -211,7 +211,7 @@ export const connectWebSocket = async (): Promise<void> => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       wsUrl = `${protocol}//${window.location.host}/ws`
     } else if (isTauriDev) {
-      wsUrl = 'ws://localhost:8000/ws'
+      wsUrl = 'ws://127.0.0.1:8000/ws'
     } else if (isTauriProduction) {
       let port = dynamicPort
       if (!port) {
@@ -363,7 +363,7 @@ export const initializeTauriEvents = async () => {
     const { listen } = await import('@tauri-apps/api/event')
     listen<string>('py-log', (event) => useStore.getState().addLog(event.payload))
     listen<string>('py-error', (event) => useStore.getState().addLog(`[ERROR] ${event.payload}`))
-    listen<number | null>('backend-terminated', (event) => {
+    listen<number | null>('backend-terminated', (_event) => {
       useStore.getState().setWsConnected(false)
       useStore.getState().setBackendReady(false)
       scheduleReconnect()

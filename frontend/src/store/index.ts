@@ -139,6 +139,8 @@ interface Store {
   backendReady: boolean
   backendPort: number | null
   lastHeartbeat: string | null
+  pointsHistory: number[]
+
 
   toggleSidebar: () => void
   toggleDarkMode: () => void
@@ -156,7 +158,9 @@ interface Store {
   setBackendReady: (ready: boolean) => void
   setBackendPort: (port: number | null) => void
   setLastHeartbeat: (time: string) => void
+  addPointsHistory: (points: number) => void
 }
+
 
 export const useStore = create<Store>((set) => ({
   sidebarCollapsed: false,
@@ -174,12 +178,29 @@ export const useStore = create<Store>((set) => ({
   backendReady: false,
   backendPort: null,
   lastHeartbeat: null,
+  pointsHistory: [],
+
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
   setTaskStatus: (status) => set({ taskStatus: status, lastDataUpdate: new Date().toISOString() }),
   setHealth: (health) => set({ health, lastDataUpdate: new Date().toISOString() }),
-  setPoints: (points) => set({ points, lastDataUpdate: new Date().toISOString() }),
+  setPoints: (points) => set((state) => {
+    const newState: Partial<Store> = { points, lastDataUpdate: new Date().toISOString() };
+    if (points.current_points !== null) {
+      const history = [...state.pointsHistory];
+      // If history is empty, seed it with the current point twice to allow a line to form
+      if (history.length === 0) {
+        history.push(points.current_points, points.current_points);
+      } else {
+        history.push(points.current_points);
+      }
+      if (history.length > 50) history.shift();
+      newState.pointsHistory = history;
+    }
+    return newState;
+  }),
+
   setConfig: (config) => set({ config }),
   setHistory: (history) => set({ history }),
   addLog: (log) => set((state) => ({ logs: [...state.logs.slice(-500), log] })),
@@ -191,4 +212,10 @@ export const useStore = create<Store>((set) => ({
   setBackendReady: (ready) => set({ backendReady: ready }),
   setBackendPort: (port) => set({ backendPort: port }),
   setLastHeartbeat: (time) => set({ lastHeartbeat: time }),
+  addPointsHistory: (points: number) => set((state) => {
+
+    const history = [...state.pointsHistory, points].slice(-50);
+    return { pointsHistory: history };
+  }),
 }))
+
