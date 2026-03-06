@@ -398,7 +398,9 @@ class PageInspector:
                         is_visible = await element.is_visible()
                         if is_visible:
                             text = await element.inner_text()
-                            if any(indicator in text.lower() for indicator in self.error_indicators):
+                            if any(
+                                indicator in text.lower() for indicator in self.error_indicators
+                            ):
                                 visible_error_elements.append(text)
                     except Exception:
                         pass

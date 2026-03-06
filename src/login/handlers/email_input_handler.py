@@ -7,6 +7,7 @@ Handles the email input state in Microsoft login flow.
 from typing import Any
 
 from browser.popup_handler import EdgePopupHandler
+
 from ..login_state_machine import LoginState
 from ..state_handler import StateHandler
 

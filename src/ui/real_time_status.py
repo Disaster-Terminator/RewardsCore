@@ -6,7 +6,6 @@
 import logging
 import sys
 from datetime import datetime
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +37,8 @@ class RealTimeStatusDisplay:
         self.current_operation = "初始化"
         self.progress = 0
         self.total_steps = 0
-        self.start_time: Optional[datetime] = None
-        self.estimated_completion: Optional[datetime] = None
+        self.start_time: datetime | None = None
+        self.estimated_completion: datetime | None = None
 
         # 搜索进度
         self.desktop_completed = 0

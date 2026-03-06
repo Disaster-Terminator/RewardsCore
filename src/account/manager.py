@@ -11,9 +11,9 @@ from pathlib import Path
 
 from playwright.async_api import BrowserContext, Page
 
-from constants import BING_URLS, LOGIN_URLS, REWARDS_URLS
-from browser.popup_handler import EdgePopupHandler
 from browser.page_utils import DISABLE_BEFORE_UNLOAD_SCRIPT
+from browser.popup_handler import EdgePopupHandler
+from constants import BING_URLS, LOGIN_URLS, REWARDS_URLS
 from login.handlers import (
     AuthBlockedHandler,
     EmailInputHandler,

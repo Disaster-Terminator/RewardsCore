@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Any
 
 from playwright.async_api import Page
 
-from infrastructure.self_diagnosis import SelfDiagnosisSystem
 from browser.popup_handler import EdgePopupHandler
+from infrastructure.self_diagnosis import SelfDiagnosisSystem
 
 if TYPE_CHECKING:
     from infrastructure.config_manager import ConfigManager

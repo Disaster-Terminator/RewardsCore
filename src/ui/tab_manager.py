@@ -8,7 +8,10 @@ import logging
 
 from playwright.async_api import BrowserContext, Page
 
-from browser.page_utils import DISABLE_BEFORE_UNLOAD_AND_WINDOW_OPEN_SCRIPT
+from browser.page_utils import (
+    DISABLE_BEFORE_UNLOAD_AND_WINDOW_OPEN_SCRIPT,
+    DISABLE_BEFORE_UNLOAD_SCRIPT,
+)
 
 logger = logging.getLogger(__name__)
 

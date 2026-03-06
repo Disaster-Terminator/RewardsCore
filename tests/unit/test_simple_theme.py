@@ -5,7 +5,7 @@ SimpleThemeManager单元测试
 
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -34,18 +34,18 @@ class TestSimpleThemeManager:
         """测试使用配置初始化"""
         theme_manager = SimpleThemeManager(mock_config)
 
-        assert theme_manager.enabled == True
+        assert theme_manager.enabled is True
         assert theme_manager.preferred_theme == "dark"
-        assert theme_manager.persistence_enabled == True
+        assert theme_manager.persistence_enabled is True
         assert theme_manager.theme_state_file == "logs/theme_state.json"
 
     def test_init_without_config(self):
         """测试不使用配置初始化"""
         theme_manager = SimpleThemeManager(None)
 
-        assert theme_manager.enabled == False
+        assert theme_manager.enabled is False
         assert theme_manager.preferred_theme == "dark"
-        assert theme_manager.persistence_enabled == False
+        assert theme_manager.persistence_enabled is False
         assert theme_manager.theme_state_file == "logs/theme_state.json"
 
     def test_init_with_custom_config(self):
@@ -59,9 +59,9 @@ class TestSimpleThemeManager:
 
         theme_manager = SimpleThemeManager(config)
 
-        assert theme_manager.enabled == False
+        assert theme_manager.enabled is False
         assert theme_manager.preferred_theme == "light"
-        assert theme_manager.persistence_enabled == False
+        assert theme_manager.persistence_enabled is False
 
     async def test_set_theme_cookie_dark(self, mock_config):
         """测试设置暗色主题Cookie"""
@@ -72,7 +72,7 @@ class TestSimpleThemeManager:
 
         result = await theme_manager.set_theme_cookie(mock_context)
 
-        assert result == True
+        assert result is True
         assert mock_context.add_cookies.called
         cookies = mock_context.add_cookies.call_args[0][0]
         assert len(cookies) == 1
@@ -94,7 +94,7 @@ class TestSimpleThemeManager:
 
         result = await theme_manager.set_theme_cookie(mock_context)
 
-        assert result == True
+        assert result is True
         cookies = mock_context.add_cookies.call_args[0][0]
         assert cookies[0]["value"] == "WEBTHEME=0"  # light = 0
 
@@ -108,7 +108,7 @@ class TestSimpleThemeManager:
         mock_context = Mock()
         result = await theme_manager.set_theme_cookie(mock_context)
 
-        assert result == True
+        assert result is True
         assert not mock_context.add_cookies.called
 
     async def test_set_theme_cookie_exception(self, mock_config):
@@ -120,7 +120,7 @@ class TestSimpleThemeManager:
 
         result = await theme_manager.set_theme_cookie(mock_context)
 
-        assert result == False
+        assert result is False
 
     async def test_save_theme_state_enabled(self, mock_config, tmp_path):
         """测试启用持久化时保存主题状态"""
@@ -136,11 +136,12 @@ class TestSimpleThemeManager:
 
         result = await theme_manager.save_theme_state("dark")
 
-        assert result == True
+        assert result is True
         assert theme_file.exists()
 
         import json
-        with open(theme_file, 'r', encoding='utf-8') as f:
+
+        with open(theme_file, encoding="utf-8") as f:
             data = json.load(f)
             assert data["theme"] == "dark"
             assert "timestamp" in data
@@ -157,13 +158,14 @@ class TestSimpleThemeManager:
 
         result = await theme_manager.save_theme_state("dark")
 
-        assert result == True  # 禁用时返回True
+        assert result is True  # 禁用时返回True
 
     async def test_load_theme_state_enabled(self, mock_config, tmp_path):
         """测试启用持久化时加载主题状态"""
         theme_file = tmp_path / "test_theme.json"
         import json
-        with open(theme_file, 'w', encoding='utf-8') as f:
+
+        with open(theme_file, "w", encoding="utf-8") as f:
             json.dump({"theme": "dark", "timestamp": 1234567890}, f)
 
         config = Mock()
