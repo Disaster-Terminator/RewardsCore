@@ -6,19 +6,20 @@
 import logging
 import sys
 from datetime import datetime
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 # Module-level singleton instance
-_display_instance: "RealTimeStatusDisplay | None" = None
+_status_instance: "RealTimeStatusDisplay | None" = None
 
 
-def get_display(config=None) -> "RealTimeStatusDisplay":
-    """获取或创建全局显示实例"""
-    global _display_instance
-    if _display_instance is None:
-        _display_instance = RealTimeStatusDisplay(config)
-    return _display_instance
+def get_status_manager(config=None) -> "RealTimeStatusDisplay":
+    """获取或创建全局状态显示器实例"""
+    global _status_instance
+    if _status_instance is None:
+        _status_instance = RealTimeStatusDisplay(config)
+    return _status_instance
 
 
 class RealTimeStatusDisplay:
@@ -37,23 +38,27 @@ class RealTimeStatusDisplay:
         self.current_operation = "初始化"
         self.progress = 0
         self.total_steps = 0
-        self.start_time = None
-        self.estimated_completion = None
+        self.start_time: Optional[datetime] = None
+        self.estimated_completion: Optional[datetime] = None
 
-        self.desktop_searches_completed = 0
-        self.desktop_searches_total = 0
-        self.mobile_searches_completed = 0
-        self.mobile_searches_total = 0
+        # 搜索进度
+        self.desktop_completed = 0
+        self.desktop_total = 0
+        self.mobile_completed = 0
+        self.mobile_total = 0
 
-        self.search_times: list[float] = []
-        self.max_search_times = 50
-
-        self.error_count = 0
-        self.warning_count = 0
-
+        # 积分状态
         self.initial_points = 0
         self.current_points = 0
         self.points_gained = 0
+
+        # 错误/警告计数
+        self.error_count = 0
+        self.warning_count = 0
+
+        # 性能追踪
+        self.search_times: list[float] = []
+        self.max_search_times = 50
 
         logger.info("实时状态显示器初始化完成")
 
@@ -74,10 +79,10 @@ class RealTimeStatusDisplay:
         if not self.enabled:
             return
 
-        desktop_completed = self.desktop_searches_completed
-        desktop_total = self.desktop_searches_total
-        mobile_completed = self.mobile_searches_completed
-        mobile_total = self.mobile_searches_total
+        desktop_completed = self.desktop_completed
+        desktop_total = self.desktop_total
+        mobile_completed = self.mobile_completed
+        mobile_total = self.mobile_total
         operation = self.current_operation
         current_points = self.current_points
         points_gained = self.points_gained
@@ -200,34 +205,27 @@ class RealTimeStatusDisplay:
         self.total_steps = total
         self._update_display()
 
-    def update_desktop_searches(self, completed: int, total: int, search_time: float = None):
+    def update_search_progress(
+        self, search_type: str, completed: int, total: int, search_time: float = None
+    ):
         """
-        更新桌面搜索进度
+        更新搜索进度（桌面或移动）
 
         Args:
+            search_type: 搜索类型，"desktop" 或 "mobile"
             completed: 已完成数量
             total: 总数量
             search_time: 本次搜索耗时（秒）
         """
-        self.desktop_searches_completed = completed
-        self.desktop_searches_total = total
-        if search_time is not None:
-            self.search_times.append(search_time)
-            if len(self.search_times) > self.max_search_times:
-                self.search_times.pop(0)
-        self._update_display()
+        if search_type == "desktop":
+            self.desktop_completed = completed
+            self.desktop_total = total
+        elif search_type == "mobile":
+            self.mobile_completed = completed
+            self.mobile_total = total
+        else:
+            raise ValueError(f"Unknown search_type: {search_type}")
 
-    def update_mobile_searches(self, completed: int, total: int, search_time: float = None):
-        """
-        更新移动搜索进度
-
-        Args:
-            completed: 已完成数量
-            total: 总数量
-            search_time: 本次搜索耗时（秒）
-        """
-        self.mobile_searches_completed = completed
-        self.mobile_searches_total = total
         if search_time is not None:
             self.search_times.append(search_time)
             if len(self.search_times) > self.max_search_times:
@@ -236,7 +234,7 @@ class RealTimeStatusDisplay:
 
     def update_points(self, current: int, initial: int = None):
         """
-        更新积分信息
+        更新积分信息（简化版 - 直接计算差值）
 
         Args:
             current: 当前积分
@@ -245,13 +243,23 @@ class RealTimeStatusDisplay:
         self.current_points = current
         if initial is not None:
             self.initial_points = initial
+
+        # 简化的差值计算
         if self.current_points is not None and self.initial_points is not None:
-            self.points_gained = self.current_points - self.initial_points
-        elif self.current_points is not None and self.initial_points is None:
-            self.points_gained = 0
+            self.points_gained = max(0, self.current_points - self.initial_points)
         else:
             self.points_gained = 0
+
         self._update_display()
+
+    # 向后兼容的包装方法
+    def update_desktop_searches(self, completed: int, total: int, search_time: float = None):
+        """更新桌面搜索进度（向后兼容）"""
+        self.update_search_progress("desktop", completed, total, search_time)
+
+    def update_mobile_searches(self, completed: int, total: int, search_time: float = None):
+        """更新移动搜索进度（向后兼容）"""
+        self.update_search_progress("mobile", completed, total, search_time)
 
     def increment_error_count(self):
         """增加错误计数"""
@@ -268,10 +276,10 @@ class RealTimeStatusDisplay:
         if not self.enabled:
             return
 
-        desktop_completed = self.desktop_searches_completed
-        desktop_total = self.desktop_searches_total
-        mobile_completed = self.mobile_searches_completed
-        mobile_total = self.mobile_searches_total
+        desktop_completed = self.desktop_completed
+        desktop_total = self.desktop_total
+        mobile_completed = self.mobile_completed
+        mobile_total = self.mobile_total
         points_gained = self.points_gained
         error_count = self.error_count
         warning_count = self.warning_count
@@ -303,58 +311,58 @@ class RealTimeStatusDisplay:
 
 
 class StatusManager:
-    """状态管理器（简化版）"""
+    """状态管理器 - 简化版"""
 
     @classmethod
-    def get_display(cls):
+    def get_display(cls) -> RealTimeStatusDisplay:
         """获取状态显示器实例"""
-        return get_display()
+        return get_status_manager()
 
     @classmethod
     def start(cls, config=None):
         """启动状态显示"""
-        display = get_display(config)
+        display = get_status_manager(config)
         display.start()
 
     @classmethod
     def stop(cls):
         """停止状态显示"""
-        if _display_instance:
-            _display_instance.stop()
+        if _status_instance:
+            _status_instance.stop()
 
     @classmethod
     def update_operation(cls, operation: str):
         """更新操作状态"""
-        if _display_instance:
-            _display_instance.update_operation(operation)
+        if _status_instance:
+            _status_instance.update_operation(operation)
 
     @classmethod
     def update_progress(cls, current: int, total: int):
         """更新进度"""
-        if _display_instance:
-            _display_instance.update_progress(current, total)
+        if _status_instance:
+            _status_instance.update_progress(current, total)
 
     @classmethod
     def update_desktop_searches(cls, completed: int, total: int, search_time: float = None):
-        """更新桌面搜索进度"""
-        if _display_instance:
-            _display_instance.update_desktop_searches(completed, total, search_time)
+        """更新桌面搜索进度（向后兼容）"""
+        if _status_instance:
+            _status_instance.update_desktop_searches(completed, total, search_time)
 
     @classmethod
     def update_mobile_searches(cls, completed: int, total: int, search_time: float = None):
-        """更新移动搜索进度"""
-        if _display_instance:
-            _display_instance.update_mobile_searches(completed, total, search_time)
+        """更新移动搜索进度（向后兼容）"""
+        if _status_instance:
+            _status_instance.update_mobile_searches(completed, total, search_time)
 
     @classmethod
     def update_points(cls, current: int, initial: int = None):
         """更新积分信息"""
-        if _display_instance:
-            _display_instance.update_points(current, initial)
+        if _status_instance:
+            _status_instance.update_points(current, initial)
 
     @classmethod
     def show_completion(cls):
         """显示完成摘要"""
-        if _display_instance:
-            _display_instance.show_completion_summary()
-            _display_instance.stop()
+        if _status_instance:
+            _status_instance.show_completion_summary()
+            _status_instance.stop()
