@@ -51,6 +51,7 @@ class SearchEngine:
         query_engine=None,
         status_manager: type[StatusManagerProtocol] | None = None,
         human_behavior: HumanBehaviorSimulator | None = None,
+        theme_manager=None,
     ):
         """
         初始化搜索引擎
@@ -63,6 +64,7 @@ class SearchEngine:
             query_engine: QueryEngine 实例（可选，用于智能查询生成）
             status_manager: StatusManager 类（可选，用于进度显示，使用 classmethod）
             human_behavior: HumanBehaviorSimulator 实例（可选，用于拟人化行为）
+            theme_manager: SimpleThemeManager 实例（可选，用于主题管理）
         """
         self.config = config
         self.term_generator = term_generator
@@ -71,6 +73,7 @@ class SearchEngine:
         self.query_engine = query_engine
         self.status_manager = status_manager
         self.human_behavior = human_behavior or HumanBehaviorSimulator(logger)
+        self.theme_manager = theme_manager
 
         self.element_detector = ElementDetector(config)
         self._query_cache = []
@@ -343,7 +346,7 @@ class SearchEngine:
             if page_errors:
                 logger.warning(f"检测到页面错误: {page_errors}")
 
-            if self.theme_manager.enabled:
+            if self.theme_manager and self.theme_manager.enabled:
                 context = page.context
                 await self.theme_manager.ensure_theme_before_search(page, context)
 

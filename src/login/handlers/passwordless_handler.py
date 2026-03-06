@@ -6,7 +6,7 @@ Handles Microsoft's passwordless authentication flow.
 
 from typing import Any
 
-from ..edge_popup_handler import EdgePopupHandler
+from browser.popup_handler import EdgePopupHandler
 from ..login_state_machine import LoginState
 from ..state_handler import StateHandler
 

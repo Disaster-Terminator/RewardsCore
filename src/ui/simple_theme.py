@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from playwright.async_api import BrowserContext
+from playwright.async_api import BrowserContext, Page
 
 
 class SimpleThemeManager:
@@ -48,6 +48,20 @@ class SimpleThemeManager:
             return True
         except Exception:
             return False
+
+    async def ensure_theme_before_search(self, page: Page, context: BrowserContext) -> bool:
+        """
+        在搜索前确保主题Cookie已设置
+        这是 SearchEngine 调用的接口方法
+
+        Args:
+            page: Playwright Page 对象
+            context: BrowserContext 对象
+
+        Returns:
+            是否成功
+        """
+        return await self.set_theme_cookie(context)
 
     async def save_theme_state(self, theme: str) -> bool:
         """保存主题状态到文件"""
