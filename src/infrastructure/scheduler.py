@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import random
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 
 try:
@@ -165,7 +166,9 @@ class TaskScheduler:
                 else:
                     logger.debug(f"还需等待 {wait_seconds / 60:.1f} 分钟...")
 
-    async def run_scheduled_task(self, task_func, run_once_first: bool = True) -> None:
+    async def run_scheduled_task(
+        self, task_func: Callable[[], Awaitable[None]], run_once_first: bool = True
+    ) -> None:
         """
         运行调度任务
 

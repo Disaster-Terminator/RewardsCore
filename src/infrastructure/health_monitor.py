@@ -392,7 +392,7 @@ class HealthMonitor:
     # 公共 API 方法
     # ============================================
 
-    def record_search_result(self, success: bool, response_time: float = 0.0):
+    def record_search_result(self, success: bool, response_time: float = 0.0) -> None:
         """记录搜索结果"""
         self.metrics["total_searches"] += 1
         if success:

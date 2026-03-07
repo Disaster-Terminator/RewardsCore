@@ -212,6 +212,27 @@ class LogRotation:
 
         return total_result
 
+    def cleanup_old_diagnoses(
+        self,
+        logs_dir: Path,
+        max_folders: int = 10,
+        max_age_days: int = 7,
+        dry_run: bool = False,
+    ) -> dict:
+        """
+        清理旧的诊断目录（公共接口）
+
+        Args:
+            logs_dir: logs 目录路径
+            max_folders: 最多保留的文件夹数量
+            max_age_days: 最大保留天数
+            dry_run: 若为 True，仅模拟删除不实际删除
+
+        Returns:
+            清理结果统计
+        """
+        return self._cleanup_old_diagnoses(logs_dir, max_folders, max_age_days, dry_run)
+
     def _cleanup_old_diagnoses(
         self,
         logs_dir: Path,

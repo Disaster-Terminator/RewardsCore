@@ -159,8 +159,9 @@ class BrowserPopupHandler:
 
         for selector in popup_container_selectors:
             try:
-                element = await page.query_selector(selector)
-                if element and await element.is_visible(timeout=timeout):
+                # 使用 wait_for_selector 而不是 query_selector + is_visible
+                element = await page.wait_for_selector(selector, timeout=timeout, state="visible")
+                if element:
                     self.logger.debug(f"检测到弹窗容器: {selector}")
                     return True
             except Exception:
@@ -169,8 +170,8 @@ class BrowserPopupHandler:
         # 策略2: 检查是否有任何弹窗按钮可见
         for selector in self.POPUP_SELECTORS[:10]:  # 只检查前10个常用选择器
             try:
-                element = await page.query_selector(selector)
-                if element and await element.is_visible(timeout=timeout):
+                element = await page.wait_for_selector(selector, timeout=timeout, state="visible")
+                if element:
                     self.logger.debug(f"检测到弹窗按钮: {selector}")
                     return True
             except Exception:
@@ -180,9 +181,12 @@ class BrowserPopupHandler:
         try:
             dialogs = await page.query_selector_all('[role="dialog"], [role="alertdialog"]')
             for dialog in dialogs:
-                if await dialog.is_visible(timeout=timeout):
+                try:
+                    await dialog.wait_for_element_state("visible", timeout=timeout)
                     self.logger.debug("检测到 dialog 元素")
                     return True
+                except Exception:
+                    continue
         except Exception:
             pass
 

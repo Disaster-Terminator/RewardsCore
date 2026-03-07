@@ -4,16 +4,20 @@
 """
 
 import json
+import logging
 import time
 from pathlib import Path
+from typing import Any
 
 from playwright.async_api import BrowserContext, Page
+
+logger = logging.getLogger(__name__)
 
 
 class SimpleThemeManager:
     """简化版主题管理器，只做核心功能"""
 
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         self.enabled = config.get("bing_theme.enabled", False) if config else False
         self.preferred_theme = config.get("bing_theme.theme", "dark") if config else "dark"
         self.persistence_enabled = (
@@ -46,7 +50,8 @@ class SimpleThemeManager:
                 ]
             )
             return True
-        except Exception:
+        except Exception as e:
+            logger.error(f"设置主题Cookie失败: {e}")
             return False
 
     async def ensure_theme_before_search(self, page: Page, context: BrowserContext) -> bool:
@@ -80,7 +85,8 @@ class SimpleThemeManager:
             with open(theme_file_path, "w", encoding="utf-8") as f:
                 json.dump(theme_state, f, indent=2, ensure_ascii=False)
             return True
-        except Exception:
+        except Exception as e:
+            logger.error(f"保存主题状态失败: {e}")
             return False
 
     async def load_theme_state(self) -> str | None:
@@ -96,5 +102,6 @@ class SimpleThemeManager:
             with open(theme_file_path, encoding="utf-8") as f:
                 data = json.load(f)
                 return data.get("theme")
-        except Exception:
+        except Exception as e:
+            logger.error(f"加载主题状态失败: {e}")
             return None

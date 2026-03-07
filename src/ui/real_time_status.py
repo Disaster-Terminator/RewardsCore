@@ -59,9 +59,13 @@ class RealTimeStatusDisplay:
         self.search_times: list[float] = []
         self.max_search_times = 50
 
+        # 节流控制：非 TTY 环境下的更新频率
+        self._last_display_time: datetime | None = None
+        self._min_display_interval = 5.0  # 非 TTY 环境最少间隔 5 秒
+
         logger.info("实时状态显示器初始化完成")
 
-    def start(self):
+    def start(self) -> None:
         """开始实时状态显示"""
         if not self.enabled:
             return
@@ -69,7 +73,7 @@ class RealTimeStatusDisplay:
         self.start_time = datetime.now()
         logger.debug("实时状态显示已启动")
 
-    def stop(self):
+    def stop(self) -> None:
         """停止实时状态显示"""
         logger.debug("实时状态显示已停止")
 
@@ -77,6 +81,14 @@ class RealTimeStatusDisplay:
         """更新状态显示（同步）"""
         if not self.enabled:
             return
+
+        # 节流控制：非 TTY 环境下限制更新频率
+        if not sys.stdout.isatty() and self._last_display_time is not None:
+            elapsed = (datetime.now() - self._last_display_time).total_seconds()
+            if elapsed < self._min_display_interval:
+                return
+
+        self._last_display_time = datetime.now()
 
         desktop_completed = self.desktop_completed
         desktop_total = self.desktop_total
@@ -205,8 +217,8 @@ class RealTimeStatusDisplay:
         self._update_display()
 
     def update_search_progress(
-        self, search_type: str, completed: int, total: int, search_time: float = None
-    ):
+        self, search_type: str, completed: int, total: int, search_time: float | None = None
+    ) -> None:
         """
         更新搜索进度（桌面或移动）
 

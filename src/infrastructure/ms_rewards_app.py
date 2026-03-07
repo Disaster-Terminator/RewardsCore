@@ -103,7 +103,7 @@ class MSRewardsApp:
                 self.diagnosis_reporter = DiagnosisReporter(output_dir="logs/diagnosis")
                 self._page_inspector = PageInspector()
                 self.logger.info("诊断模式已启用")
-                LogRotation()._cleanup_old_diagnoses(Path("logs"))
+                LogRotation().cleanup_old_diagnoses(Path("logs"))
             except ImportError as e:
                 module_name = getattr(e, "name", "未知模块")
                 self.logger.error(
