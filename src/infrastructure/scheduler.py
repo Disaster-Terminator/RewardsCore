@@ -35,6 +35,13 @@ class TaskScheduler:
         self.enabled = config.get("scheduler.enabled", True)
         # 保留 mode 配置选项以保证向后兼容，但实际只使用 scheduled
         self.mode = config.get("scheduler.mode", "scheduled")
+        if self.mode not in ["scheduled", "random", "fixed"]:
+            logger.warning(f"未知的调度模式: {self.mode}，将使用 scheduled 模式")
+        elif self.mode in ["random", "fixed"]:
+            logger.warning(
+                f"调度模式 '{self.mode}' 已弃用，现在只支持 'scheduled' 模式。"
+                f"配置项 scheduler.mode 将在未来的版本中移除。"
+            )
         self.run_once_on_start = config.get("scheduler.run_once_on_start", True)
 
         self.timezone_str = config.get("scheduler.timezone", "Asia/Shanghai")

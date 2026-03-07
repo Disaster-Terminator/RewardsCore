@@ -209,7 +209,8 @@ class Notificator:
             success = await self.send_telegram(msg) or success
 
         if self.serverchan_enabled:
-            title = f"MS Rewards 每日报告 - {data['date_str']}"
+            date_str = data["date_str"]
+            title = f"MS Rewards 每日报告 - {date_str}"
             content = MESSAGE_TEMPLATES["serverchan_daily"].format(**data)
             success = await self.send_serverchan(title, content) or success
 

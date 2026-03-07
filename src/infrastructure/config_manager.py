@@ -11,8 +11,6 @@ import yaml
 
 from constants import REWARDS_URLS
 
-from .config_types import ConfigDict
-
 logger = logging.getLogger(__name__)
 
 

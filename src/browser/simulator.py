@@ -340,6 +340,13 @@ class BrowserSimulator:
 
             theme_manager = SimpleThemeManager(self.config)
             if theme_manager.enabled:
+                # 尝试加载保存的主题状态
+                if theme_manager.persistence_enabled:
+                    saved_theme = await theme_manager.load_theme_state()
+                    if saved_theme:
+                        logger.info(f"从文件加载主题状态: {saved_theme}")
+                        theme_manager.preferred_theme = saved_theme
+
                 success = await theme_manager.set_theme_cookie(context)
                 if success:
                     logger.info(f"✓ 已设置Bing主题: {theme_manager.preferred_theme}")

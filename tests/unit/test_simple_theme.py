@@ -3,7 +3,6 @@ SimpleThemeManager单元测试
 测试简化版主题管理器的各种功能
 """
 
-from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, Mock
 
