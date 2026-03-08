@@ -49,9 +49,9 @@ class AntiFocusScripts:
                 if (document[method]) document[method] = () => false;
             });
 
-            Object.defineProperty(document, 'visibilityState', {value: 'hidden', writable: false});
-            Object.defineProperty(document, 'hidden', {value: true, writable: false});
-            Object.defineProperty(document, 'hasFocus', {value: () => false, writable: false});
+            Object.defineProperty(document, 'visibilityState', {value: 'hidden', writable: false, configurable: false});
+            Object.defineProperty(document, 'hidden', {value: true, writable: false, configurable: false});
+            Object.defineProperty(document, 'hasFocus', {value: () => false, writable: false, configurable: false});
 
             ['focus', 'blur', 'focusin', 'focusout'].forEach(eventType => {
                 document.addEventListener(eventType, e => {e.stopPropagation(); e.preventDefault();}, true);

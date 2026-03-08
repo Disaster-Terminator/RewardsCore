@@ -226,9 +226,10 @@ class Notificator:
             return False
 
         time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 转义花括号，防止 str.format() 将消息中的 {placeholder} 误认为格式字段
         data = {
-            "alert_type": alert_type,
-            "message": message,
+            "alert_type": alert_type.replace("{", "{{").replace("}", "}}"),
+            "message": message.replace("{", "{{").replace("}", "}}"),
             "time_str": time_str,
         }
 
