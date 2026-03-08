@@ -85,12 +85,11 @@ class MSRewardsApp:
         self.page = None
 
         self.current_device = "desktop"
+        self.coordinator = None  # 将在 _init_components 中创建
 
         from .system_initializer import SystemInitializer
 
         self.initializer = SystemInitializer(config, args, self.logger)
-
-        # coordinator 将在 _init_components 中创建（需要所有依赖项）
 
         if self.diagnose:
             try:

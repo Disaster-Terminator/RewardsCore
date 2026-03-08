@@ -14,7 +14,7 @@ from .screenshot import ScreenshotManager
 
 
 # 向后兼容：提供 cleanup_old_diagnoses 函数
-async def cleanup_old_diagnoses(
+def cleanup_old_diagnoses(
     logs_dir: Path, max_folders: int = 30, max_age_days: int = 30, dry_run: bool = False
 ) -> dict:
     """

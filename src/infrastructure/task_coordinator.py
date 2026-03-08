@@ -244,8 +244,12 @@ class TaskCoordinator:
             )
 
             # 验证移动端登录状态
+            # 使用新的 AccountManager 实例避免桌面端状态污染
             self.logger.info("  验证移动端登录状态...")
-            mobile_logged_in = await self._account_manager.is_logged_in(page, navigate=False)
+            from account.manager import AccountManager
+
+            account_mgr = AccountManager(self.config)
+            mobile_logged_in = await account_mgr.is_logged_in(page, navigate=False)
             if not mobile_logged_in:
                 self.logger.warning("  移动端未登录，后续搜索可能不计积分")
 

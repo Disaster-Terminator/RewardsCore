@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BrowserSimulator:
     """浏览器模拟器类"""
 
-    def __init__(self, config, anti_ban, theme_manager=None):
+    def __init__(self, config, anti_ban, theme_manager=None) -> None:
         """
         初始化浏览器模拟器
 

@@ -95,8 +95,8 @@ class RealTimeStatusDisplay:
         if not self.enabled:
             return
 
-        # 节流控制：非 TTY 环境下限制更新频率
-        if not sys.stdout.isatty() and self._last_display_time is not None:
+        # 节流控制：所有环境下限制更新频率
+        if self._last_display_time is not None:
             elapsed = (datetime.now() - self._last_display_time).total_seconds()
             if elapsed < self._min_display_interval:
                 return
@@ -278,11 +278,15 @@ class RealTimeStatusDisplay:
         self._update_display()
 
     # 向后兼容的包装方法
-    def update_desktop_searches(self, completed: int, total: int, search_time: float = None):
+    def update_desktop_searches(
+        self, completed: int, total: int, search_time: float | None = None
+    ) -> None:
         """更新桌面搜索进度（向后兼容）"""
         self.update_search_progress("desktop", completed, total, search_time)
 
-    def update_mobile_searches(self, completed: int, total: int, search_time: float = None):
+    def update_mobile_searches(
+        self, completed: int, total: int, search_time: float | None = None
+    ) -> None:
         """更新移动搜索进度（向后兼容）"""
         self.update_search_progress("mobile", completed, total, search_time)
 

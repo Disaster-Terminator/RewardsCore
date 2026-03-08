@@ -249,7 +249,7 @@ class TaskScheduler:
         return {
             "enabled": self.enabled,
             "running": self.running,
-            "mode": "scheduled",  # 简化：总是返回 scheduled
+            "mode": self.mode,
             "timezone": self.timezone_str,
             "run_once_on_start": self.run_once_on_start,
             "next_run_time": self.next_run_time.isoformat() if self.next_run_time else None,
