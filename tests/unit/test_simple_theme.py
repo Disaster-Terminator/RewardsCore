@@ -144,7 +144,7 @@ class TestSimpleThemeManager:
 
         assert result is False
 
-    async def test_save_theme_state_enabled(self, mock_config, tmp_path) -> None:
+    def test_save_theme_state_enabled(self, mock_config, tmp_path) -> None:
         """测试启用持久化时保存主题状态"""
         theme_file = tmp_path / "test_theme.json"
         config = Mock()
@@ -156,7 +156,7 @@ class TestSimpleThemeManager:
 
         theme_manager = SimpleThemeManager(config)
 
-        result = await theme_manager.save_theme_state("dark")
+        result = theme_manager.save_theme_state("dark")
 
         assert result is True
         assert theme_file.exists()
@@ -168,7 +168,7 @@ class TestSimpleThemeManager:
             assert data["theme"] == "dark"
             assert "timestamp" in data
 
-    async def test_save_theme_state_disabled(self, mock_config) -> None:
+    def test_save_theme_state_disabled(self, mock_config) -> None:
         """测试禁用持久化时保存主题状态"""
         config = Mock()
         config.get.side_effect = lambda key, default=None: {
@@ -178,11 +178,11 @@ class TestSimpleThemeManager:
 
         theme_manager = SimpleThemeManager(config)
 
-        result = await theme_manager.save_theme_state("dark")
+        result = theme_manager.save_theme_state("dark")
 
         assert result is True  # 禁用时返回True
 
-    async def test_load_theme_state_enabled(self, mock_config, tmp_path) -> None:
+    def test_load_theme_state_enabled(self, mock_config, tmp_path) -> None:
         """测试启用持久化时加载主题状态"""
         theme_file = tmp_path / "test_theme.json"
         import json
@@ -199,19 +199,25 @@ class TestSimpleThemeManager:
 
         theme_manager = SimpleThemeManager(config)
 
-        result = await theme_manager.load_theme_state()
+        result = theme_manager.load_theme_state()
 
         assert result == "dark"
 
-    async def test_load_theme_state_disabled(self, mock_config) -> None:
+    def test_load_theme_state_disabled(self, mock_config) -> None:
         """测试禁用持久化时加载主题状态"""
-        theme_manager = SimpleThemeManager(mock_config)
+        config = Mock()
+        config.get.side_effect = lambda key, default=None: {
+            "bing_theme.enabled": True,
+            "bing_theme.persistence_enabled": False,
+        }.get(key, default)
 
-        result = await theme_manager.load_theme_state()
+        theme_manager = SimpleThemeManager(config)
+
+        result = theme_manager.load_theme_state()
 
         assert result is None
 
-    async def test_load_theme_state_file_not_exists(self, mock_config, tmp_path) -> None:
+    def test_load_theme_state_file_not_exists(self, mock_config, tmp_path) -> None:
         """测试文件不存在时加载主题状态"""
         theme_file = tmp_path / "nonexistent.json"
         config = Mock()
@@ -223,6 +229,6 @@ class TestSimpleThemeManager:
 
         theme_manager = SimpleThemeManager(config)
 
-        result = await theme_manager.load_theme_state()
+        result = theme_manager.load_theme_state()
 
         assert result is None

@@ -8,9 +8,6 @@ URL 常量模块
 - BING_URLS: Bing 搜索相关 URL
 - LOGIN_URLS: Microsoft 登录 URL
 - API_ENDPOINTS: Dashboard 和 App API 端点
-- API_PARAMS: API 查询参数
-- OAUTH_URLS: OAuth 认证 URL
-- OAUTH_CONFIG: OAuth 配置值
 - QUERY_SOURCE_URLS: 搜索查询来源 URL
 - NOTIFICATION_URLS: 通知服务 URL
 - HEALTH_CHECK_URLS: 健康检查测试 URL

@@ -103,8 +103,8 @@ class SimpleThemeManager:
         """
         return await self.set_theme_cookie(context)
 
-    async def save_theme_state(self, theme: str) -> bool:
-        """保存主题状态到文件"""
+    def save_theme_state(self, theme: str) -> bool:
+        """保存主题状态到文件（同步方法）"""
         if not self.persistence_enabled:
             return True
 
@@ -124,8 +124,8 @@ class SimpleThemeManager:
             logger.error(f"保存主题状态失败: {e}")
             return False
 
-    async def load_theme_state(self) -> str | None:
-        """从文件加载主题状态"""
+    def load_theme_state(self) -> str | None:
+        """从文件加载主题状态（同步方法）"""
         if not self.persistence_enabled:
             return None
 

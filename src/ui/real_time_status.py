@@ -72,9 +72,9 @@ class RealTimeStatusDisplay:
         self.search_times: list[float] = []
         self.max_search_times = 50
 
-        # 节流控制：非 TTY 环境下的更新频率
+        # 节流控制：限制更新频率，避免闪烁
         self._last_display_time: datetime | None = None
-        self._min_display_interval = 5.0  # 非 TTY 环境最少间隔 5 秒
+        self._min_display_interval = 5.0  # 最少间隔 5 秒
 
         logger.info("实时状态显示器初始化完成")
 
