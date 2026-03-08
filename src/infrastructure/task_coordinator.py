@@ -304,6 +304,15 @@ class TaskCoordinator:
 
         task_system_enabled = self.config.get("task_system.enabled", False)
 
+        # Dry-run 模式
+        if self.args.dry_run:
+            if task_system_enabled:
+                self.logger.info("  [模拟] 将执行日常任务")
+            else:
+                self.logger.info("  [模拟] 任务系统未启用")
+            StatusManager.update_progress(7, 8)
+            return page
+
         if task_system_enabled:
             try:
                 from tasks import TaskManager
@@ -416,11 +425,8 @@ class TaskCoordinator:
 
                 traceback.print_exc()
         else:
-            if not task_system_enabled:
-                self.logger.info("  ⚠ 任务系统未启用")
-                self.logger.info("  提示: 在 config.yaml 中设置 task_system.enabled: true 来启用")
-            else:
-                self.logger.info("  [模拟] 将执行日常任务")
+            self.logger.info("  ⚠ 任务系统未启用")
+            self.logger.info("  提示: 在 config.yaml 中设置 task_system.enabled: true 来启用")
 
         StatusManager.update_progress(7, 8)
         return page
