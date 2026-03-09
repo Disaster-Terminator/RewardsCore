@@ -97,17 +97,18 @@ class LogRotation:
         # 按修改时间排序（旧的在前）
         files.sort(key=lambda x: x.stat().st_mtime)
 
-        # 计算应该保留的文件数
-        files_to_keep = max(len(files) - self.keep_min_files, 0)
+        # 计算应该保留的文件数 - 始终保留最近的 keep_min_files 个文件
+        files_to_keep = self.keep_min_files
+        num_files = len(files)
 
         for i, file_path in enumerate(files):
             try:
-                # 如果还有足够的文件保留，跳过
-                if i < files_to_keep and not self.should_delete(file_path):
+                # 强制保留最近的文件（无论是否应该删除）
+                if i >= num_files - files_to_keep:
                     result["skipped"] += 1
                     continue
 
-                # 检查是否应该删除（必须通过 should_delete 检查）
+                # 检查是否应该删除
                 if self.should_delete(file_path):
                     file_size = file_path.stat().st_size
 

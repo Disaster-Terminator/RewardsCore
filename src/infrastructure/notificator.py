@@ -194,13 +194,18 @@ class Notificator:
             "current_points": report_data.get("current_points") or 0,
             "desktop_searches": report_data.get("desktop_searches") or 0,
             "mobile_searches": report_data.get("mobile_searches") or 0,
-            "status": report_data.get("status") or "未知",
+            "status": (report_data.get("status") or "未知").replace("{", "{{").replace("}", "}}"),
             "alerts_section": "",
         }
 
         alerts = report_data.get("alerts", [])
         if alerts:
             data["alerts_section"] = f"\n⚠️ 告警: {len(alerts)} 条"
+
+        # 转义所有用户提供的字段中的花括号
+        for key in ["status", "alerts_section"]:
+            if isinstance(data[key], str):
+                data[key] = data[key].replace("{", "{{").replace("}", "}}")
 
         success = False
 
