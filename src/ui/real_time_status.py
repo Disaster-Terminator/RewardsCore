@@ -257,7 +257,7 @@ class RealTimeStatusDisplay:
                 self.search_times.pop(0)
         self._update_display()
 
-    def update_points(self, current: int, initial: int = None):
+    def update_points(self, current: int, initial: int | None = None) -> None:
         """
         更新积分信息（简化版 - 直接计算差值）
 
@@ -384,7 +384,7 @@ class StatusManager:
             _status_instance.update_mobile_searches(completed, total, search_time)
 
     @classmethod
-    def update_points(cls, current: int, initial: int = None):
+    def update_points(cls, current: int, initial: int | None = None) -> None:
         """更新积分信息"""
         if _status_instance:
             _status_instance.update_points(current, initial)

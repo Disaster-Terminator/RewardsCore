@@ -202,10 +202,7 @@ class Notificator:
         if alerts:
             data["alerts_section"] = f"\n⚠️ 告警: {len(alerts)} 条"
 
-        # 转义所有用户提供的字段中的花括号
-        for key in ["status", "alerts_section"]:
-            if isinstance(data[key], str):
-                data[key] = data[key].replace("{", "{{").replace("}", "}}")
+        # 注意：status 已在 data 准备时转义一次，这里不再重复转义
 
         success = False
 
@@ -231,10 +228,9 @@ class Notificator:
             return False
 
         time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # 转义花括号，防止 str.format() 将消息中的 {placeholder} 误认为格式字段
         data = {
-            "alert_type": alert_type.replace("{", "{{").replace("}", "}}"),
-            "message": message.replace("{", "{{").replace("}", "}}"),
+            "alert_type": alert_type,
+            "message": message,
             "time_str": time_str,
         }
 
