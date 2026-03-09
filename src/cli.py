@@ -133,7 +133,7 @@ def signal_handler(signum, frame):
     _shutdown_requested = True
 
     if logger:
-        logger.info("\n收到中断信号，正在优雅关闭...")
+        logger.info("\n收到中断信号，正在关闭...")
 
     # 触发 KeyboardInterrupt 让 asyncio.run 正常退出
     # 这会让正在运行的协程收到异常并执行 finally 块
@@ -201,6 +201,11 @@ async def async_main():
     scheduler_enabled = config.get("scheduler.enabled", True)
 
     try:
+        # 初始化 StatusManager（调度和非调度模式都需要）
+        from ui.real_time_status import StatusManager
+
+        StatusManager.start(config)
+
         if scheduler_enabled:
             logger.info("启动调度模式...")
             from infrastructure.scheduler import TaskScheduler
@@ -223,10 +228,6 @@ async def async_main():
             logger.info(f"浏览器: {args.browser}")
             logger.info(f"无头模式: {config.get('browser.headless', True)}")
             logger.info("=" * 70)
-
-            from ui.real_time_status import StatusManager
-
-            StatusManager.start(config)
 
             return await _current_app.run()
 
