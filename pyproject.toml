@@ -44,13 +44,11 @@ rscore = "cli:main"
 package-dir = {"" = "src"}
 py-modules = ["cli"]
 
-[tool.setuptools.packages]
-find = {where = ["src"]}
-explicit = ["review"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
 browser = ["scripts/*.js"]
-review = ["tests/*.py"]
 
 [tool.ruff]
 line-length = 100
