@@ -217,7 +217,7 @@ class RealTimeStatusDisplay:
         logger.info(f"状态更新: {operation}")
         self._update_display()
 
-    def update_progress(self, current: int, total: int):
+    def update_progress(self, current: int, total: int) -> None:
         """
         更新总体进度
 
