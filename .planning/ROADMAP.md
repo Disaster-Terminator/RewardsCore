@@ -39,10 +39,15 @@
 **Duration:** Planning only (no code changes)
 **Goal:** 建立变更边界和调用关系图，确保后续删除不会误伤
 
+**Plans:** 1 plan
+
+**Plans:**
+- [ ] 01-01-PLAN.md — 基线调查（调用图、配置边界、性能基准、测试基线）
+
 ### REQ Mapping
 
-- REQ-010 (配置兼容性) - **Partially**
-- REQ-011 (性能基准) - **Partially**
+- REQ-010 (配置兼容性) - **Core**
+- REQ-011 (性能基准) - **Core**
 
 ### Deliverables
 
