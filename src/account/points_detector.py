@@ -3,12 +3,14 @@
 从 Microsoft Rewards Dashboard 抓取积分信息
 """
 
+import asyncio
 import logging
 import re
 
 from playwright.async_api import Page
 
-from api.dashboard_client import DashboardClient
+from api.dashboard_client import DashboardClient, DashboardError
+from constants import REWARDS_URLS
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 class PointsDetector:
     """积分检测器类"""
 
-    DASHBOARD_URL = "https://rewards.bing.com/"
+    DASHBOARD_URL = REWARDS_URLS["dashboard"]
 
     POINTS_SELECTORS = [
         "p.text-title1.font-semibold",
@@ -93,22 +95,24 @@ class PointsDetector:
             # 优先使用 Dashboard API
             try:
                 logger.debug("尝试使用 Dashboard API 获取积分...")
-                client = DashboardClient(page)
-                api_points: int | None = await client.get_current_points()
+                async with DashboardClient(page) as client:
+                    api_points: int | None = await asyncio.wait_for(
+                        client.get_current_points(), timeout=35.0
+                    )
                 if api_points is not None and api_points >= 0:
-                    logger.debug(f"✓ 从 API 获取积分: {api_points:,}")
+                    logger.info("✓ 从 API 获取积分成功")
                     return int(api_points)
-            except Exception as e:
-                logger.warning(
-                    f"API 获取积分失败（{type(e).__name__}: {e}），使用 HTML 解析作为备用"
-                )
+            except asyncio.TimeoutError:
+                logger.warning("Dashboard API 超时，使用 HTML 解析作为备用")
+            except DashboardError as e:
+                logger.warning(f"Dashboard API 失败: {e}，使用 HTML 解析作为备用")
 
             # 备用：HTML 解析
             logger.debug("尝试从页面源码提取积分...")
             points = await self._extract_points_from_source(page)
 
             if points is not None:
-                logger.debug(f"✓ 从源码提取积分: {points:,}")
+                logger.info(f"✓ 从源码提取积分: {points:,}")
                 return points
 
             logger.debug("源码提取失败，尝试选择器...")
@@ -121,11 +125,11 @@ class PointsDetector:
                         points_text = await element.text_content()
                         logger.debug(f"找到积分文本: {points_text}")
 
-                        if points_text:
-                            points = self._parse_points(points_text)
+                        if points_text and points_text.strip():
+                            points = self._parse_points(points_text.strip())
 
                             if points is not None and points >= 100:
-                                logger.debug(f"✓ 当前积分: {points:,}")
+                                logger.info("✓ 当前积分获取成功")
                                 return points
                             elif points is not None:
                                 logger.debug(f"积分值太小，可能是误识别: {points}")
@@ -158,7 +162,7 @@ class PointsDetector:
         Returns:
             积分数量，失败返回 None
         """
-        if not text or not text.strip():
+        if not text:
             return None
 
         try:
