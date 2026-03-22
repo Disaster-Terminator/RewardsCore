@@ -1,168 +1,155 @@
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-last_updated: "2026-03-21T01:07:08.664Z"
-progress:
-  total_phases: 5
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 0
----
+# STATE
 
-## Executive Summary
-
-**Status:** Executing Phase 01
-**Next Action:** Execute Phase 1 (Baseline) to establish boundaries
-**Milestone:** V1.0 - Technical Debt Reduction (0/5 phases completed)
-**Git Branch:** refactor/test-cleanup
+**Project:** RewardsCore E2E & Smoke Test Suite
+**Milestone:** M1 - Smoke Tests Ready
+**Current Phase:** Complete (all 15 phase plans created)
+**Branch:** feature/e2e-testing
+**Last Updated:** 2026-03-22
 
 ---
 
-## Current Context
+## Project Reference
 
-**Project Definition:**
+**Core Value:**
+Independent verification of critical user journeys without requiring full application context or manual setup. Tests must be fast (<30s smoke, <5min E2E), reliable (≥90% pass), self-diagnosing, and environment-friendly.
 
-- Type: Technical debt reduction & simplification (减法项目)
-- Goal: Delete low-value code, shrink over-complex implementations, reduce error surface
-- Core Principle: No feature regression, main config path compatible, -10% to -20% LOC
+**Current Focus:**
+Establish test infrastructure—pytest-asyncio framework, Playwright fixtures, test data management—so that subsequent test modules can be written with reusable, isolated components.
 
-**Must Preserve (Non-negotiable):**
-
-- Desktop/mobile search execution
-- Login system (state machine)
-- Task system (discovery + execution)
-- Points tracking
-- Notification system
-- Scheduler
-- Diagnosis system
-- Anti-detection module
-- Configuration system
-- CLI entry point
-
-**Success Targets:**
-
-- LOC reduction: 8,600 → 6,400–7,740 (-10% to -20%)
-- Silent exceptions: 100+ → <20
-- Test coverage: High-risk modules ≥ 80%
-- Compatibility: 100% backward compatible for main config path
+**Constraints:**
+- Browser: Playwright Chromium only
+- Isolation: Per-test fresh context with 100% cleanup
+- Accounts: CI secrets, dedicated test accounts
+- Runtime: Smoke <30s, E2E <5min, flakiness <5%
 
 ---
 
-## Phase Progress
+## Current Position
 
-| Phase | Name | Status | Start | End | Δ LOC (est.) |
-|-------|------|--------|-------|-------|--------------|
-| 1 | 兼容边界冻结与调用图基线 | 📋 Planned | - | - | 0 |
-| 2 | 低风险纯删除 | 📋 Planned | - | - | -500 to -1,500 |
-| 3 | 核心模块收缩 | 📋 Planned | - | - | -1,000 to -2,000 |
-| 4 | 异常与返回语义治理 | 📋 Planning | - | - | 0 (reorg) |
-| 5 | 测试补锁与依赖清理 | 📋 Planned | - | - | +500 (tests) |
+| Attribute | Value |
+|-----------|-------|
+| **Phase** | Complete |
+| **Phase Name** | All phase plans created |
+| **Plan** | All 15 plans defined |
+| **Status** | planning_complete |
+| **Progress** | 15/15 plans (100%) |
+| **Started** | 2026-03-21 |
+| **Completed** | 2026-03-22 |
 
-**Total Phases:** 5
-**Completed:** 0 / 5 (0%)
-**In Progress:** 0
-
----
-
-## Recent Decisions
-
-| Date | Decision |
-|------|----------|
-| 2026-03-21 | Project defined as "technical debt convergence" not pure deletion |
-| 2026-03-21 | "Missing tests" alone is NOT a reason to delete code |
-| 2026-03-21 | Main config path must remain 100% backward compatible |
+**Progress bar:** ░░░░░░░░░░ 0%
 
 ---
 
-## Quick Tasks Completed
+## Performance Metrics
 
-| Date | Quick Task | Description | Status | Commits |
-|------|------------|-------------|--------|---------|
-| 2026-03-21 | 260321-enz | WSL/WSLg E2E preflight system | ✅ Complete | 4 |
+| Metric | Target | Current | Trend |
+|--------|--------|---------|-------|
+| Test framework setup time | < 2 hours | - | - |
+| Fixture reliability (pass rate) | 100% | - | - |
+| Test context cleanup | 100% | - | - |
+| Screenshot on failure | Enabled | - | - |
 
-**Quick Task 260321-enz details**:
-- Implemented `PreflightChecker` with 6 blocker types
-- Added 11 unit tests (all passing)
-- Integrated `--preflight` flag and `E2E_PREFLIGHT` env var into CLI
-- Created comprehensive WSL documentation (337 lines)
-- 4 commits: `53fad99` (preflight), `ffa5592` (tests), `4aa8aa4` (CLI), `2dc02af` (docs)
+*Metrics will be populated during execution.*
 
 ---
 
-## Open Issues & Blockers
+## Accumulated Context
 
-**None at this time.**
+### Key Decisions (so far)
 
----
+| Decision | Rationale | Status |
+|----------|-----------|--------|
+| Use pytest-asyncio | Consistent with existing test stack | Decided |
+| Separate smoke/e2e directories | Fast feedback vs comprehensive validation | Decided |
+| No-login-first for search tests | Reduce account lock risk, improve stability | Decided |
+| Per-test browser context | Ensure isolation, no state leakage | Decided |
+| Chromium only | Align with main app, reduce complexity | Decided |
+| Real browser tests (no mocking) | Validate actual user experience | Decided |
 
-## Artifacts
+### Open Questions
 
-**Project Planning Documents:**
+- Which test accounts to use for CI vs local development? (needs 2 dedicated Microsoft accounts)
+- Should tests run with `--headed` locally for debugging? (likely yes, but CI headless)
+- How to handle Bing UI changes breaking selectors? (monitoring + alerting)
+- Task test data: auto-discover or predefine scenarios? (hybrid approach)
 
-- ✅ `PROJECT.md` - Project vision, scope, success criteria
-- ✅ `REQUIREMENTS.md` - Detailed functional requirements (12 REQs)
-- ✅ `ROADMAP.md` - Phase breakdown and timeline
-- 📋 `STATE.md` - This file (progress tracking)
-- 📋 `config.json` - GSD workflow configuration
+### Known Risks
 
-**Codebase Mapping:**
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| Bing UI changes | Medium | High | Robust selectors + screenshots + weekly health check |
+| Account lockout | Low | High | Dedicated test account, staggered runs |
+| Network flakiness | Medium | Medium | Timeouts + retry (≤1) + verbose logs |
+| CI secrets errors | Medium | High | Local validation script + docs |
+| Playwright drift | Low | Medium | Pin versions, CI cache |
 
-- ✅ `codebase/STACK.md` - Technology stack (200 lines)
-- ✅ `codebase/INTEGRATIONS.md` - External integrations (323 lines)
-- ✅ `codebase/ARCHITECTURE.md` - Architecture patterns (251 lines)
-- ✅ `codebase/STRUCTURE.md` - Directory layout and structure (300 lines)
-- ✅ `codebase/CONVENTIONS.md` - Coding conventions (213 lines)
-- ✅ `codebase/TESTING.md` - Testing patterns (361 lines)
-- ✅ `codebase/CONCERNS.md` - Technical debt and concerns (234 lines)
+### Dependencies & Blockers
 
-**Notes & Lessons:**
+**External:**
+- Need 2 dedicated Microsoft Rewards test accounts (email + password + optional 2FA)
+- CI secrets setup: `MS_REWARDS_E2E_EMAIL`, `MS_REWARDS_E2E_PASSWORD`, `MS_REWARDS_E2E_TOTP_SECRET`
+- GitHub repository with Actions enabled
 
-- Phase 1 needs to generate call graph → `.planning/call_graph/` or similar
-- Baseline benchmarks need to be established before any code changes
-- Config boundary should be machine-readable for validation
-
----
-
-## What's Next
-
-**Immediate Next Step:**
-**Execute Phase 1** to establish baselines and boundaries before any code changes.
-
-```bash
-
-# After clearing context
-
-/gsd:plan-phase 1
-```
-
-**After Phase 1 completion:**
-**Execute Phase 2** (low-risk deletion) once baseline is confirmed.
+**Internal:**
+- None yet
 
 ---
 
-## Metrics & Health
+## Session Continuity
 
-| Metric | Baseline | Target | Current |
-|--------|----------|--------|---------|
-| Source LOC | ~8,600 | 6,400–7,740 | 8,600 |
-| Test Coverage | Unknown (needs measurement) | ≥80% on critical modules | Unknown |
-| Silent Exceptions | 100+ | <20 | 100+ |
-| Core Feature Tests | Assumed passing | 100% passing | Assumed |
-| Config Compatibility | 100% | 100% | 100% |
+### What Just Happened
 
-**Note:** Metrics will be populated during Phase 1 baseline.
+- Completed planning phase: All 15 phase plan files created across 6 phases
+- Roadmap finalized with 15 deliverables covering all 8 v1 requirements (34 total test items)
+- All phase plans include: Objective, Tasks with acceptance criteria, Deliverables, Success Criteria, Dependencies, Notes
+- Structure validated: Each phase has correct number of plans (3, 2, 3, 3, 2, 2)
+- Files written: `.planning/ROADMAP.md`, `.planning/STATE.md`, and all 15 phase plans
+- No orphaned requirements; traceability table covers all E2E-001 through E2E-008
+- Dashboard API references removed per user directive
+
+### Next Actions (for human or next agent)
+
+1. **Review ROADMAP and phase plans** — Confirm all plans are complete and make sense
+2. **If approved**, begin execution: `/gsd:execute-phase 1` starts implementing Phase 1 tasks
+3. **Set up test accounts** — Acquire credentials before Phase 3/4/5 implementation
+4. **Configure CI secrets** — Prepare GitHub Actions secrets template
+5. **Monitor progress** — Phase plans can be executed sequentially or in parallel where dependencies allow
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260322-jsl | 配置 pre-commit，集成 ruff、ruff-format 和 mypy | 2026-03-22 | pending | [260322-jsl-discuss-conda](./quick/260322-jsl-discuss-conda/) |
 
 ---
 
-## Change Log
+### Notes for Plan-Phase (phase planner agent)
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-03-21 | Initial STATE.md created | Claude (system) |
-| 2026-03-21 | Project definition finalized | User + Claude |
+- Phase 1 combines E2E-001 (Infrastructure) and E2E-008 (Test Data)
+- Granularity: standard (5–8 expected, we have 6)
+- Goal-backward thinking applied: success criteria are observable user/test behaviors
+- No orphaned requirements
+- Deliverables: 15 plans total across 6 phases (3+2+3+3+2+2)
+- Phase 2 is a milestone gate: smoke tests must pass before other test suites developed
+- Payload consistency: PUT /api/v1/rewards { "amount": 500 } — fix consistency</hash>
 
 ---
 
-*Last updated: 2026-03-21*
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| E2E-001 | Phase 1 | Pending |
+| E2E-002 | Phase 2 | Pending |
+| E2E-003 | Phase 3 | Pending |
+| E2E-004 | Phase 4 | Pending |
+| E2E-005 | Phase 4 | Pending |
+| E2E-006 | Phase 5 | Pending |
+| E2E-007 | Phase 6 | Pending |
+| E2E-008 | Phase 1 | Pending |
+
+**Coverage:** 8/8 (100%) ✓
+
+---
+
+*State last written: 2026-03-22 — Quick task 260322-jsl completed (pre-commit config updated)*
