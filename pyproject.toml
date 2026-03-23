@@ -94,7 +94,7 @@ warn_unused_configs = true
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests/unit", "tests/integration"]
+testpaths = ["tests/unit", "tests/integration", "tests/e2e"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -113,6 +113,9 @@ markers = [
     "security: Security and anti-detection tests",
     "slow: Slow tests (skip in quick test runs)",
     "real: Real browser tests (requires credentials, skipped by default)",
+    "smoke: Smoke tests (fast <30s validation)",
+    "requires_login: Tests that require login credentials",
+    "no_login: Tests that run without login (public access)",
 ]
 addopts = "-v --tb=short --strict-markers -m 'not real'"
 

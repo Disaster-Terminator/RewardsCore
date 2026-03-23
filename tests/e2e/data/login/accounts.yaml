@@ -1,0 +1,18 @@
+# Test account configuration template
+# IMPORTANT: Do not commit actual credentials - use CI secrets
+#
+# To use:
+# 1. Copy to .env.test and fill in actual credentials
+# 2. Or set MS_REWARDS_E2E_EMAIL and MS_REWARDS_E2E_PASSWORD env vars
+
+accounts:
+  primary:
+    email: "${MS_REWARDS_E2E_EMAIL}"
+    # Password should be set via MS_REWARDS_E2E_PASSWORD env var
+    totp_secret: "${MS_REWARDS_E2E_TOTP_SECRET}"  # Optional: for 2FA accounts
+
+  # Secondary account for parallel test runs (optional)
+  secondary:
+    email: ""
+    password: ""
+    totp_secret: ""

@@ -1,0 +1,20 @@
+python tutorial
+javascript framework
+machine learning basics
+web development best practices
+react vs vue
+data science projects
+cloud computing services
+docker container
+kubernetes tutorial
+api design patterns
+sql optimization
+git workflow
+ci cd pipeline
+rest api examples
+graphql vs rest
+frontend frameworks
+backend development
+database design
+software architecture
+testing best practices

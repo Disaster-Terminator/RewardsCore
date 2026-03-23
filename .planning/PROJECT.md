@@ -1,160 +1,115 @@
-# PROJECT.md
+# RewardsCore E2E & Smoke Test Suite
 
-**Project:** RewardsCore Technical Debt Reduction & Simplification
-**Type:** Brownfield Refactoring
+**Project:** E2E Testing Framework for RewardsCore
+**Type:** Quality Assurance Initiative
 **Created:** 2026-03-21
-**Branch:** refactor/test-cleanup
-
-## Vision
-
-这是一个现有代码库上的**技术债收敛与简化项目**。目标是通过删除无价值代码、收缩过度复杂实现、降低错误面和维护成本，提升代码质量和可维护性，同时保持核心运行能力和配置兼容性。
-
-**核心理念：** 只做减法，不做加法。通过删除和简化来改善代码质量。
-
-## Project Scope
-
-### In Scope (V1)
-
-**删除目标：**
-- 死代码（未使用的函数、类、模块）
-- 重复实现（同一功能的多个版本）
-- 已被替代的旧实现（遗留代码）
-- 注释废代码（大段注释掉的代码块）
-- 无调用方模块（独立存在的模块但无人使用）
-- 临时脚本和工具（开发过程中的临时文件）
-- 冗余文档（过时或重复的文档）
-
-**重构目标：**
-- 核心路径中的复杂实现（过度设计的模块）
-- 静默异常处理（`except Exception: pass` 模式）
-- 硬编码选择器（脆弱的 DOM 解析）
-- 缺乏测试覆盖的模块（补充最小回归测试）
-
-**注意：** "缺测试"不能单独作为删除理由，必须有其他质量问题的组合。
-
-### Must Preserve (Non-negotiable)
-
-以下核心功能必须保留且功能无回退：
-
-- ✅ 桌面搜索执行（`src/search/search_engine.py`）
-- ✅ 移动搜索执行（`src/search/search_engine.py`）
-- ✅ 登录系统（状态机 + 处理器，`src/login/`）
-- ✅ 任务系统（发现 + 执行，`src/tasks/`）
-- ✅ 积分追踪（`src/account/points_detector.py`）
-- ✅ 通知系统（`src/infrastructure/notificator.py`）
-- ✅ 调度器（`src/infrastructure/scheduler.py`）
-- ✅ 诊断系统（`src/diagnosis/`）
-- ✅ 反检测模块（`src/browser/anti_ban_module.py`）
-- ✅ 配置系统（`src/infrastructure/config_manager.py`）
-- ✅ CLI 主入口（`src/cli.py`）
-
-### Out of Scope
-
-**明确不做的事情：**
-
-- ❌ 添加新功能（不增加新特性）
-- ❌ 架构重写（保持现有架构）
-- ❌ 性能优化（除非是删除带来的副作用）
-- ❌ 新的测试框架（只补充必要测试）
-- ❌ API 变更（保持配置兼容）
-- ❌ 多账户支持（未来版本考虑）
-- ❌ GUI 界面（未来版本考虑）
-- ❌ 云部署支持（未来版本考虑）
-
-## Success Criteria
-
-### Quantitative Goals
-
-**代码量减少：**
-- 源码行数下降：**10% – 20%**（目标：~8,000 行 → ~6,400–7,200 行）
-- 文件数量减少：根据实际情况，优先删除独立模块
-- 圈复杂度降低：高复杂度函数（>50）降低至合理范围
-
-**质量改善：**
-- 静默异常处理：从 100+ 处减少至 <20 处（仅保留明确需要静默的场景）
-- 无语义返回值：空返回 `[]` 改为明确的错误处理或文档说明
-- 测试覆盖：高风险模块（登录处理器、任务处理器、积分检测器）补充最小回归测试
-- 配置兼容性：主路径配置保持 100% 向后兼容
-
-### Qualitative Goals
-
-- 代码可读性提升（减少认知负荷）
-- 错误排查更容易（异常不再被静默吞没）
-- 维护成本降低（删除冗余实现）
-- 新人上手更快（代码量减少，逻辑更清晰）
-
-### Non-goals
-
-- 不追求 100% 测试覆盖率（最小可行测试即可）
-- 不追求零技术债（收敛至可接受水平）
-- 不重构所有复杂模块（只收缩高价值区域）
-
-## Constraints & Dependencies
-
-### Hard Constraints
-
-**兼容性要求：**
-- `config.yaml` 主路径配置必须保持兼容（新增字段可以有，但已有字段语义不变）
-- CLI 参数保持兼容（可以废弃，但不能移除常用参数）
-- `storage_state.json` 格式不变（会话持久化兼容）
-
-**风险容忍度：**
-- 核心功能（搜索、登录、任务）不能有任何功能回退
-- 可接受的风险：边缘功能的调整（如通知格式微调）
-- 不可接受的风险：大规模架构变更、核心流程重写
-
-### Dependencies
-
-**内部依赖：**
-- 依赖现有代码库（Python 3.10+, Playwright, asyncio）
-- 依赖现有配置系统（ConfigManager, ConfigValidator）
-- 依赖现有测试框架（pytest）
-
-**外部依赖：**
-- Microsoft Rewards 平台（页面结构可能变化，但不在控制范围）
-- 外部 API（DuckDuckGo, Wikipedia）- 可用性不在控制范围
-
-### Timeline
-
-- **无硬性截止日期**，采用渐进式重构
-- 建议每个阶段完成后进行验证，确保无回退
-- 优先处理高风险、高价值区域
-
-## Decision Log
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-03-21 | 项目定义为"技术债收敛与简化"，非纯删除项目 | 删除无价值代码，但保留核心功能，重构复杂实现 |
-| 2026-03-21 | "缺测试"不能单独作为删除理由 | 避免误删有价值的未测试代码 |
-| 2026-03-21 | 配置主路径必须兼容 | 减少用户迁移成本 |
-
-## Milestones
-
-**Phase 1: 冻结兼容边界与调用图**
-- 建立兼容边界检查（配置、CLI、API）
-- 生成调用图，识别孤立代码
-- 验证核心功能测试基线
-
-**Phase 2: 低风险纯删除**
-- 删除死代码、重复实现、注释废代码
-- 删除无调用方模块、临时脚本、冗余文档
-- 验证功能无回退
-
-**Phase 3: 核心模块收缩**
-- 拆分或简化过度复杂的实现（如 `search_engine.py` 732行）
-- 收缩健康监控开销（psutil 调用频率）
-- 验证性能无退化
-
-**Phase 4: 异常与返回语义治理**
-- 替换静默异常处理为正确日志
-- 改进空返回值的语义（错误处理或文档）
-- 验证错误排查能力提升
-
-**Phase 5: 测试补锁与依赖清理**
-- 高风险模块补充最小回归测试
-- 移除未使用的依赖包
-- 最终验证与文档更新
+**Branch:** feature/e2e-testing
+**Milestone:** M1 - Smoke Tests Ready
 
 ---
 
-**Next:** 详细需求定义见 `REQUIREMENTS.md`，阶段计划见 `ROADMAP.md`
+## What This Is
+
+This project adds a comprehensive end-to-end (E2E) and smoke test suite to RewardsCore, ensuring that core functionalities (login, search, tasks) remain stable and reliable across changes.
+
+The test suite uses **Playwright** for real browser automation and is designed with **decoupled modules** so that login tests and search tests can run independently.
+
+---
+
+## Core Value
+
+**Independent verification** of critical user journeys without requiring full application context or manual setup. Tests must be:
+- Fast (smoke < 30s, E2E < 5min per scenario)
+- Reliable (≥90% pass rate, minimal flakiness)
+- Self-diagnosing (auto-capture screenshots/logs on failure)
+- Environment-friendly (support both real accounts and mock scenarios)
+
+---
+
+## Requirements
+
+### Validated
+
+(None yet — ship to validate)
+
+### Active
+
+- [ ] **E2E-001**: Test Infrastructure Setup
+- [ ] **E2E-002**: Smoke Test Suite Implementation
+- [ ] **E2E-003**: Login E2E Tests
+- [ ] **E2E-004**: Search E2E Tests (No-Login Mode)
+- [ ] **E2E-005**: Search E2E Tests (With-Login Mode)
+- [ ] **E2E-006**: Task E2E Tests
+- [ ] **E2E-007**: CI/CD Integration
+- [ ] **E2E-008**: Test Data Management
+
+### Out of Scope
+
+- [ ] Unit tests — Already covered in `tests/unit/`
+- [ ] Performance/load testing — Separate effort
+- [ ] Mobile browser testing — Desktop only
+- [ ] Third-party API mocking — Use existing fixtures
+- [ ] Cross-browser testing — Chromium only
+
+---
+
+## Context
+
+**Existing Test Coverage:**
+- Unit tests: ~316 tests in `tests/unit/`
+- Integration tests: 1 file (`test_query_engine_integration.py`)
+- Manual test checklist: `tests/manual/login_test_checklist.md`
+
+**Gaps Identified:**
+- ❌ No E2E tests for complete workflows
+- ❌ No smoke tests for quick validation
+- ❌ No decoupled login/search testing
+- ❌ No CI/CD automated browser testing
+
+**Technical Debt Note:**
+The current codebase has a separate `.planning-technical-debt/` project for code simplification. This E2E testing project runs in parallel and does not interfere with that effort.
+
+---
+
+## Constraints
+
+- **Browser**: Playwright with Chromium (same as main code)
+- **Isolation**: Each test gets fresh browser context, 100% cleanup
+- **Headless**: Supported for CI, optional for local dev
+- **Accounts**: Use dedicated test Microsoft accounts, credentials via CI secrets
+- **Runtime**: Smoke < 30s total, E2E < 5min per scenario
+- **Flakiness**: Target < 5% retry rate
+
+---
+
+## Key Decisions
+
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| Use pytest-asyncio | Consistent with existing test stack | Pending |
+| Separate smoke/e2e directories | Fast feedback vs comprehensive validation | Pending |
+| No-login-first for search tests | Reduce account lock risk, improve stability | Pending |
+| Per-test browser context | Ensure isolation, no state leakage | Pending |
+
+---
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
+---
+
+*Last updated: 2026-03-21 after initialization*
