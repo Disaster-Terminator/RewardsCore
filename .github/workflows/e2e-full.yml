@@ -1,0 +1,128 @@
+name: E2E Full Tests
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # Daily at 6 PM UTC
+  workflow_dispatch:     # Manual trigger
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+            libasound2 libpangocairo-1.0-0 libcairo2 libpango-1.0-0 libgtk-3.0
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Validate secrets configured
+        run: |
+          if [ -z "${{ secrets.MS_REWARDS_E2E_EMAIL }}" ]; then
+            echo "ERROR: MS_REWARDS_E2E_EMAIL secret not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.MS_REWARDS_E2E_PASSWORD }}" ]; then
+            echo "ERROR: MS_REWARDS_E2E_PASSWORD secret not set"
+            exit 1
+          fi
+
+      - name: Create env file from secrets
+        run: |
+          echo "MS_REWARDS_E2E_EMAIL=${{ secrets.MS_REWARDS_E2E_EMAIL }}" >> .env.test
+          echo "MS_REWARDS_E2E_PASSWORD=${{ secrets.MS_REWARDS_E2E_PASSWORD }}" >> .env.test
+          echo "MS_REWARDS_E2E_TOTP_SECRET=${{ secrets.MS_REWARDS_E2E_TOTP_SECRET }}" >> .env.test
+          echo "E2E_STORAGE_STATE=tests/fixtures/storage_state.json" >> .env.test
+
+      - name: Generate storage state (first run only)
+        if: vars.need_storage_state != 'false'  # Configurable via repository variable
+        run: |
+          python scripts/save_storage_state.py
+        env:
+          E2E_HEADLESS: true
+        continue-on-error: true  # Storage state generation may fail; not fatal
+
+      - name: Run E2E tests (no-login first)
+        run: |
+          pytest tests/e2e/ -v --tb=short -m "no_login" --junitxml=pytest-no-login.xml
+        env:
+          E2E_HEADLESS: true
+
+      - name: Run E2E tests (with-login)
+        run: |
+          pytest tests/e2e/ -v --tb=short -m "requires_login" --junitxml=pytest-with-login.xml
+        env:
+          E2E_HEADLESS: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results-full
+          path: |
+            pytest-*.xml
+            logs/e2e/**/*.json
+            logs/daily_reports/
+          retention-days: 30
+
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-full
+          path: logs/e2e/screenshots/
+          retention-days: 30
+
+      - name: Upload diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-full
+          path: logs/diagnosis/**/*
+          retention-days: 30
+
+      - name: Check for flaky tests
+        if: always()
+        run: |
+          # Could implement flakiness detection via pytest-rerunfailures or custom script
+          echo "Flakiness check not implemented yet"

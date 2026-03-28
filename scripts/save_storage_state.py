@@ -30,8 +30,9 @@ async def main():
         print("ERROR: Set MS_REWARDS_E2E_EMAIL and MS_REWARDS_E2E_PASSWORD")
         return 1
 
+    headless = os.getenv("E2E_HEADLESS", "false").lower() == "true"
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=headless)
         context = await browser.new_context()
         page = await context.new_page()
 

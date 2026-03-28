@@ -1,0 +1,115 @@
+name: E2E Smoke Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            libgbm1 \
+            libasound2 \
+            libpangocairo-1.0-0 \
+            libcairo2 \
+            libpango-1.0-0 \
+            libgtk-3.0
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Create env file from secrets
+        run: |
+          echo "MS_REWARDS_E2E_EMAIL=${{ secrets.MS_REWARDS_E2E_EMAIL }}" >> .env.test
+          echo "MS_REWARDS_E2E_PASSWORD=${{ secrets.MS_REWARDS_E2E_PASSWORD }}" >> .env.test
+          echo "MS_REWARDS_E2E_TOTP_SECRET=${{ secrets.MS_REWARDS_E2E_TOTP_SECRET }}" >> .env.test
+          echo "E2E_STORAGE_STATE=tests/fixtures/storage_state.json" >> .env.test
+
+      - name: Upload storage state artifact (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-state
+          path: tests/fixtures/storage_state.json
+          retention-days: 7
+
+      - name: Run smoke tests (no-login only)
+        run: |
+          pytest tests/e2e/smoke/ -v --tb=short -m "no_login or smoke" --junitxml=pytest-smoke.xml
+        env:
+          E2E_HEADLESS: true
+
+      - name: Upload test results (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results-smoke
+          path: |
+            pytest-smoke.xml
+            logs/e2e/**/*.json
+          retention-days: 7
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-smoke
+          path: logs/e2e/screenshots/
+          retention-days: 7
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-smoke
+          path: logs/e2e/
+          retention-days: 7
