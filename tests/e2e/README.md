@@ -466,5 +466,48 @@ When adding new smoke tests:
 - ✅ **02-03**: Login E2E tests (Happy path, persistence, edge cases)
 - ✅ **02-04**: Search E2E tests (No-login mode)
 - ✅ **02-05**: Search E2E tests with login
-- ⏳ **02-06**: Task E2E tests
+- ✅ **02-06**: Task E2E tests
 - ⏳ **02-07**: CI/CD integration
+
+## Task E2E Tests
+
+Tests for Microsoft Rewards task system: discovery, execution, verification.
+
+### Running Task Tests
+
+```bash
+# All task tests (requires login) with parallel execution
+python -m pytest -n auto tests/e2e/tasks/ -v -m "requires_login"
+
+# Only discovery tests
+python -m pytest -n auto tests/e2e/tasks/test_task_discovery.py -v
+
+# Only URL reward tasks
+python -m pytest -n auto tests/e2e/tasks/test_url_reward_tasks.py -v
+```
+
+### Test Coverage
+
+| Test File | Coverage |
+|-----------|----------|
+| `test_task_discovery.py` | Discovering and parsing task cards |
+| `test_url_reward_tasks.py` | Executing URL-based reward tasks |
+| `test_task_persistence.py` | Completed task state persistence |
+| `test_task_filtering.py` | Categories and filters |
+
+### Task Types Supported
+
+- **URL Reward**: Visit a URL → earn points (automatically or after interaction)
+- **Quiz**: Multi-step questionnaire (covered in next plan)
+- **Poll**: Single vote (covered in next plan)
+
+### Prerequisites
+
+- Authenticated session (`MS_REWARDS_E2E_EMAIL`/`PASSWORD`)
+- Account must have active tasks (some tasks depend on demographics/region)
+
+### Notes
+
+- Tasks are account-specific; some tests may skip if no tasks of that type available
+- Task execution can involve external sites; may be slower
+- Use `storage_state.json` to speed up authentication overhead
