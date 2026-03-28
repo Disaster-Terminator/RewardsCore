@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-03-28T09:27:22.009722+00:00",
+  "total_tests": 4,
+  "passed": 2,
+  "failed": 1,
+  "skipped": 1,
+  "tests": [
+    {
+      "classname": "test_a",
+      "name": "test_pass",
+      "status": "passed",
+      "time": 0.5,
+      "failure": null,
+      "error": null
+    },
+    {
+      "classname": "test_a",
+      "name": "test_fail",
+      "status": "failed",
+      "time": 0.5,
+      "failure": "failed",
+      "error": "AssertionError"
+    },
+    {
+      "classname": "test_b",
+      "name": "test_pass",
+      "status": "passed",
+      "time": 0.5,
+      "failure": null,
+      "error": null
+    },
+    {
+      "classname": "test_b",
+      "name": "test_skip",
+      "status": "skipped",
+      "time": 0.5,
+      "failure": null,
+      "error": "skipped"
+    }
+  ],
+  "pass_rate": 50.0,
+  "total": 4
+}

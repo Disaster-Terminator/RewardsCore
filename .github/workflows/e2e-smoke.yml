@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
@@ -98,7 +103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-reports-smoke
+          name: e2e-reports-smoke-${{ matrix.python-version }}
           path: |
             reports/
             logs/e2e/**/*.json
@@ -108,7 +113,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots-smoke
+          name: screenshots-smoke-${{ matrix.python-version }}
           path: logs/e2e/screenshots/
           retention-days: 7
 
@@ -116,6 +121,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-smoke
+          name: logs-smoke-${{ matrix.python-version }}
           path: logs/e2e/
           retention-days: 7

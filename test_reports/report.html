@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>E2E Test Report</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; }
+        .summary { display: flex; gap: 2rem; margin-bottom: 2rem; }
+        .stat { padding: 1rem 2rem; border-radius: 8px; color: white; font-weight: bold; }
+        .passed { background: #28a745; }
+        .failed { background: #dc3545; }
+        .skipped { background: #ffc107; }
+        .total { background: #17a2b8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+        th, td { padding: 0.75rem; border: 1px solid #ddd; text-align: left; }
+        th { background: #f4f4f4; }
+        .status-PASSED { color: #28a745; font-weight: bold; }
+        .status-FAILED { color: #dc3545; font-weight: bold; }
+        .status-ERROR { color: #dc3545; font-weight: bold; }
+        .status-SKIPPED { color: #ffc107; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>E2E Test Report</h1>
+    <p><strong>Generated:</strong> 2026-03-28T09:27:22.009722+00:00</p>
+
+    <div class="summary">
+        <div class="stat total">Total: 4</div>
+        <div class="stat passed">Passed: 2</div>
+        <div class="stat failed">Failed: 1</div>
+        <div class="stat skipped">Skipped: 1</div>
+    </div>
+
+    <h2>Pass Rate: 50.0%</h2>
+
+    <h2>Test Results</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Status</th>
+                <th>Time (s)</th>
+                <th>Failure/Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>test_a.test_pass</td>
+                <td class="status-PASSED">PASSED</td>
+                <td>0.50</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>test_a.test_fail</td>
+                <td class="status-FAILED">FAILED</td>
+                <td>0.50</td>
+                <td>failed</td>
+            </tr>
+            <tr>
+                <td>test_b.test_pass</td>
+                <td class="status-PASSED">PASSED</td>
+                <td>0.50</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>test_b.test_skip</td>
+                <td class="status-SKIPPED">SKIPPED</td>
+                <td>0.50</td>
+                <td>skipped</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

@@ -176,19 +176,23 @@ def main():
     print(f"Loading JUnit XML files: {existing_junit_paths}...")
     report = load_junit_xml(existing_junit_paths)
 
-    # Save JSON
-    json_path = report_dir / "report.json"
-    with open(json_path, "w") as f:
-        json.dump(report, f, indent=2)
-    print(f"✓ JSON report: {json_path}")
+    # Summary calculation
+    pass_rate = (report["passed"] / report["total_tests"] * 100) if report["total_tests"] > 0 else 0
+    report["pass_rate"] = pass_rate
+    report["total"] = report["total_tests"]
+
+    # Save JSON (both report.json and summary.json for compatibility)
+    for name in ["report.json", "summary.json"]:
+        json_path = report_dir / name
+        with open(json_path, "w") as f:
+            json.dump(report, f, indent=2)
+        print(f"✓ JSON report: {json_path}")
 
     # Save HTML
     html_path = report_dir / "report.html"
     generate_html_report(report, str(html_path))
     print(f"✓ HTML report: {html_path}")
 
-    # Summary
-    pass_rate = (report["passed"] / report["total_tests"] * 100) if report["total_tests"] > 0 else 0
     print(f"\n📊 Summary: {report['passed']}/{report['total_tests']} passed ({pass_rate:.1f}%)")
     return 0
 

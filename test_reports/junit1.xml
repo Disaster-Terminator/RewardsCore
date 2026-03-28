@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="1.0">
+    <testcase classname="test_a" name="test_pass" time="0.5"/>
+    <testcase classname="test_a" name="test_fail" time="0.5">
+      <failure message="failed">AssertionError</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
