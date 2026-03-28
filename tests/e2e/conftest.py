@@ -154,12 +154,24 @@ async def _capture_failure_on_error(request: Any, page: Page):
     # Check if test failed
     if hasattr(request.node, "_e2e_failed") and request.node._e2e_failed:
         from tests.e2e.helpers.screenshot import capture_failure_screenshot
+        from tests.e2e.helpers.diagnostic_report import save_login_diagnostic
 
+        # Save standard failure screenshot
         artifacts = await capture_failure_screenshot(
             page,
             test_name=request.node.name,
             request=request,
         )
+        # Save specialized login diagnostic data for login tests
+        if "login" in request.node.name.lower() or "login" in str(request.node.fspath).lower():
+            diagnostic_info = await save_login_diagnostic(
+                page,
+                test_name=request.node.name,
+                failure_repr=getattr(request.node, "_e2e_failure_repr", "No repr")
+            )
+            # Add to artifacts
+            artifacts.update(diagnostic_info)
+
         # Log artifacts location
         import logging
         logging.error(f"Test failed. Artifacts saved: {artifacts}")
