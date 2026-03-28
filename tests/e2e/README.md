@@ -311,6 +311,56 @@ pytest -n auto tests/e2e/search/ -v
 - **Autocomplete not showing**: May depend on region; test may skip
 - **Images/Videos tabs missing**: Region-specific features; skip acceptable
 
+## Search E2E Tests (With-Login Mode)
+
+### When to Use With-Login Tests
+
+- Verify search quota tracking
+- Check points awarding behavior
+- Validate session-specific features (search history, preferences)
+- Test mobile search with authenticated sessions
+
+### Prerequisites
+
+```bash
+export MS_REWARDS_E2E_EMAIL=user@outlook.com
+export MS_REWARDS_E2E_PASSWORD=secret
+export MS_REWARDS_E2E_TOTP_SECRET=  # Optional for 2FA
+```
+
+Optional: Generate `storage_state.json` for faster tests:
+```bash
+python scripts/save_storage_state.py
+```
+
+### Running With-Login Tests
+
+```bash
+# All search tests (no-login + with-login) with parallel execution
+pytest -n auto tests/e2e/search/ -v
+
+# Only with-login tests
+pytest -n auto tests/e2e/search/ -v -m "requires_login"
+
+# Specific test
+pytest -n auto tests/e2e/search/test_search_quota.py -v
+```
+
+### Test Files
+
+| Test File | Purpose |
+|-----------|---------|
+| `test_search_quota.py` | Verify search counts increment |
+| `test_search_mobile_authenticated.py` | Mobile search with login |
+| `test_search_session.py` | Session persistence across tabs |
+| `test_search_errors.py` | Rate limiting, empty queries, special chars |
+
+### Performance Notes
+
+- With-login tests are slower (~2-3x) due to login overhead
+- Use `storage_state.json` to reduce time by 60-70%
+- Default: no-login tests for rapid iteration; with-login for integration validation
+
 ## Configuration
 
 ### Environment Variables
@@ -378,6 +428,6 @@ When adding new smoke tests:
 - ✅ **02-02**: Search execution, flakiness tracking, performance gates
 - ✅ **02-03**: Login E2E tests (Happy path, persistence, edge cases)
 - ✅ **02-04**: Search E2E tests (No-login mode)
-- ⏳ **02-05**: Search E2E tests with login
+- ✅ **02-05**: Search E2E tests with login
 - ⏳ **02-06**: Task E2E tests
 - ⏳ **02-07**: CI/CD integration
