@@ -41,6 +41,10 @@ config.local.yaml
 
 # 环境变量文件（包含 Token）
 .env
+.env.test
+
+# 测试环境变量文件
+.env.test
 
 # 日志文件
 logs/
@@ -90,8 +94,27 @@ screenshots/*.png
 screenshots/*.html
 !screenshots/points_detection_failed.png
 
+# E2E 测试工件
+tests/e2e/fixtures/storage_state.json
+logs/e2e/
+
 # Trae 规格和文档
 .trae/spec/
 .trae/specs/
 .trae/documents/
 .trae/data/
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+*.pyc
+.venv/
+target/
+vendor/
+coverage/
+.cache/
+tmp/

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "context7",
+      "args": []
+    },
+    "firecrawl": {
+      "command": "firecrawl",
+      "args": [],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-ec7b5d3844aa445ba92704065761257e"
+      }
+    }
+  }
+}

@@ -100,6 +100,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 pythonpath = "src"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 timeout = 300
 timeout_method = "thread"
 norecursedirs = [".git", ".hypothesis", "__pycache__", "*.egg-info", "tests/autonomous"]

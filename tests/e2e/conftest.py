@@ -14,6 +14,9 @@ from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
 from tests.e2e.helpers.environment import get_environment_type, is_ci_environment
 
+# Register pytest-asyncio plugin for pytest 9.x compatibility
+pytest_plugins = ["pytest_asyncio"]
+
 # E2E-specific default configuration overrides
 # Uses E2E_* namespace to avoid conflicts with MS_REWARDS_*
 E2E_DEFAULT_CONFIG = {
@@ -21,7 +24,7 @@ E2E_DEFAULT_CONFIG = {
         "desktop_count": 2,  # E2E_SEARCH_COUNT default
     },
     "browser": {
-        "headless": False,  # E2E_HEADLESS default (false for local, true for CI)
+        "headless": True,  # E2E_HEADLESS default (true for both local and CI)
     },
     "task_system": {
         "enabled": False,
@@ -55,21 +58,23 @@ def e2e_config() -> dict[str, Any]:
     if os.environ.get("E2E_SEARCH_COUNT"):
         config["search"]["desktop_count"] = int(os.environ["E2E_SEARCH_COUNT"])
 
-    # Headless mode: default to True in CI, False locally
+    # Headless mode: default to True locally and in CI, unless E2E_HEADLESS=false
     if os.environ.get("E2E_HEADLESS"):
         config["browser"]["headless"] = os.environ["E2E_HEADLESS"].lower() == "true"
     else:
-        config["browser"]["headless"] = is_ci_environment()
+        config["browser"]["headless"] = True
 
     return config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 async def browser(e2e_config: dict[str, Any]) -> Generator[Browser, None, None]:
     """
-    Provide a session-scoped Playwright browser instance.
+    Provide a function-scoped Playwright browser instance.
 
-    Uses Chromium only, consistent with main app.
+    Changed from session to function scope to avoid asyncio deadlock in WSL
+    with pytest-asyncio 1.3.0 + asyncio_default_fixture_loop_scope="session".
+    Performance impact: browser launches once per test (acceptable for smoke tests).
     """
     async with async_playwright() as p:
         browser = await p.chromium.launch(

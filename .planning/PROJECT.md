@@ -30,12 +30,11 @@ The test suite uses **Playwright** for real browser automation and is designed w
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] **E2E-001**: Test Infrastructure Setup
+- [x] **E2E-008**: Test Data Management
+- [x] **E2E-002**: Smoke Test Suite Implementation
 
 ### Active
-
-- [ ] **E2E-001**: Test Infrastructure Setup
-- [ ] **E2E-002**: Smoke Test Suite Implementation
 - [ ] **E2E-003**: Login E2E Tests
 - [ ] **E2E-004**: Search E2E Tests (No-Login Mode)
 - [ ] **E2E-005**: Search E2E Tests (With-Login Mode)
