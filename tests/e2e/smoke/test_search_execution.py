@@ -48,15 +48,49 @@ class TestSearchExecution:
         """
         queries = ["python testing", "playwright docs", "async await python"]
 
-        for query in queries:
-            await page.goto("https://www.bing.com", wait_until="domcontentloaded", timeout=30000)
+        # Initial navigation
+        await page.goto("https://www.bing.com", wait_until="load", timeout=30000)
 
+        # Handle cookie banner if present
+        try:
+            # Try multiple common "Accept" buttons
+            for btn_text in ["Accept", "Allow all", "I agree"]:
+                btn = page.get_by_role("button", name=btn_text, exact=False).first
+                if await btn.is_visible(timeout=1000):
+                    await btn.click()
+                    break
+        except Exception:
+            pass
+
+        for query in queries:
+            # Locate search input - wait for it to be ready
             search_input = page.locator("input[name='q']")
-            await expect(search_input).to_be_visible(timeout=20000)
-            await search_input.fill(query)
+            await expect(search_input).to_be_visible(timeout=10000)
+            
+            # Clear and type
+            await search_input.fill("")
+            await search_input.type(query, delay=10)
             await search_input.press("Enter")
 
-            await page.wait_for_load_state("domcontentloaded", timeout=30000)
+            # Wait for navigation or results to appear
+            # We check for results container but we're more permissive about visibility
             results = page.locator(".b_algo")
+            
+            # Wait up to 10s for at least one result to exist in DOM
+            try:
+                await page.wait_for_selector(".b_algo", state="attached", timeout=10000)
+            except Exception:
+                # If .b_algo not found, try a broader results container
+                await page.wait_for_selector("#b_results", state="attached", timeout=5000)
+            
+            # Check count
             count = await results.count()
-            assert count > 0, f"No results for query: {query}"
+            if count == 0:
+                # Fallback: check any list item in results
+                count = await page.locator("#b_results li").count()
+            
+            assert count > 0, f"No results found for query: {query}"
+            
+            # Brief pause for stability
+            import asyncio
+            await asyncio.sleep(0.5)

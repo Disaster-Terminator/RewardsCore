@@ -1,72 +1,78 @@
-"""Account health check utilities for E2E tests."""
-
-import os
-from typing import Any, Callable
-
-import pytest
 from playwright.async_api import Page
 
-
-async def check_account_health(page: Page) -> dict[str, Any]:
+async def check_account_health(page: Page) -> dict:
     """
-    Check if the test account is healthy (not locked, has rewards access).
-
-    Args:
-        page: Playwright page with logged-in session
-
-    Returns:
-        Dict with 'healthy' (bool) and 'reason' (str) keys
+    Check if test account is healthy (not locked, can access rewards).
+    Returns: {"healthy": bool, "reason": str if not}
     """
     try:
-        # Navigate to rewards page to check account status
-        await page.goto("https://rewards.bing.com/", timeout=10000)
+        await page.goto("https://rewards.bing.com", wait_until="domcontentloaded", timeout=15000)
 
-        # Check for common account issues
-        page_content = await page.content().lower()
+        # Check for lockout indicators
+        lockout_selectors = [
+            "text='account is locked'",
+            "text='account has been blocked'",
+            "[data-ct*='locked']",
+            ".accountLocked"
+        ]
+        for selector in lockout_selectors:
+            element = await page.query_selector(selector)
+            if element:
+                text = await element.text_content()
+                if text and "lock" in text.lower():
+                    return {"healthy": False, "reason": "account_locked", "details": text.strip()}
 
-        # Check for account locked message
-        if "account" in page_content and "locked" in page_content:
-            return {"healthy": False, "reason": "Account appears to be locked"}
+        # Check for sign-in prompt (means not logged in)
+        signin_selectors = [
+            "a[href*='login']",
+            "button:has-text('Sign in')",
+            "text='Sign in'"
+        ]
+        for selector in signin_selectors:
+            element = await page.query_selector(selector)
+            if element:
+                return {"healthy": False, "reason": "not_logged_in"}
 
-        # Check for login redirect (not logged in)
-        if "sign in" in page_content and "rewards" in page_content:
-            return {"healthy": False, "reason": "Not logged in or session expired"}
+        # Check for home/dashboard elements (logged in)
+        dashboard_indicators = [
+            ".progressContainer",
+            "[data-ct*='dashboard']",
+            "text='Daily'"
+        ]
+        for selector in dashboard_indicators:
+            if await page.query_selector(selector):
+                return {"healthy": True}
 
-        # Check for errors
-        if "error" in page_content and "try again later" in page_content:
-            return {"healthy": False, "reason": "Service error detected"}
-
-        return {"healthy": True, "reason": "Account healthy"}
-
+        return {"healthy": False, "reason": "uncertain_state"}
     except Exception as e:
-        return {"healthy": False, "reason": f"Health check failed: {str(e)}"}
+        return {"healthy": False, "reason": "error", "details": str(e)}
 
-
-def requires_healthy_account(func: Callable) -> Callable:
+def skip_if_unhealthy(page_fixture_name: str = "page"):
     """
-    Decorator to skip test if account is not healthy (D-20).
-
-    Usage:
-        @pytest.mark.asyncio
-        @requires_healthy_account
-        async def test_with_login(page):
-            ...
+    Decorator to skip test if account health check fails.
+    Usage: @skip_if_unhealthy() or @skip_if_unhealthy("admin_logged_in_page")
     """
-    async def wrapper(*args, **kwargs):
-        # Extract page from args or kwargs
-        page = None
-        for arg in args:
-            if hasattr(arg, "goto"):  # Playwright page
-                page = arg
-                break
+    def decorator(func):
+        import pytest
+        import functools
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Find page fixture from kwargs
+            page = kwargs.get(page_fixture_name)
+            if not page:
+                # Try to find by type
+                for arg in args:
+                    if hasattr(arg, 'goto') and hasattr(arg, 'query_selector'):
+                        page = arg
+                        break
+            if page:
+                from tests.e2e.helpers.account_health import check_account_health
+                health = await check_account_health(page)
+                if not health["healthy"]:
+                    pytest.skip(f"Account unhealthy: {health['reason']} - {health.get('details', '')}")
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
 
-        if page is None:
-            pytest.skip("Cannot determine page for health check")
-
-        health = await check_account_health(page)
-        if not health["healthy"]:
-            pytest.skip(f"Account not healthy: {health['reason']}")
-
-        return await func(*args, **kwargs)
-
-    return wrapper
+# Alias for compatibility with existing code
+requires_healthy_account = skip_if_unhealthy

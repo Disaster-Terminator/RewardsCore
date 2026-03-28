@@ -7,7 +7,8 @@ Provides:
 - Automatic cleanup and failure screenshot capture
 """
 
-from typing import Any, Generator
+import os
+from typing import Any, Generator, Dict
 
 import pytest
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
@@ -162,3 +163,23 @@ async def _capture_failure_on_error(request: Any, page: Page):
         # Log artifacts location
         import logging
         logging.error(f"Test failed. Artifacts saved: {artifacts}")
+
+@pytest.fixture(scope="session")
+def e2e_test_account() -> Dict[str, str]:
+    """Load MS Rewards test credentials from environment."""
+    creds = {
+        "email": os.getenv("MS_REWARDS_E2E_EMAIL"),
+        "password": os.getenv("MS_REWARDS_E2E_PASSWORD"),
+        "totp_secret": os.getenv("MS_REWARDS_E2E_TOTP_SECRET")
+    }
+    if not creds["email"] or not creds["password"]:
+        pytest.skip("Test credentials not set. Set MS_REWARDS_E2E_EMAIL and MS_REWARDS_E2E_PASSWORD")
+    return creds
+
+
+@pytest.fixture
+async def admin_logged_in_page(page, e2e_test_account):
+    """Perform full login flow and return authenticated page."""
+    from tests.e2e.helpers.login import perform_login
+    await perform_login(page, e2e_test_account)
+    return page
