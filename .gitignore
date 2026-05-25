@@ -118,3 +118,7 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# 本地 MCP 配置文件（包含真实 API key，禁止提交）
+.mcp.json
+!.mcp.example.json
